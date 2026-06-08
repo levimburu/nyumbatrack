@@ -52,78 +52,168 @@ function AuthPage() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-sm">
-          <div className="mb-10 flex items-center gap-2">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div className="font-display text-xl font-semibold tracking-tight">NyumbaTrack</div>
-          </div>
-
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-            {mode === "signin" ? "Welcome back" : "Create your account"}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {mode === "signin"
-              ? "Sign in to manage tenants and payments."
-              : "The first account becomes the landlord/admin."}
-          </p>
-
-          <form onSubmit={submit} className="mt-8 space-y-4">
-            {mode === "signup" && (
-              <Field label="Full name">
-                <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="auth-input" placeholder="Jane Landlord" />
-              </Field>
-            )}
-            <Field label="Email">
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="auth-input" placeholder="you@example.com" />
-            </Field>
-            <Field label="Password">
-              <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="auth-input" placeholder="••••••••" />
-            </Field>
-
-            <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-glow disabled:opacity-60">
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {mode === "signin" ? "Sign in" : "Create account"}
-            </button>
-          </form>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            {mode === "signin" ? "New here?" : "Already have an account?"}{" "}
-            <button onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="font-medium text-primary hover:underline">
-              {mode === "signin" ? "Create an account" : "Sign in"}
-            </button>
-          </p>
+    <div className="min-h-screen w-full bg-[#F9FAFB]">
+      {/* Mobile header bar */}
+      <div className="flex items-center gap-2 px-6 py-5 md:hidden"
+        style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)" }}>
+        <div className="grid h-9 w-9 place-items-center rounded-lg bg-amber-400 text-amber-900">
+          <Building2 className="h-5 w-5" />
         </div>
+        <span className="font-display text-lg font-semibold text-white tracking-tight">NyumbaTrack</span>
       </div>
 
-      <div className="relative hidden overflow-hidden bg-primary lg:block">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,oklch(0.5_0.12_165/0.6),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,oklch(0.78_0.13_85/0.25),transparent_55%)]" />
-        <div className="relative z-10 flex h-full flex-col justify-between p-12 text-primary-foreground">
-          <div className="font-display text-sm uppercase tracking-[0.3em] text-gold">Landlord Suite</div>
-          <div>
-            <h2 className="font-display text-4xl font-semibold leading-tight">
+      <div className="flex min-h-[calc(100vh-64px)] md:min-h-screen lg:grid lg:grid-cols-2">
+        {/* Form side */}
+        <div className="flex items-center justify-center px-6 py-10">
+          <div className="w-full max-w-sm animate-fade-in">
+
+            {/* Desktop logo */}
+            <div className="mb-8 hidden items-center gap-2 md:flex">
+              <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-white shadow-md">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div className="font-display text-xl font-semibold tracking-tight text-foreground">NyumbaTrack</div>
+            </div>
+
+            {/* Mobile hero text */}
+            <div className="mb-8 md:hidden">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 mb-4">
+                🏠 Landlord Suite
+              </div>
+              <h1 className="font-display text-2xl font-bold text-foreground">
+                {mode === "signin" ? "Welcome back" : "Get started"}
+              </h1>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                {mode === "signin"
+                  ? "Sign in to manage your properties."
+                  : "Create your landlord account."}
+              </p>
+            </div>
+
+            {/* Desktop heading */}
+            <div className="hidden md:block mb-8">
+              <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+                {mode === "signin" ? "Welcome back" : "Create your account"}
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {mode === "signin"
+                  ? "Sign in to manage tenants and payments."
+                  : "The first account becomes the landlord/admin."}
+              </p>
+            </div>
+
+            <form onSubmit={submit} className="space-y-4">
+              {mode === "signup" && (
+                <Field label="Full name">
+                  <input
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="auth-input"
+                    placeholder="Jane Landlord"
+                  />
+                </Field>
+              )}
+              <Field label="Email">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="auth-input"
+                  placeholder="you@example.com"
+                />
+              </Field>
+              <Field label="Password">
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="auth-input"
+                  placeholder="••••••••"
+                />
+              </Field>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="glow-primary flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary-glow disabled:opacity-60 mt-2"
+              >
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {mode === "signin" ? "Sign in" : "Create account"}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              {mode === "signin" ? "New here?" : "Already have an account?"}{" "}
+              <button
+                onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+                className="font-medium text-primary hover:underline"
+              >
+                {mode === "signin" ? "Create an account" : "Sign in"}
+              </button>
+            </p>
+
+            {/* Mobile stats */}
+            <div className="mt-10 grid grid-cols-3 gap-4 rounded-2xl border border-border bg-white p-4 md:hidden">
+              <div className="text-center">
+                <div className="font-display text-xl font-bold text-primary">6+</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">units tracked</div>
+              </div>
+              <div className="text-center border-x border-border">
+                <div className="font-display text-xl font-bold text-primary">98%</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">on-time rate</div>
+              </div>
+              <div className="text-center">
+                <div className="font-display text-xl font-bold text-primary">0</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">spreadsheets</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right panel — desktop only */}
+        <div className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-12"
+          style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)" }}>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(255,255,255,0.08),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(245,158,11,0.12),transparent_55%)]" />
+          <div className="relative z-10">
+            <div className="font-display text-sm uppercase tracking-[0.3em] text-amber-400">Landlord Suite</div>
+          </div>
+          <div className="relative z-10">
+            <h2 className="font-display text-4xl font-semibold leading-tight text-white">
               Rent collection,<br />tenant records,<br />in one quiet place.
             </h2>
-            <p className="mt-6 max-w-md text-sm text-primary-foreground/70">
+            <p className="mt-6 max-w-md text-sm text-white/70">
               Track who owes what, record M-Pesa and bank payments, send receipts —
               and watch your monthly collection unfold in real time.
             </p>
           </div>
-          <div className="flex gap-6 text-xs text-primary-foreground/60">
-            <div><div className="font-display text-2xl text-gold">6+</div>units tracked</div>
-            <div><div className="font-display text-2xl text-gold">98%</div>on-time rate</div>
-            <div><div className="font-display text-2xl text-gold">0</div>spreadsheets</div>
+          <div className="relative z-10 flex gap-6 text-xs text-white/60">
+            <div><div className="font-display text-2xl text-amber-400">6+</div>units tracked</div>
+            <div><div className="font-display text-2xl text-amber-400">98%</div>on-time rate</div>
+            <div><div className="font-display text-2xl text-amber-400">0</div>spreadsheets</div>
           </div>
         </div>
       </div>
 
       <style>{`
-        .auth-input { width:100%; border-radius:.5rem; border:1px solid var(--color-border); background:var(--color-card); padding:.625rem .875rem; font-size:.875rem; outline:none; transition:border-color .15s, box-shadow .15s; }
-        .auth-input:focus { border-color:var(--color-ring); box-shadow:0 0 0 3px oklch(0.45 0.1 165 / .15); }
+        .auth-input {
+          width: 100%;
+          border-radius: 0.625rem;
+          border: 1px solid #E5E7EB;
+          background: #fff;
+          padding: 0.75rem 0.875rem;
+          font-size: 0.875rem;
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .auth-input:focus {
+          border-color: #2563EB;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
       `}</style>
     </div>
   );
