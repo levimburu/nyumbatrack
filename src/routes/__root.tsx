@@ -77,10 +77,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "RentLedger — Modern Rent Tracking for Landlords" },
+      { title: "NyumbaTrack — Modern Rent Tracking for Landlords" },
       { name: "description", content: "Track tenants, rent payments, balances, and receipts in one elegant dashboard." },
-      { name: "author", content: "RentLedger" },
-      { property: "og:title", content: "RentLedger — Modern Rent Tracking" },
+      { name: "author", content: "NyumbaTrack" },
+      { property: "og:title", content: "NyumbaTrack — Modern Rent Tracking" },
       { property: "og:description", content: "Track tenants, rent payments, balances, and receipts in one elegant dashboard." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

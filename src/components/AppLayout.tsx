@@ -35,7 +35,7 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
         <div className="grid h-9 w-9 place-items-center rounded-lg bg-gold text-gold-foreground">
           <Building2 className="h-5 w-5" />
         </div>
-        <div className="font-display text-lg font-semibold tracking-tight">RentLedger</div>
+        <div className="font-display text-lg font-semibold tracking-tight">NyumbaTrack</div>
       </div>
       <nav className="flex-1 space-y-1 px-3">
         {items.map((it) => {
@@ -94,7 +94,7 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
           <button onClick={() => setMobileOpen(true)} aria-label="Open menu">
             <Menu className="h-5 w-5" />
           </button>
-          <div className="font-display font-semibold">RentLedger</div>
+          <div className="font-display font-semibold">NyumbaTrack</div>
           <div className="w-5" />
           {mobileOpen && (
             <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="absolute right-4 top-3 z-50">
