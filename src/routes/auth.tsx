@@ -64,8 +64,8 @@ function AuthPage() {
 
       <div className="flex min-h-[calc(100vh-64px)] md:min-h-screen lg:grid lg:grid-cols-2">
         {/* Form side */}
-        <div className="flex items-center justify-center px-6 py-10">
-          <div className="w-full max-w-sm animate-fade-in">
+        <div className="flex items-center justify-center px-6 py-10 text-center md:text-left">
+          <div className="w-full max-w-sm animate-fade-in mx-auto">
 
             {/* Desktop logo */}
             <div className="mb-8 hidden items-center gap-2 md:flex">
@@ -102,7 +102,7 @@ function AuthPage() {
               </p>
             </div>
 
-            <form onSubmit={submit} className="space-y-4">
+            <form onSubmit={submit} className="space-y-4 text-left">
               {mode === "signup" && (
                 <Field label="Full name">
                   <input
