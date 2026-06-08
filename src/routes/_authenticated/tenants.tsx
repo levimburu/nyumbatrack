@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { formatKES } from "@/lib/format";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { formatKES, formatDate } from "@/lib/format";
+import { Plus, Pencil, Trash2, X, Calendar, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { StatusPill } from "./dashboard";
 
@@ -22,11 +22,22 @@ interface Tenant {
   due_day: number;
   balance: number;
   status: string;
+  next_due_date: string | null;
+}
+
+interface Payment {
+  id: string;
+  amount: number;
+  paid_on: string;
+  method: string;
+  payment_month: string | null;
+  reference: string | null;
 }
 
 function TenantsPage() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Partial<Tenant> | null>(null);
+  const [viewingHistory, setViewingHistory] = useState<Tenant | null>(null);
 
   const { data } = useQuery({
     queryKey: ["tenants"],
@@ -79,18 +90,26 @@ function TenantsPage() {
         </button>
       </div>
 
-      <div className="card-surface overflow-hidden">
+      <div className="card-surface overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="px-5 py-3">Name</th><th>Unit</th><th>Phone</th><th>Rent</th><th>Balance</th><th>Status</th><th className="text-right pr-5">Actions</th>
+              <th className="px-5 py-3">Name</th>
+              <th>Unit</th>
+              <th>Phone</th>
+              <th>Rent</th>
+              <th>Balance</th>
+              <th>Next Due</th>
+              <th>Status</th>
+              <th className="text-right pr-5">Actions</th>
             </tr>
           </thead>
           <tbody>
             {data?.map((t) => {
               const status = Number(t.balance) === 0 ? "paid" : Number(t.balance) < Number(t.rent_amount) ? "partial" : "unpaid";
+              const isOverdue = t.next_due_date && new Date(t.next_due_date) < new Date() && status !== "paid";
               return (
-                <tr key={t.id} className="border-t border-border/60">
+                <tr key={t.id} className="border-t border-border/60 hover:bg-muted/30 transition-colors">
                   <td className="px-5 py-3">
                     <div className="font-medium">{t.full_name}</div>
                     <div className="text-xs text-muted-foreground">{t.email}</div>
@@ -99,22 +118,109 @@ function TenantsPage() {
                   <td className="text-muted-foreground">{t.phone}</td>
                   <td>{formatKES(t.rent_amount)}</td>
                   <td className="font-medium">{formatKES(t.balance)}</td>
+                  <td>
+                    {t.next_due_date ? (
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${isOverdue ? "bg-destructive/15 text-destructive" : "bg-success/15 text-success"}`}>
+                        <Calendar className="h-3 w-3" />
+                        {formatDate(t.next_due_date)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td><StatusPill status={status as "paid" | "partial" | "unpaid"} /></td>
                   <td className="pr-5 text-right">
                     <div className="inline-flex gap-1">
-                      <button onClick={() => setEditing(t)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => { if (confirm(`Remove ${t.full_name}?`)) del.mutate(t.id); }} className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                      <button
+                        onClick={() => setViewingHistory(t)}
+                        className="rounded-md p-1.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                        title="Payment history"
+                      >
+                        <Calendar className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => setEditing(t)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => { if (confirm(`Remove ${t.full_name}?`)) del.mutate(t.id); }} className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
               );
             })}
-            {!data?.length && <tr><td colSpan={7} className="px-5 py-10 text-center text-sm text-muted-foreground">No tenants yet.</td></tr>}
+            {!data?.length && <tr><td colSpan={8} className="px-5 py-10 text-center text-sm text-muted-foreground">No tenants yet.</td></tr>}
           </tbody>
         </table>
       </div>
 
       {editing && <TenantForm initial={editing} onSave={(t) => upsert.mutate(t)} onClose={() => setEditing(null)} saving={upsert.isPending} />}
+      {viewingHistory && <PaymentHistory tenant={viewingHistory} onClose={() => setViewingHistory(null)} />}
+    </div>
+  );
+}
+
+function PaymentHistory({ tenant, onClose }: { tenant: Tenant; onClose: () => void }) {
+  const { data: payments, isLoading } = useQuery({
+    queryKey: ["tenant-payments", tenant.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("tenant_id", tenant.id)
+        .order("paid_on", { ascending: false });
+      if (error) throw error;
+      return data as Payment[];
+    },
+  });
+
+  const nextDue = tenant.next_due_date ? new Date(tenant.next_due_date) : null;
+  const isOverdue = nextDue && nextDue < new Date();
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-4">
+      <div className="card-surface w-full max-w-lg p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-xl font-semibold">{tenant.full_name}</h2>
+            <p className="text-sm text-muted-foreground">Unit {tenant.unit} · Payment History</p>
+          </div>
+          <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
+        </div>
+
+        {/* Next due date card */}
+        <div className={`mb-4 rounded-xl p-4 ${isOverdue ? "bg-destructive/10 border border-destructive/20" : "bg-success/10 border border-success/20"}`}>
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Next Due Date</div>
+          <div className={`font-display text-lg font-semibold ${isOverdue ? "text-destructive" : "text-success"}`}>
+            {nextDue ? nextDue.toLocaleDateString("en-KE", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) : "Not set yet"}
+          </div>
+          {isOverdue && <div className="text-xs text-destructive mt-1">⚠️ Overdue</div>}
+        </div>
+
+        {/* Payment history list */}
+        <div className="space-y-2">
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Payment History</div>
+          {isLoading && <div className="text-sm text-muted-foreground py-4 text-center">Loading...</div>}
+          {payments?.length === 0 && <div className="text-sm text-muted-foreground py-4 text-center">No payments recorded yet.</div>}
+          {payments?.map((p) => (
+            <div key={p.id} className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/30 transition-colors">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                    {p.payment_month ?? formatDate(p.paid_on)}
+                  </span>
+                  <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium uppercase">{p.method}</span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Paid on {formatDate(p.paid_on)}
+                  {p.reference && ` · ${p.reference}`}
+                </div>
+              </div>
+              <div className="font-display font-semibold text-success">+{formatKES(p.amount)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -125,7 +231,7 @@ function TenantForm({ initial, onSave, onClose, saving }: { initial: Partial<Ten
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/40 p-4">
-      <div className="card-surface w-full max-w-lg p-6">
+      <div className="card-surface w-full max-w-lg p-6 animate-slide-up">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold">{initial.id ? "Edit tenant" : "Add tenant"}</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
@@ -140,10 +246,10 @@ function TenantForm({ initial, onSave, onClose, saving }: { initial: Partial<Ten
           <FormField label="Deposit (KES)"><input type="number" min={0} value={form.deposit ?? 0} onChange={(e) => set("deposit", Number(e.target.value))} className="form-input" /></FormField>
           <div className="sm:col-span-2 mt-2 flex justify-end gap-2">
             <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-glow disabled:opacity-60">{saving ? "Saving…" : "Save"}</button>
+            <button type="submit" disabled={saving} className="glow-primary rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-glow disabled:opacity-60">{saving ? "Saving…" : "Save"}</button>
           </div>
         </form>
-        <style>{`.form-input{width:100%;border-radius:.5rem;border:1px solid var(--color-border);background:var(--color-card);padding:.5rem .75rem;font-size:.875rem;outline:none}.form-input:focus{border-color:var(--color-ring);box-shadow:0 0 0 3px oklch(0.45 0.1 165/.15)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.5rem;border:1px solid var(--color-border);background:var(--color-card);padding:.5rem .75rem;font-size:.875rem;outline:none}.form-input:focus{border-color:var(--color-ring);box-shadow:0 0 0 3px rgba(37,99,235,0.12)}`}</style>
       </div>
     </div>
   );
