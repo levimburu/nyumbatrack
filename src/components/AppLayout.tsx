@@ -30,15 +30,19 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
   };
 
   const Sidebar = (
-    <aside className="flex h-full w-64 flex-col bg-sidebar text-sidebar-foreground">
+    <aside
+      className="flex h-full w-64 flex-col text-sidebar-foreground"
+      style={{ background: "linear-gradient(160deg, #1E3A5F 0%, #162d4a 100%)" }}
+    >
       <div className="flex items-center gap-2 px-6 py-6">
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-gold text-gold-foreground">
+        <div className="grid h-9 w-9 place-items-center rounded-lg bg-gold text-gold-foreground shadow-md">
           <Building2 className="h-5 w-5" />
         </div>
         <div className="font-display text-lg font-semibold tracking-tight">NyumbaTrack</div>
       </div>
+
       <nav className="flex-1 space-y-1 px-3">
-        {items.map((it) => {
+        {items.map((it, i) => {
           const active = pathname === it.to;
           const Icon = it.icon;
           return (
@@ -46,11 +50,13 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
               key={it.to}
               to={it.to}
               onClick={() => setMobileOpen(false)}
+              style={{ animationDelay: `${i * 60}ms` }}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium animate-fade-in",
+                "transition-all duration-200",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground",
+                  ? "bg-white/15 text-white shadow-sm"
+                  : "text-sidebar-foreground/70 hover:bg-white/10 hover:text-white",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -59,16 +65,21 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
           );
         })}
       </nav>
-      <div className="border-t border-sidebar-border p-3">
+
+      <div className="border-t border-white/10 p-3">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <div className="grid h-8 w-8 place-items-center rounded-full bg-sidebar-accent text-xs font-semibold">
+          <div className="grid h-8 w-8 place-items-center rounded-full bg-white/15 text-xs font-semibold">
             <UserIcon className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-xs font-medium">{email ?? "Signed in"}</div>
             <div className="text-[10px] uppercase tracking-wider text-sidebar-foreground/60">{role}</div>
           </div>
-          <button onClick={handleSignOut} className="text-sidebar-foreground/60 hover:text-sidebar-foreground" aria-label="Sign out">
+          <button
+            onClick={handleSignOut}
+            className="text-sidebar-foreground/60 hover:text-white transition-colors duration-200"
+            aria-label="Sign out"
+          >
             <LogOut className="h-4 w-4" />
           </button>
         </div>
@@ -78,19 +89,20 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      {/* Desktop */}
       <div className="hidden md:block">{Sidebar}</div>
 
-      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-foreground/40" onClick={() => setMobileOpen(false)} />
-          <div className="absolute inset-y-0 left-0">{Sidebar}</div>
+          <div
+            className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 animate-slide-up">{Sidebar}</div>
         </div>
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-card/60 px-4 py-3 md:hidden">
+        <header className="flex items-center justify-between border-b border-border bg-card/80 backdrop-blur-sm px-4 py-3 md:hidden">
           <button onClick={() => setMobileOpen(true)} aria-label="Open menu">
             <Menu className="h-5 w-5" />
           </button>
@@ -102,7 +114,7 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
             </button>
           )}
         </header>
-        <main className="flex-1 p-4 md:p-8">{children}</main>
+        <main className="flex-1 p-4 md:p-8 animate-fade-in">{children}</main>
       </div>
     </div>
   );
