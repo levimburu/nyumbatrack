@@ -59,7 +59,7 @@ function AuthPage() {
             <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary text-primary-foreground">
               <Building2 className="h-5 w-5" />
             </div>
-            <div className="font-display text-xl font-semibold tracking-tight">RentLedger</div>
+            <div className="font-display text-xl font-semibold tracking-tight">NyumbaTrack</div>
           </div>
 
           <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
