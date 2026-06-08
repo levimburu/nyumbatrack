@@ -126,3 +126,52 @@
   border-radius: var(--radius-lg);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.04);
 }
+
+/* ---- Animations ---- */
+
+/* Fade in on page load */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s ease forwards;
+}
+
+/* Subtle gradient sidebar enhancement */
+:root {
+  --sidebar-gradient: linear-gradient(160deg, #1E3A5F 0%, #162d4a 100%);
+}
+
+/* Glowing primary button */
+.glow-primary {
+  box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  transition: box-shadow 200ms ease, transform 150ms ease, background-color 150ms ease;
+}
+.glow-primary:hover {
+  box-shadow: 0 0 16px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+.glow-primary:active {
+  transform: translateY(0);
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Slide in for modals */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
