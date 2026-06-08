@@ -50,7 +50,7 @@ function PaymentsPage() {
         .select("*, tenants(full_name, unit)")
         .order("paid_on", { ascending: false });
       if (error) throw error;
-      return data as PaymentRow[];
+      return data as any as PaymentRow[];
     },
   });
 
@@ -74,12 +74,12 @@ function PaymentsPage() {
       const { error } = await supabase.from("payments").insert({
         ...p,
         payment_month: p.payment_month,
-      });
+      } as any);
       if (error) throw error;
 
       // Update tenant's next due date
       if (tenant) {
-        await supabase.from("tenants").update({ next_due_date: nextDueStr }).eq("id", p.tenant_id);
+        await (supabase.from("tenants") as any).update({ next_due_date: nextDueStr }).eq("id", p.tenant_id);
       }
     },
     onSuccess: () => {
@@ -164,7 +164,7 @@ function PaymentForm({ tenants, onSave, onClose, saving, monthOptions }: {
   const [tenantId, setTenantId] = useState(tenants[0]?.id ?? "");
   const [amount, setAmount] = useState<number>(tenants[0]?.rent_amount ?? 0);
   const [paidOn, setPaidOn] = useState(new Date().toISOString().slice(0, 10));
-  const [method, setMethod] = useState("mpesa");
+  const [method, setMethod] = useState<string>("mpesa");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [paymentMonth, setPaymentMonth] = useState(monthOptions[2] ?? "");

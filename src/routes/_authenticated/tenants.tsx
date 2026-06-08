@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
-import { Plus, Pencil, Trash2, X, Calendar, ChevronDown } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { StatusPill } from "./dashboard";
 
@@ -44,7 +44,7 @@ function TenantsPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("tenants").select("*").order("unit");
       if (error) throw error;
-      return data as Tenant[];
+      return data as any as Tenant[];
     },
   });
 
@@ -62,7 +62,7 @@ function TenantsPage() {
           unit: t.unit!, rent_amount: t.rent_amount ?? 0,
           deposit: t.deposit ?? 0, due_day: t.due_day ?? 1,
           balance: t.rent_amount ?? 0,
-        });
+        } as any);
         if (error) throw error;
       }
     },
@@ -170,7 +170,7 @@ function PaymentHistory({ tenant, onClose }: { tenant: Tenant; onClose: () => vo
         .eq("tenant_id", tenant.id)
         .order("paid_on", { ascending: false });
       if (error) throw error;
-      return data as Payment[];
+      return data as any as Payment[];
     },
   });
 
