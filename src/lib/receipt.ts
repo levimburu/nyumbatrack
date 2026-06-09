@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { formatKES, formatDate } from "./format";
 
-interface ReceiptData {
+export interface ReceiptData {
   tenantName: string;
   unit: string;
   amount: number;
@@ -9,19 +9,20 @@ interface ReceiptData {
   method: string;
   reference?: string | null;
   receiptNo: string;
+  paymentMonth?: string | null;
 }
 
-export function downloadReceipt(d: ReceiptData) {
+export function generateReceiptDoc(d: ReceiptData): jsPDF {
   const doc = new jsPDF({ unit: "pt", format: "a5" });
   const w = doc.internal.pageSize.getWidth();
 
   // Header bar
-  doc.setFillColor(6, 78, 59); // emerald
+  doc.setFillColor(37, 99, 235);
   doc.rect(0, 0, w, 72, "F");
-  doc.setTextColor(245, 240, 224);
+  doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
-  doc.text("RENTLEDGER", 32, 36);
+  doc.text("NYUMBATRACK", 32, 36);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text("Official Rent Receipt", 32, 54);
@@ -53,6 +54,7 @@ export function downloadReceipt(d: ReceiptData) {
   const rows: [string, string][] = [
     ["Amount paid", formatKES(d.amount)],
     ["Payment date", formatDate(d.paidOn)],
+    ["Month paid for", d.paymentMonth ?? "—"],
     ["Payment method", d.method.toUpperCase()],
     ["Reference", d.reference || "—"],
   ];
@@ -68,21 +70,31 @@ export function downloadReceipt(d: ReceiptData) {
 
   // Amount banner
   y += 14;
-  doc.setFillColor(245, 240, 224);
+  doc.setFillColor(219, 234, 254);
   doc.roundedRect(32, y, w - 64, 56, 6, 6, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(110, 95, 30);
+  doc.setTextColor(30, 64, 175);
   doc.text("TOTAL PAID", 48, y + 22);
   doc.setFontSize(20);
-  doc.setTextColor(40, 60, 30);
+  doc.setTextColor(30, 64, 175);
   doc.text(formatKES(d.amount), w - 48, y + 34, { align: "right" });
 
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(140, 140, 140);
-  doc.text("This is a system-generated receipt.", 32, doc.internal.pageSize.getHeight() - 28);
+  doc.text("This is a NyumbaTrack system-generated receipt.", 32, doc.internal.pageSize.getHeight() - 28);
   doc.text("Thank you for your payment.", 32, doc.internal.pageSize.getHeight() - 16);
 
+  return doc;
+}
+
+export function downloadReceipt(d: ReceiptData) {
+  const doc = generateReceiptDoc(d);
   doc.save(`receipt-${d.receiptNo}.pdf`);
+}
+
+export function getReceiptDataUrl(d: ReceiptData): string {
+  const doc = generateReceiptDoc(d);
+  return doc.output("datauristring");
 }
