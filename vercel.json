@@ -1,1 +1,1 @@
-{"buildCommand":"npm run build","outputDirectory":"dist","installCommand":"npm install --legacy-peer-deps","rewrites":[{"source":"/(.*)","destination":"/index.html"}]}
+{"buildCommand":"node node_modules/vite/bin/vite.js build","outputDirectory":"dist","installCommand":"npm install --legacy-peer-deps","rewrites":[{"source":"/(.*)","destination":"/index.html"}]}
