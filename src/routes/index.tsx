@@ -104,16 +104,20 @@ function IndexPage() {
   };
 
   const redirectUser = async (uid: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", uid)
-      .maybeSingle();
+    try {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", uid)
+        .maybeSingle();
 
-    if (data?.role === "admin") {
+      if (data?.role === "admin") {
+        navigate({ to: "/properties", replace: true });
+      } else {
+        navigate({ to: "/portal", replace: true });
+      }
+    } catch {
       navigate({ to: "/properties", replace: true });
-    } else {
-      navigate({ to: "/portal", replace: true });
     }
   };
 
