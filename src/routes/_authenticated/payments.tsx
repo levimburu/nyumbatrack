@@ -1,11 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
 import { Plus, X, Download, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { downloadReceipt, getReceiptDataUrl, type ReceiptData } from "@/lib/receipt";
+import { useProperty } from "@/context/PropertyContext";
 
 export const Route = createFileRoute("/_authenticated/payments")({
   component: PaymentsPage,
@@ -20,7 +21,7 @@ interface PaymentRow {
   reference: string | null;
   note: string | null;
   payment_month: string | null;
-  tenants: { full_name: string; unit: string } | null;
+  tenants: { full_name: string; unit: string; property_id: string } | null;
 }
 
 const MONTHS = [
@@ -40,30 +41,40 @@ function getMonthOptions() {
 
 function PaymentsPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const { selectedProperty } = useProperty();
   const [adding, setAdding] = useState(false);
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
 
+  useEffect(() => {
+    if (!selectedProperty) navigate({ to: "/properties" });
+  }, [selectedProperty, navigate]);
+
   const { data: payments } = useQuery({
-    queryKey: ["payments"],
+    queryKey: ["payments", selectedProperty?.id],
+    enabled: !!selectedProperty,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("payments")
-        .select("*, tenants(full_name, unit)")
+        .select("*, tenants(full_name, unit, property_id)")
         .order("paid_on", { ascending: false });
       if (error) throw error;
-      return data as any as PaymentRow[];
+      const all = data as any as PaymentRow[];
+      return all.filter((p) => p.tenants?.property_id === selectedProperty!.id);
     },
   });
 
   const { data: tenants } = useQuery({
-    queryKey: ["tenants-min"],
+    queryKey: ["tenants-min", selectedProperty?.id],
+    enabled: !!selectedProperty,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tenants")
         .select("id, full_name, unit, rent_amount, due_day")
+        .eq("property_id", selectedProperty!.id)
         .order("unit");
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
@@ -99,20 +110,24 @@ function PaymentsPage() {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["payments"] });
-      qc.invalidateQueries({ queryKey: ["tenants"] });
-      qc.invalidateQueries({ queryKey: ["payments-recent"] });
+      qc.invalidateQueries({ queryKey: ["payments", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["tenants", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["payments-recent", selectedProperty?.id] });
       setAdding(false);
       toast.success("Payment recorded");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  if (!selectedProperty) return null;
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Ledger</div>
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {selectedProperty.name}
+          </div>
           <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Payments</h1>
         </div>
         <button
@@ -180,7 +195,7 @@ function PaymentsPage() {
             {!payments?.length && (
               <tr>
                 <td colSpan={8} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                  No payments recorded yet.
+                  No payments recorded yet for {selectedProperty.name}.
                 </td>
               </tr>
             )}
@@ -210,11 +225,9 @@ function PaymentsPage() {
 
 function ReceiptPreview({ data, onClose }: { data: ReceiptData; onClose: () => void }) {
   const dataUrl = getReceiptDataUrl(data);
-
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-foreground/60 p-4 backdrop-blur-sm">
       <div className="mx-auto w-full max-w-lg flex flex-col h-full">
-        {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-lg font-semibold text-white">Receipt Preview</h2>
           <div className="flex items-center gap-2">
@@ -232,8 +245,6 @@ function ReceiptPreview({ data, onClose }: { data: ReceiptData; onClose: () => v
             </button>
           </div>
         </div>
-
-        {/* PDF Preview */}
         <div className="flex-1 rounded-xl overflow-hidden bg-white shadow-2xl">
           <iframe
             src={dataUrl}
@@ -281,22 +292,12 @@ function PaymentForm({
       <div className="card-surface w-full max-w-lg p-6 animate-slide-up">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold">Record payment</h2>
-          <button onClick={onClose}>
-            <X className="h-5 w-5 text-muted-foreground" />
-          </button>
+          <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            onSave({
-              tenant_id: tenantId,
-              amount: Number(amount),
-              paid_on: paidOn,
-              method,
-              reference,
-              note,
-              payment_month: paymentMonth,
-            });
+            onSave({ tenant_id: tenantId, amount: Number(amount), paid_on: paidOn, method, reference, note, payment_month: paymentMonth });
           }}
           className="grid gap-3 sm:grid-cols-2"
         >
@@ -314,55 +315,27 @@ function PaymentForm({
               className="form-input"
             >
               {tenants.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.full_name} · Unit {t.unit}
-                </option>
+                <option key={t.id} value={t.id}>{t.full_name} · Unit {t.unit}</option>
               ))}
             </select>
           </label>
           <label className="block sm:col-span-2">
             <span className="mb-1 block text-xs font-medium">Month being paid for</span>
-            <select
-              required
-              value={paymentMonth}
-              onChange={(e) => setPaymentMonth(e.target.value)}
-              className="form-input"
-            >
-              {monthOptions.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
+            <select required value={paymentMonth} onChange={(e) => setPaymentMonth(e.target.value)} className="form-input">
+              {monthOptions.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium">Amount (KES)</span>
-            <input
-              required
-              type="number"
-              min={1}
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              className="form-input"
-            />
+            <input required type="number" min={1} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className="form-input" />
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium">Date paid</span>
-            <input
-              required
-              type="date"
-              value={paidOn}
-              onChange={(e) => setPaidOn(e.target.value)}
-              className="form-input"
-            />
+            <input required type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} className="form-input" />
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium">Method</span>
-            <select
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              className="form-input"
-            >
+            <select value={method} onChange={(e) => setMethod(e.target.value)} className="form-input">
               <option value="mpesa">M-Pesa</option>
               <option value="cash">Cash</option>
               <option value="bank">Bank Transfer</option>
@@ -370,34 +343,15 @@ function PaymentForm({
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium">Reference</span>
-            <input
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-              className="form-input"
-              placeholder="MPESA-XYZ123"
-            />
+            <input value={reference} onChange={(e) => setReference(e.target.value)} className="form-input" placeholder="MPESA-XYZ123" />
           </label>
           <label className="block sm:col-span-2">
             <span className="mb-1 block text-xs font-medium">Note (optional)</span>
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="form-input"
-            />
+            <input value={note} onChange={(e) => setNote(e.target.value)} className="form-input" />
           </label>
           <div className="sm:col-span-2 mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-border px-4 py-2 text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="glow-primary rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-glow disabled:opacity-60"
-            >
+            <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm">Cancel</button>
+            <button type="submit" disabled={saving} className="glow-primary rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-glow disabled:opacity-60">
               {saving ? "Saving…" : "Save payment"}
             </button>
           </div>
