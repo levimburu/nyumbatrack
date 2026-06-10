@@ -15,6 +15,21 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedShell() {
   const { role, user, loading } = useAuth();
+  const [profileName, setProfileName] = useState<string>("");
+
+  useEffect(() => {
+    if (user?.id) {
+      (supabase as any)
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle()
+        .then(({ data }: any) => {
+          if (data?.full_name) setProfileName(data.full_name);
+        });
+    }
+  }, [user?.id]);
+
   if (loading || !role) {
     return (
       <div className="grid min-h-screen place-items-center bg-background">
@@ -22,15 +37,6 @@ function AuthenticatedShell() {
       </div>
     );
   }
-  const [profileName, setProfileName] = useState<string>("");
-
-  useEffect(() => {
-    if (user?.id) {
-      (supabase as any).from("profiles").select("full_name").eq("id", user.id).maybeSingle().then(({ data }: any) => {
-        if (data?.full_name) setProfileName(data.full_name);
-      });
-    }
-  }, [user?.id]);
 
   return (
     <AppLayout role={role} email={user?.email ?? undefined} displayName={profileName}>
