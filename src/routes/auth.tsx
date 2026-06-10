@@ -81,7 +81,7 @@ function AuthPage() {
     try {
       // Validate invite code for agents
       if (role === "agent") {
-        const { data: codeData, error: codeError } = await supabase
+        const { data: codeData, error: codeError } = await (supabase as any)
           .from("invite_codes")
           .select("*")
           .eq("code", inviteCode)
@@ -112,16 +112,22 @@ function AuthPage() {
       const pinHash = hashPin(pin);
 
       // Update profile with role, name, and PIN
-      await supabase.from("profiles").upsert({
+      await (supabase as any).from("profiles").upsert({
         id: userId,
         full_name: fullName,
         role: role,
         pin_hash: pinHash,
       } as any);
 
+      // Insert into user_roles table
+      await (supabase as any).from("user_roles").upsert({
+        user_id: userId,
+        role: role === "landlord" ? "admin" : "tenant",
+      } as any);
+
       // If agent, mark invite code as used and create agent-landlord link
       if (role === "agent") {
-        const { data: codeData } = await supabase
+        const { data: codeData } = await (supabase as any)
           .from("invite_codes")
           .select("*")
           .eq("code", inviteCode)
@@ -129,12 +135,12 @@ function AuthPage() {
           .maybeSingle();
 
         if (codeData) {
-          await supabase
+          await (supabase as any)
             .from("invite_codes")
             .update({ used: true, used_by: userId } as any)
             .eq("id", codeData.id);
 
-          await supabase.from("agent_landlord").insert({
+          await (supabase as any).from("agent_landlord").insert({
             agent_id: userId,
             landlord_id: codeData.landlord_id,
           } as any);
