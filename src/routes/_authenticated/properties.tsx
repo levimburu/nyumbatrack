@@ -108,7 +108,7 @@ function PropertiesPage() {
     navigate({ to: "/dashboard" });
   };
 
-  if (isLoading) {
+  if (isLoading || !properties) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-sm text-muted-foreground">Loading...</div>
@@ -116,7 +116,7 @@ function PropertiesPage() {
     );
   }
 
-  if (!properties?.length) {
+  if (!properties.length) {
     return (
       <div className="flex min-h-[80vh] flex-col items-center justify-center px-4 text-center">
         <div className="mb-6">
