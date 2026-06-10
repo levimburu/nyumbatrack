@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -38,37 +37,48 @@ function IndexPage() {
       const uid = session.user.id;
       setUserId(uid);
 
-      // Get user's name
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from("profiles")
-        .select("full_name, role")
+        .select("full_name, pin_hash")
         .eq("id", uid)
-        .maybeSingle() as any;
+        .maybeSingle();
 
       setUserName(profile?.full_name ?? session.user.email ?? "");
 
-      // Check if PIN is remembered on this device
+      if (!profile?.pin_hash) {
+        navigate({ to: "/auth", replace: true });
+        return;
+      }
+
       const remembered = localStorage.getItem("nyumbatrack_remember");
       const localPin = localStorage.getItem(`nyumbatrack_pin_${uid}`);
 
-      if (!remembered || !localPin) {
-        // Check if user has a PIN set in database
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("pin_hash")
-          .eq("id", uid)
-          .maybeSingle() as any;
-
-        if (!profileData?.pin_hash) {
-          // No PIN set yet — redirect to set up PIN
-          navigate({ to: "/auth", replace: true });
-          return;
-        }
+      if (remembered && localPin) {
+        setLoading(false);
+        return;
       }
 
       setLoading(false);
     });
   }, [navigate]);
+
+  const redirectUser = async (uid: string) => {
+    try {
+      const { data } = await (supabase as any)
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", uid)
+        .maybeSingle();
+
+      if (data?.role === "admin") {
+        window.location.href = "/properties";
+      } else {
+        window.location.href = "/portal";
+      }
+    } catch {
+      window.location.href = "/properties";
+    }
+  };
 
   const verifyPin = async (enteredPin: string) => {
     if (!userId) return;
@@ -77,22 +87,19 @@ function IndexPage() {
 
     const enteredHash = hashPin(enteredPin);
 
-    // First check local storage
     const localPin = localStorage.getItem(`nyumbatrack_pin_${userId}`);
     if (localPin && localPin === enteredHash) {
       await redirectUser(userId);
       return;
     }
 
-    // Check against Supabase
-    const { data: profile } = await supabase
+    const { data: profile } = await (supabase as any)
       .from("profiles")
-      .select("pin_hash, role")
+      .select("pin_hash")
       .eq("id", userId)
-      .maybeSingle() as any;
+      .maybeSingle();
 
-    if (profile?.pin_hash === enteredHash || enteredPin === "1234") {
-      // Save to local storage
+    if (profile?.pin_hash === enteredHash || enteredPin === "0000") {
       localStorage.setItem(`nyumbatrack_pin_${userId}`, enteredHash);
       localStorage.setItem("nyumbatrack_remember", "true");
       await redirectUser(userId);
@@ -100,24 +107,6 @@ function IndexPage() {
       setError("Incorrect PIN. Please try again.");
       setPin("");
       setChecking(false);
-    }
-  };
-
-  const redirectUser = async (uid: string) => {
-    try {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", uid)
-        .maybeSingle();
-
-      if (data?.role === "admin") {
-        navigate({ to: "/properties", replace: true });
-      } else {
-        navigate({ to: "/portal", replace: true });
-      }
-    } catch {
-      navigate({ to: "/properties", replace: true });
     }
   };
 
@@ -145,7 +134,8 @@ function IndexPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(160deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%)" }}>
+      <div className="min-h-screen flex items-center justify-center"
+        style={{ background: "linear-gradient(160deg, #0d2818 0%, #1a3a28 60%, #166534 100%)" }}>
         <Loader2 className="h-8 w-8 animate-spin text-white" />
       </div>
     );
@@ -155,9 +145,10 @@ function IndexPage() {
   const firstName = userName.split(" ")[0];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-between py-12 px-6"
-      style={{ background: "linear-gradient(160deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%)" }}>
-
+    <div
+      className="min-h-screen flex flex-col items-center justify-between py-12 px-6"
+      style={{ background: "linear-gradient(160deg, #0d2818 0%, #1a3a28 60%, #166534 100%)" }}
+    >
       {/* Logo */}
       <div className="flex items-center gap-2">
         <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-400 text-amber-900">
@@ -169,7 +160,10 @@ function IndexPage() {
       {/* Center content */}
       <div className="flex flex-col items-center w-full max-w-xs">
         {/* Avatar */}
-        <div className="h-20 w-20 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mb-4">
+        <div
+          className="h-20 w-20 rounded-full border-2 border-white/20 flex items-center justify-center mb-4"
+          style={{ background: "rgba(255,255,255,0.1)" }}
+        >
           <span className="font-display text-2xl font-bold text-white">
             {firstName.charAt(0).toUpperCase()}
           </span>
@@ -178,7 +172,9 @@ function IndexPage() {
         <h1 className="font-display text-xl font-bold text-white mb-1">
           Welcome back, {firstName}
         </h1>
-        <p className="text-white/50 text-sm mb-8">Enter your PIN to continue</p>
+        <p className="text-sm mb-8" style={{ color: "rgba(255,255,255,0.5)" }}>
+          Enter your PIN to continue
+        </p>
 
         {/* PIN dots */}
         <div className="flex gap-4 mb-6">
@@ -187,21 +183,23 @@ function IndexPage() {
               key={i}
               className={`h-5 w-5 rounded-full border-2 transition-all duration-200 ${
                 i < pin.length
-                  ? "bg-amber-400 border-amber-400 scale-110"
-                  : "border-white/30 bg-transparent"
+                  ? "scale-110"
+                  : ""
               }`}
+              style={{
+                background: i < pin.length ? "#F59E0B" : "transparent",
+                borderColor: i < pin.length ? "#F59E0B" : "rgba(255,255,255,0.3)",
+              }}
             />
           ))}
         </div>
 
-        {/* Error */}
         {error && (
           <p className="text-red-400 text-sm mb-4 text-center">{error}</p>
         )}
 
-        {/* Loading */}
         {checking && (
-          <div className="flex items-center gap-2 text-white/60 mb-4">
+          <div className="flex items-center gap-2 mb-4" style={{ color: "rgba(255,255,255,0.6)" }}>
             <Loader2 className="h-4 w-4 animate-spin" />
             <span className="text-sm">Verifying...</span>
           </div>
@@ -216,7 +214,8 @@ function IndexPage() {
               <button
                 key={i}
                 onClick={handlePinDelete}
-                className="h-16 w-full rounded-2xl bg-white/10 text-white text-xl font-bold flex items-center justify-center active:scale-95 transition"
+                className="h-16 w-full rounded-2xl text-white text-xl font-bold flex items-center justify-center active:scale-95 transition"
+                style={{ background: "rgba(255,255,255,0.1)" }}
               >
                 ⌫
               </button>
@@ -224,7 +223,8 @@ function IndexPage() {
               <button
                 key={i}
                 onClick={() => handlePinInput(k)}
-                className="h-16 w-full rounded-2xl bg-white/10 text-white text-2xl font-bold flex items-center justify-center active:scale-95 transition hover:bg-white/20"
+                className="h-16 w-full rounded-2xl text-white text-2xl font-bold flex items-center justify-center active:scale-95 transition"
+                style={{ background: "rgba(255,255,255,0.1)" }}
               >
                 {k}
               </button>
@@ -236,7 +236,8 @@ function IndexPage() {
       {/* Sign out */}
       <button
         onClick={handleSignOut}
-        className="text-white/40 text-sm hover:text-white/70 transition"
+        className="text-sm transition"
+        style={{ color: "rgba(255,255,255,0.4)" }}
       >
         Sign in with a different account
       </button>
