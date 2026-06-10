@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout } from "@/components/AppLayout";
+import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -21,8 +22,18 @@ function AuthenticatedShell() {
       </div>
     );
   }
+  const [profileName, setProfileName] = useState<string>("");
+
+  useEffect(() => {
+    if (user?.id) {
+      (supabase as any).from("profiles").select("full_name").eq("id", user.id).maybeSingle().then(({ data }: any) => {
+        if (data?.full_name) setProfileName(data.full_name);
+      });
+    }
+  }, [user?.id]);
+
   return (
-    <AppLayout role={role} email={user?.email ?? undefined}>
+    <AppLayout role={role} email={user?.email ?? undefined} displayName={profileName}>
       <Outlet />
     </AppLayout>
   );

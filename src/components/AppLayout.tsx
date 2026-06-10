@@ -20,7 +20,7 @@ const tenantNav: NavItem[] = [
   { to: "/portal", label: "My Rent", icon: LayoutDashboard },
 ];
 
-export function AppLayout({ children, role, email }: { children: ReactNode; role: AppRole; email?: string }) {
+export function AppLayout({ children, role, email, displayName }: { children: ReactNode; role: AppRole; email?: string; displayName?: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -38,7 +38,9 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
   };
 
   // Get initials from email
-  const initials = email ? email.charAt(0).toUpperCase() : "U";
+  const displayLabel = displayName || email || "User";
+  const initials = displayLabel.charAt(0).toUpperCase();
+  const roleLabel = role === "admin" ? "Landlord" : "Agent";
 
   const Sidebar = (
     <aside className="flex h-full w-64 flex-col" style={{ background: "#0d2818" }}>
@@ -106,8 +108,8 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
             {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-xs font-medium text-white">{email ?? "Signed in"}</div>
-            <div className="text-[10px] uppercase tracking-wider" style={{ color: "#6B9E7A" }}>{role}</div>
+            <div className="truncate text-xs font-medium text-white">{displayName || email || "User"}</div>
+            <div className="text-[10px] uppercase tracking-wider" style={{ color: "#6B9E7A" }}>{roleLabel}</div>
           </div>
           <button
             onClick={handleSignOut}
