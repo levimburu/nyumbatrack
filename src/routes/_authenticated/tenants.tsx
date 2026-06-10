@@ -53,7 +53,7 @@ function TenantsPage() {
     queryKey: ["tenants", selectedProperty?.id],
     enabled: !!selectedProperty,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("tenants")
         .select("*")
         .eq("property_id", selectedProperty!.id)

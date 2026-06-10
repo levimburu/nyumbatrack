@@ -26,7 +26,7 @@ function Dashboard() {
     queryKey: ["tenants", selectedProperty?.id],
     enabled: !!selectedProperty,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("tenants")
         .select("*")
         .eq("property_id", selectedProperty!.id)
@@ -40,14 +40,14 @@ function Dashboard() {
     queryKey: ["payments-recent", selectedProperty?.id],
     enabled: !!selectedProperty,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("payments")
         .select("*, tenants(full_name, unit, property_id)")
-        .eq("tenants.property_id", selectedProperty!.id)
         .order("paid_on", { ascending: false })
         .limit(5);
       if (error) throw error;
-      return data;
+      const all = data as any[];
+      return all.filter((p: any) => p.tenants?.property_id === selectedProperty!.id);
     },
   });
 
