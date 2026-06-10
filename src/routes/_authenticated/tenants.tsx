@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
-import { Plus, Pencil, Trash2, X, Eye, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Eye, Search, Key, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { StatusPill } from "./dashboard";
 import { useProperty } from "@/context/PropertyContext";
@@ -46,10 +46,21 @@ function TenantsPage() {
   const [editing, setEditing] = useState<Partial<Tenant> | null>(null);
   const [viewingHistory, setViewingHistory] = useState<Tenant | null>(null);
   const [search, setSearch] = useState("");
+  const [tenantCode, setTenantCode] = useState<{ code: string; name: string } | null>(null);
 
   useEffect(() => {
     if (!selectedProperty) navigate({ to: "/properties" });
   }, [selectedProperty, navigate]);
+
+  const generateTenantCode = async (tenantId: string, tenantName: string) => {
+    const code = "TNT-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const { error } = await (supabase as any).from("tenant_invite_codes").insert({
+      tenant_id: tenantId,
+      code,
+    });
+    if (error) { toast.error("Failed to generate code"); return; }
+    setTenantCode({ code, name: tenantName });
+  };
 
   const { data } = useQuery({
     queryKey: ["tenants", selectedProperty?.id],
@@ -228,6 +239,13 @@ function TenantsPage() {
                         <Eye className="h-4 w-4" />
                       </button>
                       <button
+                        onClick={() => generateTenantCode(t.id, t.full_name)}
+                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+                        title="Generate invite code"
+                      >
+                        <Key className="h-4 w-4" />
+                      </button>
+                      <button
                         onClick={() => setEditing({ ...t })}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
                       >
@@ -295,6 +313,13 @@ function TenantsPage() {
                   <Eye className="h-4 w-4" />
                 </button>
                 <button
+                  onClick={() => generateTenantCode(t.id, t.full_name)}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
+                  title="Generate invite code"
+                >
+                  <Key className="h-4 w-4" />
+                </button>
+                <button
                   onClick={() => setEditing({ ...t })}
                   className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
                 >
@@ -325,11 +350,43 @@ function TenantsPage() {
           saving={upsert.isPending}
         />
       )}
+
       {viewingHistory && (
         <TenantProfile
           tenant={viewingHistory}
           onClose={() => setViewingHistory(null)}
         />
+      )}
+
+      {tenantCode && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
+              <Key className="h-7 w-7" style={{ color: "#166534" }} />
+            </div>
+            <h2 className="font-display text-xl font-semibold mb-1">Tenant Invite Code</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Share this code with <span className="font-medium text-foreground">{tenantCode.name}</span> so they can access their portal.
+            </p>
+            <div className="flex items-center justify-between rounded-xl border-2 px-4 py-3 mb-4" style={{ borderColor: "#166534", background: "#F0FDF4" }}>
+              <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: "#166534" }}>{tenantCode.code}</span>
+              <button
+                onClick={() => { navigator.clipboard.writeText(tenantCode.code); toast.success("Code copied!"); }}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Copy className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">This code can only be used once.</p>
+            <button
+              onClick={() => setTenantCode(null)}
+              className="w-full rounded-xl py-3 text-sm font-semibold text-white"
+              style={{ background: "#166534" }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -354,7 +411,6 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
   const isOverdue = nextDue && nextDue < new Date();
   const initials = tenant.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
-  // Build chart data from payments
   const chartData = payments?.map((p) => ({
     month: p.payment_month ?? formatDate(p.paid_on),
     amount: Number(p.amount),
@@ -547,7 +603,7 @@ function TenantForm({ initial, onSave, onClose, saving }: {
               type="submit"
               disabled={saving}
               className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary"
-              style={{ background: "#166634" }}
+              style={{ background: "#166534" }}
             >
               {saving ? "Saving…" : "Save"}
             </button>
