@@ -47,6 +47,32 @@ function TenantsPage() {
   const [viewingHistory, setViewingHistory] = useState<Tenant | null>(null);
   const [search, setSearch] = useState("");
   const [tenantCode, setTenantCode] = useState<{ code: string; name: string } | null>(null);
+  const [isAgent, setIsAgent] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data?.role === "agent") setIsAgent(true);
+    });
+  }, []);
+  const [isAgent, setIsAgent] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data?.role === "agent") setIsAgent(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (!selectedProperty) navigate({ to: "/properties" });
@@ -251,12 +277,14 @@ function TenantsPage() {
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => { if (confirm(`Remove ${t.full_name}?`)) del.mutate(t.id); }}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {!isAgent && (
+                        <button
+                          onClick={() => { if (confirm(`Remove ${t.full_name}?`)) del.mutate(t.id); }}
+                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
