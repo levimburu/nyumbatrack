@@ -3,6 +3,7 @@ import { LayoutDashboard, Users, Receipt, BarChart3, LogOut, Building2, Menu, X,
 import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useProperty } from "@/context/PropertyContext";
 import type { AppRole } from "@/hooks/use-auth";
 
 interface NavItem { to: string; label: string; icon: typeof Users; }
@@ -23,12 +24,16 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const items = role === "admin" ? adminNav : tenantNav;
+  const { selectedProperty, setSelectedProperty } = useProperty();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
-
+const handleBackToProperties = () => {
+    setSelectedProperty(null);
+    navigate({ to: "/properties" });
+  };
   const Sidebar = (
     <aside
       className="flex h-full w-64 flex-col text-sidebar-foreground"
