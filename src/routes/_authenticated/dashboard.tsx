@@ -1,25 +1,38 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { StatCard } from "@/components/StatCard";
-import { Users, Wallet, TrendingUp, AlertCircle } from "lucide-react";
+import { Users, Wallet, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
 import { formatKES, formatDate } from "@/lib/format";
 import { useProperty } from "@/context/PropertyContext";
-import { useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
+
+export function StatusPill({ status }: { status: "paid" | "partial" | "unpaid" }) {
+  const styles = {
+    paid: { background: "#DCFCE7", color: "#166534" },
+    partial: { background: "#FEF9C3", color: "#854D0E" },
+    unpaid: { background: "#FEE2E2", color: "#991B1B" },
+  };
+  const labels = { paid: "Paid", partial: "Partial", unpaid: "Unpaid" };
+  return (
+    <span
+      className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+      style={styles[status]}
+    >
+      {labels[status]}
+    </span>
+  );
+}
 
 function Dashboard() {
   const { selectedProperty } = useProperty();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!selectedProperty) {
-      navigate({ to: "/properties" });
-    }
+    if (!selectedProperty) navigate({ to: "/properties" });
   }, [selectedProperty, navigate]);
 
   const { data: tenants } = useQuery({
@@ -44,10 +57,10 @@ function Dashboard() {
         .from("payments")
         .select("*, tenants(full_name, unit, property_id)")
         .order("paid_on", { ascending: false })
-        .limit(5);
+        .limit(10);
       if (error) throw error;
       const all = data as any[];
-      return all.filter((p: any) => p.tenants?.property_id === selectedProperty!.id);
+      return all.filter((p) => p.tenants?.property_id === selectedProperty!.id).slice(0, 5);
     },
   });
 
@@ -59,60 +72,112 @@ function Dashboard() {
 
   if (!selectedProperty) return null;
 
+  const statCards = [
+    {
+      label: "Total Tenants",
+      value: String(totalTenants),
+      icon: Users,
+      iconBg: "#EFF6FF",
+      iconColor: "#2563EB",
+    },
+    {
+      label: "Expected Rent",
+      value: formatKES(expected),
+      icon: Wallet,
+      iconBg: "#FEF9C3",
+      iconColor: "#D97706",
+    },
+    {
+      label: "Collected",
+      value: formatKES(collected),
+      icon: TrendingUp,
+      iconBg: "#DCFCE7",
+      iconColor: "#16A34A",
+    },
+    {
+      label: "Outstanding",
+      value: formatKES(outstanding),
+      icon: AlertCircle,
+      iconBg: "#FEE2E2",
+      iconColor: "#DC2626",
+    },
+  ];
+
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-6">
+      {/* Header */}
       <div>
-        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          {selectedProperty.name}
-        </div>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {collectionRate}% of this month's rent collected.
-        </p>
+        <h1 className="font-display text-2xl font-bold text-foreground">{selectedProperty.name}</h1>
+        {selectedProperty.location && (
+          <p className="text-sm text-muted-foreground mt-0.5">{selectedProperty.location}</p>
+        )}
       </div>
 
+      {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total tenants" value={String(totalTenants)} icon={Users} />
-        <StatCard label="Expected rent" value={formatKES(expected)} icon={Wallet} tone="gold" hint="This month" />
-        <StatCard label="Collected" value={formatKES(collected)} icon={TrendingUp} tone="success" />
-        <StatCard label="Outstanding" value={formatKES(outstanding)} icon={AlertCircle} tone="warning" />
+        {statCards.map((s) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="card-surface p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div
+                  className="grid h-10 w-10 place-items-center rounded-xl"
+                  style={{ background: s.iconBg }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: s.iconColor }} />
+                </div>
+              </div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">{s.label}</div>
+              <div className="font-display text-xl font-bold text-foreground">{s.value}</div>
+            </div>
+          );
+        })}
       </div>
 
+      {/* Content grid */}
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* Tenant overview */}
         <div className="card-surface lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <h2 className="font-display text-base font-semibold">Tenants</h2>
-            <span className="text-xs text-muted-foreground">Live</span>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <h2 className="font-display text-base font-semibold">Tenant Overview</h2>
+            <span className="text-xs text-muted-foreground">{collectionRate}% collected</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-5 py-3">Name</th>
-                  <th>Unit</th>
-                  <th>Rent</th>
-                  <th>Balance</th>
-                  <th>Status</th>
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Tenant</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Unit</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Rent</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {tenants?.map((t) => {
                   const status = Number(t.balance) === 0 ? "paid" : Number(t.balance) < Number(t.rent_amount) ? "partial" : "unpaid";
+                  const initials = t.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
                   return (
-                    <tr key={t.id} className="border-t border-border/60">
-                      <td className="px-5 py-3 font-medium">{t.full_name}</td>
-                      <td className="text-muted-foreground">{t.unit}</td>
-                      <td>{formatKES(t.rent_amount)}</td>
-                      <td className={Number(t.balance) > 0 ? "text-foreground font-medium" : "text-muted-foreground"}>
-                        {formatKES(t.balance)}
+                    <tr key={t.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0"
+                            style={{ background: "#166534" }}
+                          >
+                            {initials}
+                          </div>
+                          <span className="font-medium">{t.full_name}</span>
+                        </div>
                       </td>
-                      <td><StatusPill status={status} /></td>
+                      <td className="py-3 text-muted-foreground">{t.unit}</td>
+                      <td className="py-3">{formatKES(t.rent_amount)}</td>
+                      <td className="py-3"><StatusPill status={status} /></td>
                     </tr>
                   );
                 })}
                 {!tenants?.length && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                    <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted-foreground">
                       No tenants yet for this property.
                     </td>
                   </tr>
@@ -122,43 +187,36 @@ function Dashboard() {
           </div>
         </div>
 
+        {/* Recent payments */}
         <div className="card-surface">
-          <div className="border-b border-border px-5 py-4">
-            <h2 className="font-display text-base font-semibold">Recent payments</h2>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <h2 className="font-display text-base font-semibold">Recent Payments</h2>
           </div>
           <ul className="divide-y divide-border">
             {payments?.length ? payments.map((p) => (
-              <li key={p.id} className="flex items-center justify-between px-5 py-3">
-                <div>
-                  <div className="text-sm font-medium">{p.tenants?.full_name ?? "—"}</div>
+              <li key={p.id} className="flex items-center gap-3 px-5 py-3">
+                <div
+                  className="grid h-8 w-8 place-items-center rounded-full flex-shrink-0"
+                  style={{ background: "#DCFCE7" }}
+                >
+                  <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{p.tenants?.full_name ?? "—"}</div>
                   <div className="text-xs text-muted-foreground">
-                    {p.tenants?.unit} · {formatDate(p.paid_on)} · {p.method.toUpperCase()}
+                    {p.payment_month ?? formatDate(p.paid_on)}
                   </div>
                 </div>
-                <div className="font-display text-sm font-semibold text-success">
+                <div className="font-display text-sm font-bold" style={{ color: "#16A34A" }}>
                   +{formatKES(p.amount)}
                 </div>
               </li>
             )) : (
-              <li className="px-5 py-6 text-sm text-muted-foreground">No payments yet.</li>
+              <li className="px-5 py-6 text-sm text-muted-foreground text-center">No payments yet.</li>
             )}
           </ul>
         </div>
       </div>
     </div>
-  );
-}
-
-export function StatusPill({ status }: { status: "paid" | "partial" | "unpaid" }) {
-  const m = {
-    paid: "bg-success/15 text-success",
-    partial: "bg-warning/25 text-warning-foreground",
-    unpaid: "bg-destructive/15 text-destructive",
-  } as const;
-  const label = { paid: "Paid", partial: "Partial", unpaid: "Unpaid" } as const;
-  return (
-    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${m[status]}`}>
-      {label[status]}
-    </span>
   );
 }
