@@ -60,19 +60,6 @@ function TenantsPage() {
       if (data?.role === "agent") setIsAgent(true);
     });
   }, []);
-  const [isAgent, setIsAgent] = useState(false);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const { data } = await (supabase as any)
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (data?.role === "agent") setIsAgent(true);
-    });
-  }, []);
 
   useEffect(() => {
     if (!selectedProperty) navigate({ to: "/properties" });
