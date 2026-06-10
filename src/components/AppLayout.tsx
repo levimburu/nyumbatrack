@@ -34,12 +34,18 @@ export function AppLayout({ children, role, email }: { children: ReactNode; role
       className="flex h-full w-64 flex-col text-sidebar-foreground"
       style={{ background: "linear-gradient(160deg, #1E3A5F 0%, #162d4a 100%)" }}
     >
-      <div className="flex items-center gap-2 px-6 py-6">
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-gold text-gold-foreground shadow-md">
+      <button
+        onClick={handleBackToProperties}
+        className="flex items-center gap-2 px-6 py-6 hover:opacity-80 transition-opacity w-full text-left"
+      >
+        <div className="grid h-9 w-9 place-items-center rounded-lg bg-amber-400 text-amber-900 shadow-md">
           <Building2 className="h-5 w-5" />
         </div>
-        <div className="font-display text-lg font-semibold tracking-tight">NyumbaTrack</div>
-      </div>
+        <div>
+          <div className="font-display text-lg font-semibold tracking-tight">NyumbaTrack</div>
+          <div className="text-[10px] text-white/50">← All Properties</div>
+        </div>
+      </button>
 
       <nav className="flex-1 space-y-1 px-3">
         {items.map((it, i) => {
