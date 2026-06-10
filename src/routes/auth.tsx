@@ -119,10 +119,10 @@ function AuthPage() {
         pin_hash: pinHash,
       } as any);
 
-      // Insert into user_roles table
+      // Insert into user_roles table — both landlords and agents get admin access
       await (supabase as any).from("user_roles").upsert({
         user_id: userId,
-        role: role === "landlord" ? "admin" : "tenant",
+        role: "admin",
       } as any);
 
       // If agent, mark invite code as used and create agent-landlord link
