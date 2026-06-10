@@ -103,7 +103,10 @@ function AuthPage() {
   const sendSigninOtp = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      const { error } = await supabase.auth.signInWithOtp({
+  email,
+  options: { shouldCreateUser: false, emailRedirectTo: undefined },
+});
       if (error) throw error;
       toast.success("OTP sent! Check your email.");
       setStep("signin_otp");
