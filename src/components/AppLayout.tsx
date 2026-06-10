@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Receipt, BarChart3, LogOut, Building2, Menu, X, User as UserIcon, Home } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { LayoutDashboard, Users, Receipt, BarChart3, LogOut, Building2, Menu, X, Home } from "lucide-react";
+import { useState, useEffect, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/hooks/use-auth";
@@ -20,12 +20,30 @@ const tenantNav: NavItem[] = [
   { to: "/portal", label: "My Rent", icon: LayoutDashboard },
 ];
 
-export function AppLayout({ children, role, email, displayName }: { children: ReactNode; role: AppRole; email?: string; displayName?: string }) {
+export function AppLayout({ children, role, email, displayName }: {
+  children: ReactNode;
+  role: AppRole;
+  email?: string;
+  displayName?: string;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileRole, setProfileRole] = useState<string>("landlord");
   const { selectedProperty, setSelectedProperty } = useProperty();
   const items = role === "admin" ? adminNav : tenantNav;
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data?.role) setProfileRole(data.role);
+    });
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -37,10 +55,9 @@ export function AppLayout({ children, role, email, displayName }: { children: Re
     navigate({ to: "/properties" });
   };
 
-  // Get initials from email
   const displayLabel = displayName || email || "User";
   const initials = displayLabel.charAt(0).toUpperCase();
-  const roleLabel = role === "admin" ? "Landlord" : "Agent";
+  const roleLabel = profileRole === "agent" ? "Agent" : "Landlord";
 
   const Sidebar = (
     <aside className="flex h-full w-64 flex-col" style={{ background: "#0d2818" }}>
@@ -81,9 +98,7 @@ export function AppLayout({ children, role, email, displayName }: { children: Re
               onClick={() => setMobileOpen(false)}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                active
-                  ? "text-white font-semibold"
-                  : "hover:text-white"
+                active ? "text-white font-semibold" : "hover:text-white"
               )}
               style={active
                 ? { background: "#166534", color: "#FFFFFF" }
@@ -119,6 +134,15 @@ export function AppLayout({ children, role, email, displayName }: { children: Re
           >
             <LogOut className="h-4 w-4" />
           </button>
+        </div>
+
+        {/* Copyright footer */}
+        <div className="mt-3 px-1">
+          <div className="text-[9px] leading-relaxed" style={{ color: "#4a7a5a" }}>
+            <div className="font-semibold" style={{ color: "#6B9E7A" }}>NyumbaTrack Technologies Ltd</div>
+            <div>© 2026 All rights reserved</div>
+            <div>Built for Kenyan landlords</div>
+          </div>
         </div>
       </div>
     </aside>

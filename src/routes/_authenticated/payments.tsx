@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
-import { Plus, X, Download, Eye, Search, Receipt } from "lucide-react";
+import { Plus, X, Download, Eye, Search, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { downloadReceipt, getReceiptDataUrl, type ReceiptData } from "@/lib/receipt";
 import { useProperty } from "@/context/PropertyContext";
@@ -21,6 +21,7 @@ interface PaymentRow {
   reference: string | null;
   note: string | null;
   payment_month: string | null;
+  created_at: string;
   tenants: { full_name: string; unit: string; property_id: string } | null;
 }
 
@@ -53,6 +54,23 @@ function MethodBadge({ method }: { method: string }) {
   );
 }
 
+function hashPin(pin: string): string {
+  let hash = 0;
+  for (let i = 0; i < pin.length; i++) {
+    const char = pin.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+  return hash.toString(36) + pin.length.toString();
+}
+
+function isWithin96Hours(createdAt: string): boolean {
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diffHours = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
+  return diffHours <= 96;
+}
+
 function PaymentsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -60,6 +78,7 @@ function PaymentsPage() {
   const [adding, setAdding] = useState(false);
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
   const [search, setSearch] = useState("");
+  const [cancelTarget, setCancelTarget] = useState<PaymentRow | null>(null);
 
   useEffect(() => {
     if (!selectedProperty) navigate({ to: "/properties" });
@@ -135,6 +154,21 @@ function PaymentsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const cancelPayment = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("payments").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payments", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["tenants", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["payments-recent", selectedProperty?.id] });
+      setCancelTarget(null);
+      toast.success("Payment cancelled successfully");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (!selectedProperty) return null;
 
   return (
@@ -179,7 +213,7 @@ function PaymentsPage() {
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Method</th>
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Reference</th>
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Amount</th>
-              <th className="py-3 pr-5 text-right text-xs font-medium text-muted-foreground">Receipt</th>
+              <th className="py-3 pr-5 text-right text-xs font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -195,6 +229,7 @@ function PaymentsPage() {
                 paymentMonth: p.payment_month,
               };
               const initials = (p.tenants?.full_name ?? "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+              const canCancel = p.created_at && isWithin96Hours(p.created_at);
               return (
                 <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                   <td className="px-5 py-3 text-muted-foreground">{formatDate(p.paid_on)}</td>
@@ -211,10 +246,7 @@ function PaymentsPage() {
                   </td>
                   <td className="py-3 text-muted-foreground">{p.tenants?.unit}</td>
                   <td className="py-3">
-                    <span
-                      className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                      style={{ background: "#F5F5F0", color: "#374151" }}
-                    >
+                    <span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: "#F5F5F0", color: "#374151" }}>
                       {p.payment_month ?? "—"}
                     </span>
                   </td>
@@ -224,12 +256,23 @@ function PaymentsPage() {
                     {formatKES(p.amount)}
                   </td>
                   <td className="py-3 pr-5 text-right">
-                    <button
-                      onClick={() => setPreviewReceipt(receiptData)}
-                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border border-border hover:bg-muted transition-colors"
-                    >
-                      <Receipt className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="inline-flex gap-1">
+                      <button
+                        onClick={() => setPreviewReceipt(receiptData)}
+                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border border-border hover:bg-muted transition-colors"
+                      >
+                        <Receipt className="h-3.5 w-3.5" />
+                      </button>
+                      {canCancel && (
+                        <button
+                          onClick={() => setCancelTarget(p)}
+                          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border transition-colors"
+                          style={{ borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Cancel
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -259,6 +302,7 @@ function PaymentsPage() {
             paymentMonth: p.payment_month,
           };
           const initials = (p.tenants?.full_name ?? "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+          const canCancel = p.created_at && isWithin96Hours(p.created_at);
           return (
             <div key={p.id} className="card-surface p-4">
               <div className="flex items-center justify-between mb-2">
@@ -278,12 +322,23 @@ function PaymentsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <MethodBadge method={p.method} />
-                <button
-                  onClick={() => setPreviewReceipt(receiptData)}
-                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border border-border hover:bg-muted transition-colors"
-                >
-                  <Receipt className="h-3.5 w-3.5" /> View Receipt
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPreviewReceipt(receiptData)}
+                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border border-border hover:bg-muted transition-colors"
+                  >
+                    <Receipt className="h-3.5 w-3.5" /> Receipt
+                  </button>
+                  {canCancel && (
+                    <button
+                      onClick={() => setCancelTarget(p)}
+                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border transition-colors"
+                      style={{ borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" /> Cancel
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
@@ -311,6 +366,134 @@ function PaymentsPage() {
           onClose={() => setPreviewReceipt(null)}
         />
       )}
+
+      {cancelTarget && (
+        <CancelPaymentModal
+          payment={cancelTarget}
+          onConfirm={() => cancelPayment.mutate(cancelTarget.id)}
+          onClose={() => setCancelTarget(null)}
+          cancelling={cancelPayment.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+function CancelPaymentModal({ payment, onConfirm, onClose, cancelling }: {
+  payment: PaymentRow;
+  onConfirm: () => void;
+  onClose: () => void;
+  cancelling: boolean;
+}) {
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+  const [verifying, setVerifying] = useState(false);
+
+  const handlePinInput = async (digit: string) => {
+    if (pin.length >= 4) return;
+    const newPin = pin + digit;
+    setPin(newPin);
+
+    if (newPin.length === 4) {
+      setVerifying(true);
+      setError("");
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        const enteredHash = hashPin(newPin);
+        const localPin = localStorage.getItem(`nyumbatrack_pin_${user.id}`);
+
+        if (localPin && localPin === enteredHash) {
+          onConfirm();
+          return;
+        }
+
+        const { data: profile } = await (supabase as any)
+          .from("profiles")
+          .select("pin_hash")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profile?.pin_hash === enteredHash) {
+          onConfirm();
+        } else {
+          setError("Incorrect PIN. Please try again.");
+          setPin("");
+        }
+      } catch {
+        setError("Verification failed. Please try again.");
+        setPin("");
+      } finally {
+        setVerifying(false);
+      }
+    }
+  };
+
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
+      <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#FEE2E2" }}>
+          <Trash2 className="h-7 w-7" style={{ color: "#DC2626" }} />
+        </div>
+        <h2 className="font-display text-xl font-semibold mb-1">Cancel Payment</h2>
+        <p className="text-sm text-muted-foreground mb-2">
+          You are cancelling a payment of <span className="font-bold text-foreground">{formatKES(payment.amount)}</span> for <span className="font-bold text-foreground">{payment.tenants?.full_name}</span>.
+        </p>
+        <p className="text-xs text-muted-foreground mb-6">Enter your PIN to confirm cancellation.</p>
+
+        {/* PIN dots */}
+        <div className="flex justify-center gap-4 mb-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-4 w-4 rounded-full border-2 transition-all duration-200"
+              style={{
+                background: i < pin.length ? "#DC2626" : "transparent",
+                borderColor: i < pin.length ? "#DC2626" : "#D1D5DB",
+              }}
+            />
+          ))}
+        </div>
+
+        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
+        {verifying && <p className="text-muted-foreground text-sm mb-3">Verifying...</p>}
+
+        {/* PIN pad */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {keys.map((k, i) => (
+            k === "" ? (
+              <div key={i} />
+            ) : k === "⌫" ? (
+              <button
+                key={i}
+                onClick={() => setPin((p) => p.slice(0, -1))}
+                className="h-12 rounded-xl border border-border text-foreground text-lg font-bold flex items-center justify-center hover:bg-muted transition-colors"
+              >
+                ⌫
+              </button>
+            ) : (
+              <button
+                key={i}
+                onClick={() => handlePinInput(k)}
+                disabled={verifying || cancelling}
+                className="h-12 rounded-xl border border-border text-foreground text-lg font-bold flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                {k}
+              </button>
+            )
+          ))}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full rounded-xl border border-border py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+        >
+          Go back
+        </button>
+      </div>
     </div>
   );
 }
@@ -376,11 +559,7 @@ function PaymentForm({
         >
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Tenant</label>
-            <select
-              required value={tenantId}
-              onChange={(e) => { const id = e.target.value; setTenantId(id); const t = tenants.find((x) => x.id === id); if (t) setAmount(Number(t.rent_amount)); }}
-              className="form-input"
-            >
+            <select required value={tenantId} onChange={(e) => { const id = e.target.value; setTenantId(id); const t = tenants.find((x) => x.id === id); if (t) setAmount(Number(t.rent_amount)); }} className="form-input">
               {tenants.map((t) => <option key={t.id} value={t.id}>{t.full_name} – Unit {t.unit}</option>)}
             </select>
           </div>
@@ -412,11 +591,7 @@ function PaymentForm({
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button
-              type="submit" disabled={saving}
-              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary"
-              style={{ background: "#166534" }}
-            >
+            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary" style={{ background: "#166534" }}>
               {saving ? "Saving…" : "Record Payment"}
             </button>
           </div>

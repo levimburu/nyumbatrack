@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, X, Building2, MapPin, Key, Copy, Users, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
@@ -26,16 +26,54 @@ function PropertiesPage() {
   const [adding, setAdding] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [isAgent, setIsAgent] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+      setIsAgent(data?.role === "agent");
+      setProfileLoaded(true);
+    });
+  }, []);
 
   const { data: properties, isLoading } = useQuery({
-    queryKey: ["properties"],
+    queryKey: ["properties", profileLoaded, isAgent],
+    enabled: profileLoaded,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("properties")
-        .select("*")
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return data as Property[];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      if (isAgent) {
+        const { data: agentLinks } = await (supabase as any)
+          .from("agent_landlord")
+          .select("landlord_id")
+          .eq("agent_id", user.id);
+
+        if (!agentLinks?.length) return [] as Property[];
+
+        const landlordIds = agentLinks.map((l: any) => l.landlord_id);
+        const { data, error } = await (supabase as any)
+          .from("properties")
+          .select("*")
+          .in("user_id", landlordIds)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        return data as Property[];
+      } else {
+        const { data, error } = await (supabase as any)
+          .from("properties")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true });
+        if (error) throw error;
+        return data as Property[];
+      }
     },
   });
 
@@ -100,7 +138,7 @@ function PropertiesPage() {
   };
 
   const renderContent = () => {
-    if (isLoading) {
+    if (!profileLoaded || isLoading) {
       return (
         <div className="flex min-h-[60vh] items-center justify-center">
           <div className="text-sm text-muted-foreground">Loading...</div>
@@ -115,18 +153,25 @@ function PropertiesPage() {
             <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
               <Building2 className="h-10 w-10" style={{ color: "#166534" }} />
             </div>
-            <h1 className="font-display text-2xl font-bold text-foreground">Welcome to NyumbaTrack!</h1>
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              {isAgent ? "No properties assigned yet" : "Welcome to NyumbaTrack!"}
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
-              Let's get started by adding your first property.
+              {isAgent
+                ? "Ask your landlord to assign you to a property."
+                : "Let's get started by adding your first property."
+              }
             </p>
           </div>
-          <button
-            onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all glow-primary"
-            style={{ background: "#166534" }}
-          >
-            <Plus className="h-5 w-5" /> Add your first property
-          </button>
+          {!isAgent && (
+            <button
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all glow-primary"
+              style={{ background: "#166534" }}
+            >
+              <Plus className="h-5 w-5" /> Add your first property
+            </button>
+          )}
         </div>
       );
     }
@@ -140,21 +185,23 @@ function PropertiesPage() {
               {properties.length} {properties.length === 1 ? "property" : "properties"} managed
             </p>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={generateInviteCode}
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              <Key className="h-4 w-4" /> Invite Agent
-            </button>
-            <button
-              onClick={() => setAdding(true)}
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
-              style={{ background: "#166534" }}
-            >
-              <Plus className="h-4 w-4" /> Add Property
-            </button>
-          </div>
+          {!isAgent && (
+            <div className="flex gap-2">
+              <button
+                onClick={generateInviteCode}
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <Key className="h-4 w-4" /> Invite Agent
+              </button>
+              <button
+                onClick={() => setAdding(true)}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
+                style={{ background: "#166534" }}
+              >
+                <Plus className="h-4 w-4" /> Add Property
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -229,17 +276,19 @@ function PropertiesPage() {
             );
           })}
 
-          <button
-            onClick={() => setAdding(true)}
-            className="card-surface flex flex-col items-center justify-center p-8 border-2 border-dashed hover:border-primary transition-colors min-h-[200px]"
-            style={{ borderColor: "#D1D5DB" }}
-          >
-            <div className="grid h-12 w-12 place-items-center rounded-xl mb-3" style={{ background: "#F0F0EB" }}>
-              <Plus className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <div className="font-medium text-sm text-foreground">Add New Property</div>
-            <div className="text-xs text-muted-foreground mt-1">Register a property to get started</div>
-          </button>
+          {!isAgent && (
+            <button
+              onClick={() => setAdding(true)}
+              className="card-surface flex flex-col items-center justify-center p-8 border-2 border-dashed hover:border-primary transition-colors min-h-[200px]"
+              style={{ borderColor: "#D1D5DB" }}
+            >
+              <div className="grid h-12 w-12 place-items-center rounded-xl mb-3" style={{ background: "#F0F0EB" }}>
+                <Plus className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="font-medium text-sm text-foreground">Add New Property</div>
+              <div className="text-xs text-muted-foreground mt-1">Register a property to get started</div>
+            </button>
+          )}
         </div>
       </div>
     );
