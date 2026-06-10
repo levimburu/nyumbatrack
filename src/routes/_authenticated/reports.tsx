@@ -3,7 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES } from "@/lib/format";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { TrendingUp, CreditCard, BarChart2 } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Cell
+} from "recharts";
 import { useProperty } from "@/context/PropertyContext";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -39,81 +43,160 @@ function ReportsPage() {
     byMonth[m] = (byMonth[m] ?? 0) + Number(p.amount);
     byMethod[p.method] = (byMethod[p.method] ?? 0) + Number(p.amount);
   });
-  const monthData = Object.entries(byMonth).map(([month, total]) => ({ month, total }));
+
+  const now = new Date();
+  const currentMonthKey = now.toLocaleString("en", { month: "short", year: "2-digit" });
+  const monthData = Object.entries(byMonth).map(([month, total]) => ({
+    month,
+    total,
+    isCurrent: month === currentMonthKey,
+  }));
+
   const total = payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
-  const avg = monthData.length ? total / monthData.length : 0;
+  const avg = monthData.length ? Math.round(total / monthData.length) : 0;
+
+  const methodLabels: Record<string, string> = {
+    mpesa: "M-Pesa",
+    bank: "Bank Transfer",
+    cash: "Cash",
+  };
+  const methodColors: Record<string, string> = {
+    mpesa: "#166534",
+    bank: "#2563EB",
+    cash: "#6B7280",
+  };
 
   if (!selectedProperty) return null;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-6">
+      {/* Header */}
       <div>
-        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          {selectedProperty.name}
-        </div>
-        <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Reports</h1>
+        <h1 className="font-display text-2xl font-bold text-foreground">Reports</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {selectedProperty.name} · Financial overview
+        </p>
       </div>
 
+      {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Total collected" value={formatKES(total)} />
-        <Stat label="Monthly average" value={formatKES(avg)} />
-        <Stat label="Payments recorded" value={String(payments?.length ?? 0)} />
+        <div className="card-surface p-5">
+          <div
+            className="grid h-10 w-10 place-items-center rounded-xl mb-3"
+            style={{ background: "#DCFCE7" }}
+          >
+            <TrendingUp className="h-5 w-5" style={{ color: "#16A34A" }} />
+          </div>
+          <div className="text-xs text-muted-foreground mb-1">Total Collected (YTD)</div>
+          <div className="font-display text-xl font-bold text-foreground">{formatKES(total)}</div>
+        </div>
+        <div className="card-surface p-5">
+          <div
+            className="grid h-10 w-10 place-items-center rounded-xl mb-3"
+            style={{ background: "#EFF6FF" }}
+          >
+            <CreditCard className="h-5 w-5" style={{ color: "#2563EB" }} />
+          </div>
+          <div className="text-xs text-muted-foreground mb-1">Monthly Average</div>
+          <div className="font-display text-xl font-bold text-foreground">{formatKES(avg)}</div>
+        </div>
+        <div className="card-surface p-5">
+          <div
+            className="grid h-10 w-10 place-items-center rounded-xl mb-3"
+            style={{ background: "#F5F0FF" }}
+          >
+            <BarChart2 className="h-5 w-5" style={{ color: "#7C3AED" }} />
+          </div>
+          <div className="text-xs text-muted-foreground mb-1">Payments Recorded</div>
+          <div className="font-display text-xl font-bold text-foreground">{payments?.length ?? 0}</div>
+        </div>
       </div>
 
+      {/* Monthly chart */}
       <div className="card-surface p-5">
-        <h2 className="mb-4 font-display text-base font-semibold">Monthly income</h2>
-        <div className="h-72">
-          <ResponsiveContainer>
-            <BarChart data={monthData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
-              <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-              <Tooltip formatter={(v: number) => formatKES(v)} contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }} />
-              <Bar dataKey="total" fill="#2563EB" radius={[6, 6, 0, 0]} />
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-display text-base font-semibold">Monthly Rent Collected</h2>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: "#166534" }} />
+              Collected
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: "#F59E0B" }} />
+              Current month
+            </span>
+          </div>
+        </div>
+        {monthData.length > 0 && (
+          <p className="text-xs text-muted-foreground mb-4">
+            {monthData[0]?.month} – {monthData[monthData.length - 1]?.month}
+          </p>
+        )}
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={monthData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EB" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+              <Tooltip
+                formatter={(v: number) => formatKES(v)}
+                contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 12 }}
+              />
+              <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+                {monthData.map((entry, index) => (
+                  <Cell key={index} fill={entry.isCurrent ? "#F59E0B" : "#166534"} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
+        {monthData.some((m) => m.isCurrent) && (
+          <p className="text-xs text-muted-foreground text-right mt-2">
+            * {currentMonthKey} is a partial month
+          </p>
+        )}
       </div>
 
+      {/* Payment methods breakdown */}
       <div className="card-surface p-5">
-        <h2 className="mb-4 font-display text-base font-semibold">Collection by method</h2>
-        <div className="space-y-3">
-          {Object.entries(byMethod).map(([m, amt]) => {
-            const pct = total ? (amt / total) * 100 : 0;
-            return (
-              <div key={m}>
-                <div className="mb-1 flex items-center justify-between text-sm">
-                  <span className="font-medium uppercase">{m}</span>
-                  <span className="text-muted-foreground">{formatKES(amt)} · {pct.toFixed(0)}%</span>
+        <h2 className="font-display text-base font-semibold mb-4">Payment Methods Breakdown</h2>
+        {Object.keys(byMethod).length === 0 ? (
+          <p className="text-sm text-muted-foreground">No payment data yet for {selectedProperty.name}.</p>
+        ) : (
+          <div className="space-y-4">
+            {Object.entries(byMethod).map(([m, amt]) => {
+              const pct = total ? Math.round((amt / total) * 100) : 0;
+              const color = methodColors[m] ?? "#6B7280";
+              const label = methodLabels[m] ?? m;
+              return (
+                <div key={m}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                        style={{
+                          background: m === "mpesa" ? "#DCFCE7" : m === "bank" ? "#EFF6FF" : "#F5F5F0",
+                          color,
+                        }}
+                      >
+                        {label}
+                      </span>
+                      <span className="text-sm font-medium text-muted-foreground">{pct}%</span>
+                    </div>
+                    <span className="text-sm font-semibold text-foreground">{formatKES(amt)}</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%`, background: color }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-            );
-          })}
-          {!Object.keys(byMethod).length && (
-            <p className="text-sm text-muted-foreground">No payment data yet for {selectedProperty.name}.</p>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
-
-      <div className="card-surface p-5">
-        <h2 className="mb-2 font-display text-base font-semibold">Notifications</h2>
-        <p className="text-sm text-muted-foreground">
-          SMS reminders for upcoming and overdue rent are wired into the data model. Connect an SMS provider
-          (e.g. Africa's Talking) and an M-Pesa Daraja gateway to activate automatic reminders and payment confirmations.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card-surface p-5">
-      <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className="mt-2 font-display text-2xl font-semibold">{value}</div>
     </div>
   );
 }
