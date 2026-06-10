@@ -36,7 +36,7 @@ function PropertiesPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
-  const { data: properties, isLoading } = useQuery({
+  const { data: properties, isLoading, error: propertiesError } = useQuery({
     queryKey: ["properties"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -47,6 +47,14 @@ function PropertiesPage() {
       return data as Property[];
     },
   });
+
+  if (propertiesError) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-sm text-red-500">Error: {String(propertiesError)}</div>
+      </div>
+    );
+  }
 
   const { data: allTenants } = useQuery({
     queryKey: ["all-tenants-for-stats"],
