@@ -1,24 +1,37 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES } from "@/lib/format";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useProperty } from "@/context/PropertyContext";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   component: ReportsPage,
 });
 
 function ReportsPage() {
+  const { selectedProperty } = useProperty();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!selectedProperty) navigate({ to: "/properties" });
+  }, [selectedProperty, navigate]);
+
   const { data: payments } = useQuery({
-    queryKey: ["payments-all"],
+    queryKey: ["payments-all", selectedProperty?.id],
+    enabled: !!selectedProperty,
     queryFn: async () => {
-      const { data, error } = await supabase.from("payments").select("amount, paid_on, method").order("paid_on");
+      const { data, error } = await (supabase as any)
+        .from("payments")
+        .select("amount, paid_on, method, tenants(property_id)")
+        .order("paid_on");
       if (error) throw error;
-      return data;
+      const all = data as any[];
+      return all.filter((p) => p.tenants?.property_id === selectedProperty!.id);
     },
   });
 
-  // Group by month
   const byMonth: Record<string, number> = {};
   const byMethod: Record<string, number> = {};
   payments?.forEach((p) => {
@@ -30,10 +43,14 @@ function ReportsPage() {
   const total = payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
   const avg = monthData.length ? total / monthData.length : 0;
 
+  if (!selectedProperty) return null;
+
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <div>
-        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Insights</div>
+        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {selectedProperty.name}
+        </div>
         <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight">Reports</h1>
       </div>
 
@@ -48,11 +65,11 @@ function ReportsPage() {
         <div className="h-72">
           <ResponsiveContainer>
             <BarChart data={monthData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.9 0.015 95)" />
-              <XAxis dataKey="month" stroke="oklch(0.5 0.02 160)" fontSize={12} />
-              <YAxis stroke="oklch(0.5 0.02 160)" fontSize={12} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
-              <Tooltip formatter={(v: number) => formatKES(v)} contentStyle={{ borderRadius: 8, border: "1px solid oklch(0.9 0.015 95)" }} />
-              <Bar dataKey="total" fill="oklch(0.32 0.07 165)" radius={[6, 6, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="month" stroke="#6B7280" fontSize={12} />
+              <YAxis stroke="#6B7280" fontSize={12} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+              <Tooltip formatter={(v: number) => formatKES(v)} contentStyle={{ borderRadius: 8, border: "1px solid #E5E7EB" }} />
+              <Bar dataKey="total" fill="#2563EB" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -75,7 +92,9 @@ function ReportsPage() {
               </div>
             );
           })}
-          {!Object.keys(byMethod).length && <p className="text-sm text-muted-foreground">No payment data yet.</p>}
+          {!Object.keys(byMethod).length && (
+            <p className="text-sm text-muted-foreground">No payment data yet for {selectedProperty.name}.</p>
+          )}
         </div>
       </div>
 
