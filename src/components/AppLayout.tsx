@@ -9,6 +9,7 @@ import type { AppRole } from "@/hooks/use-auth";
 interface NavItem { to: string; label: string; icon: typeof Users; }
 
 const adminNav: NavItem[] = [
+  { to: "/properties", label: "Properties", icon: Building2 },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/tenants", label: "Tenants", icon: Users },
   { to: "/payments", label: "Payments", icon: Receipt },
