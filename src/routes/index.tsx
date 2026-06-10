@@ -71,12 +71,12 @@ function IndexPage() {
         .maybeSingle();
 
       if (data?.role === "admin") {
-        window.location.href = "/properties";
+        window.location.replace("/properties");
       } else {
-        window.location.href = "/portal";
+        window.location.replace("/portal");
       }
     } catch {
-      window.location.href = "/properties";
+      window.location.replace("/properties");
     }
   };
 
