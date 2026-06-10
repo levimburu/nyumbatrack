@@ -215,7 +215,7 @@ function AuthPage() {
   const totalSteps = isSignIn ? 2 : 6;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #0f172a 0%, #1e3a5f 50%, #1e40af 100%)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #0d2818 0%, #1a3a28 50%, #166534 100%)" }}>
       {/* Status bar area */}
       <div className="h-safe-top" />
 
@@ -257,54 +257,68 @@ function AuthPage() {
           <div className="flex flex-col items-center justify-center flex-1 text-center">
             {/* Illustration */}
             <div className="mb-8 relative">
-              <svg width="220" height="160" viewBox="0 0 220 160" fill="none">
-                {/* Sky gradient */}
-                <rect width="220" height="160" rx="16" fill="url(#sky)" />
-                {/* Stars */}
-                <circle cx="30" cy="20" r="1.5" fill="white" opacity="0.6" />
-                <circle cx="80" cy="12" r="1" fill="white" opacity="0.5" />
-                <circle cx="150" cy="18" r="1.5" fill="white" opacity="0.7" />
+              <svg width="220" height="180" viewBox="0 0 220 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="220" height="180" rx="20" fill="#0d2818" />
+                <circle cx="30" cy="20" r="1.5" fill="white" opacity="0.5" />
+                <circle cx="80" cy="12" r="1" fill="white" opacity="0.4" />
+                <circle cx="150" cy="18" r="1.5" fill="white" opacity="0.6" />
                 <circle cx="190" cy="10" r="1" fill="white" opacity="0.4" />
-                <circle cx="60" cy="35" r="1" fill="white" opacity="0.5" />
-                <circle cx="170" cy="30" r="1" fill="white" opacity="0.6" />
-                {/* Moon */}
-                <circle cx="185" cy="25" r="10" fill="#FCD34D" opacity="0.9" />
-                <circle cx="190" cy="22" r="8" fill="#1e3a5f" />
-                {/* Building 1 - tall */}
-                <rect x="20" y="60" width="50" height="100" rx="4" fill="#1e40af" />
-                <rect x="20" y="60" width="50" height="8" rx="4" fill="#2563eb" />
-                {/* Windows building 1 */}
-                {[0,1,2,3,4,5].map(row => [0,1,2].map(col => (
-                  <rect key={`${row}-${col}`} x={28 + col * 14} y={76 + row * 14} width="8" height="8" rx="1"
-                    fill={Math.random() > 0.4 ? "#fcd34d" : "#1e3a5f"} opacity="0.9" />
-                )))}
-                {/* Building 2 - medium */}
-                <rect x="80" y="80" width="60" height="80" rx="4" fill="#1e3a5f" />
-                <rect x="80" y="80" width="60" height="8" rx="4" fill="#2563eb" />
-                {/* Windows building 2 */}
-                {[0,1,2,3].map(row => [0,1,2,3].map(col => (
-                  <rect key={`b2-${row}-${col}`} x={88 + col * 13} y={96 + row * 14} width="8" height="8" rx="1"
-                    fill={Math.random() > 0.3 ? "#fcd34d" : "#0f172a"} opacity="0.9" />
-                )))}
-                {/* Building 3 - short */}
-                <rect x="150" y="95" width="55" height="65" rx="4" fill="#1e40af" />
-                <rect x="150" y="95" width="55" height="8" rx="4" fill="#3b82f6" />
-                {/* Windows building 3 */}
-                {[0,1,2].map(row => [0,1,2].map(col => (
-                  <rect key={`b3-${row}-${col}`} x={158 + col * 15} y={111 + row * 14} width="9" height="8" rx="1"
-                    fill={Math.random() > 0.4 ? "#fcd34d" : "#1e3a5f"} opacity="0.9" />
-                )))}
-                {/* Ground */}
-                <rect x="0" y="155" width="220" height="5" fill="#0f172a" />
-                {/* NyumbaTrack sign */}
-                <rect x="75" y="140" width="70" height="18" rx="3" fill="#2563eb" />
-                <text x="110" y="153" textAnchor="middle" fill="white" fontSize="7" fontFamily="system-ui" fontWeight="bold">NYUMBATRACK</text>
-                <defs>
-                  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0f172a" />
-                    <stop offset="100%" stopColor="#1e3a5f" />
-                  </linearGradient>
-                </defs>
+                <circle cx="60" cy="35" r="1" fill="white" opacity="0.4" />
+                <circle cx="170" cy="30" r="1" fill="white" opacity="0.5" />
+                <circle cx="185" cy="28" r="11" fill="#F59E0B" opacity="0.9" />
+                <circle cx="191" cy="24" r="9" fill="#0d2818" />
+                <rect x="15" y="55" width="52" height="125" rx="3" fill="#1a3a28" />
+                <rect x="15" y="55" width="52" height="7" rx="3" fill="#166534" />
+                <rect x="23" y="70" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="38" y="70" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="53" y="70" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="23" y="84" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="38" y="84" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="53" y="84" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="23" y="98" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="38" y="98" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="53" y="98" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="23" y="112" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="38" y="112" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="53" y="112" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="23" y="126" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="38" y="126" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="53" y="126" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="80" y="75" width="60" height="105" rx="3" fill="#166534" />
+                <rect x="80" y="75" width="60" height="7" rx="3" fill="#15803d" />
+                <rect x="88" y="90" width="8" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="101" y="90" width="8" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="114" y="90" width="8" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="127" y="90" width="8" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="88" y="104" width="8" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="101" y="104" width="8" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="114" y="104" width="8" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="127" y="104" width="8" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="88" y="118" width="8" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="101" y="118" width="8" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="114" y="118" width="8" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="127" y="118" width="8" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="88" y="132" width="8" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="101" y="132" width="8" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="114" y="132" width="8" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="127" y="132" width="8" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="152" y="90" width="55" height="90" rx="3" fill="#1a3a28" />
+                <rect x="152" y="90" width="55" height="7" rx="3" fill="#166534" />
+                <rect x="160" y="105" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="175" y="105" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="190" y="105" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="160" y="119" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="175" y="119" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="190" y="119" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="160" y="133" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="175" y="133" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="190" y="133" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="160" y="147" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="175" y="147" width="9" height="8" rx="1.5" fill="#F59E0B" opacity="0.9" />
+                <rect x="190" y="147" width="9" height="8" rx="1.5" fill="#0d2818" opacity="0.9" />
+                <rect x="0" y="175" width="220" height="5" fill="#0a1f10" />
+                <rect x="72" y="158" width="76" height="18" rx="4" fill="#166534" />
+                <text x="110" y="171" textAnchor="middle" fill="#F59E0B" fontSize="7" fontFamily="system-ui" fontWeight="bold">NYUMBATRACK</text>
               </svg>
             </div>
 
