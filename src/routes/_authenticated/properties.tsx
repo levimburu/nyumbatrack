@@ -19,15 +19,6 @@ interface Property {
   created_at: string;
 }
 
-interface PropertyStats {
-  totalTenants: number;
-  monthlyRent: number;
-  paid: number;
-  partial: number;
-  unpaid: number;
-  occupancy: number;
-}
-
 function PropertiesPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -36,7 +27,7 @@ function PropertiesPage() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
-  const { data: properties, isLoading, error: propertiesError } = useQuery({
+  const { data: properties, isLoading } = useQuery({
     queryKey: ["properties"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -48,14 +39,6 @@ function PropertiesPage() {
     },
   });
 
-  if (propertiesError) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-red-500">Error: {String(propertiesError)}</div>
-      </div>
-    );
-  }
-
   const { data: allTenants } = useQuery({
     queryKey: ["all-tenants-for-stats"],
     queryFn: async () => {
@@ -66,17 +49,6 @@ function PropertiesPage() {
       return data as any[];
     },
   });
-
-  const getPropertyStats = (propertyId: string): PropertyStats => {
-    const tenants = allTenants?.filter((t) => t.property_id === propertyId) ?? [];
-    const totalTenants = tenants.length;
-    const monthlyRent = tenants.reduce((s, t) => s + Number(t.rent_amount), 0);
-    const paid = tenants.filter((t) => Number(t.balance) === 0).length;
-    const partial = tenants.filter((t) => Number(t.balance) > 0 && Number(t.balance) < Number(t.rent_amount)).length;
-    const unpaid = tenants.filter((t) => Number(t.balance) >= Number(t.rent_amount)).length;
-    const occupancy = totalTenants > 0 ? Math.round((paid / totalTenants) * 100) : 0;
-    return { totalTenants, monthlyRent, paid, partial, unpaid, occupancy };
-  };
 
   const addProperty = useMutation({
     mutationFn: async (p: { name: string; location: string; description: string }) => {
@@ -116,164 +88,166 @@ function PropertiesPage() {
     navigate({ to: "/dashboard" });
   };
 
-  if (isLoading || !properties) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
+  const getStats = (propertyId: string) => {
+    const tenants = allTenants?.filter((t) => t.property_id === propertyId) ?? [];
+    const total = tenants.length;
+    const monthlyRent = tenants.reduce((s, t) => s + Number(t.rent_amount), 0);
+    const paid = tenants.filter((t) => Number(t.balance) === 0).length;
+    const partial = tenants.filter((t) => Number(t.balance) > 0 && Number(t.balance) < Number(t.rent_amount)).length;
+    const unpaid = tenants.filter((t) => Number(t.balance) >= Number(t.rent_amount)).length;
+    const occupancy = total > 0 ? Math.round((paid / total) * 100) : 0;
+    return { total, monthlyRent, paid, partial, unpaid, occupancy };
+  };
 
-  if (!properties.length) {
-    return (
-      <div className="flex min-h-[80vh] flex-col items-center justify-center px-4 text-center">
-        <div className="mb-6">
-          <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-            <Building2 className="h-10 w-10" style={{ color: "#166534" }} />
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="text-sm text-muted-foreground">Loading...</div>
+        </div>
+      );
+    }
+
+    if (!properties?.length) {
+      return (
+        <div className="flex min-h-[80vh] flex-col items-center justify-center px-4 text-center">
+          <div className="mb-6">
+            <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
+              <Building2 className="h-10 w-10" style={{ color: "#166534" }} />
+            </div>
+            <h1 className="font-display text-2xl font-bold text-foreground">Welcome to NyumbaTrack!</h1>
+            <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
+              Let's get started by adding your first property.
+            </p>
           </div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Welcome to NyumbaTrack!</h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
-            Let's get started by adding your first property.
-          </p>
-        </div>
-        <button
-          onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all glow-primary"
-          style={{ background: "#166534" }}
-        >
-          <Plus className="h-5 w-5" /> Add your first property
-        </button>
-        {adding && (
-          <PropertyForm
-            onSave={(p) => addProperty.mutate(p)}
-            onClose={() => setAdding(false)}
-            saving={addProperty.isPending}
-          />
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">My Properties</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{properties.length} {properties.length === 1 ? "property" : "properties"} managed</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={generateInviteCode}
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            <Key className="h-4 w-4" /> Invite Agent
-          </button>
           <button
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
+            className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all glow-primary"
             style={{ background: "#166534" }}
           >
-            <Plus className="h-4 w-4" /> Add Property
+            <Plus className="h-5 w-5" /> Add your first property
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div className="flex items-end justify-between">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-foreground">My Properties</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {properties.length} {properties.length === 1 ? "property" : "properties"} managed
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={generateInviteCode}
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Key className="h-4 w-4" /> Invite Agent
+            </button>
+            <button
+              onClick={() => setAdding(true)}
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
+              style={{ background: "#166534" }}
+            >
+              <Plus className="h-4 w-4" /> Add Property
+            </button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {properties.map((p) => {
+            const stats = getStats(p.id);
+            return (
+              <div
+                key={p.id}
+                className="card-surface card-hover overflow-hidden cursor-pointer"
+                onClick={() => openProperty(p)}
+              >
+                <div className="relative h-28 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}>
+                  {stats.occupancy > 0 && (
+                    <div className="absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ background: "rgba(0,0,0,0.25)" }}>
+                      {stats.occupancy}% occupied
+                    </div>
+                  )}
+                  {stats.total > 0 && (
+                    <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#F59E0B", color: "#FFFFFF" }}>
+                      <Users className="h-3 w-3" />
+                      {stats.total} units
+                    </div>
+                  )}
+                  <Building2 className="h-12 w-12 opacity-20 text-white" />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-display font-bold text-foreground">{p.name}</h3>
+                  {p.location && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                      <MapPin className="h-3 w-3" />
+                      {p.location}
+                    </div>
+                  )}
+                  {stats.total > 0 && (
+                    <>
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                            <TrendingUp className="h-3 w-3" /> Monthly Rent
+                          </div>
+                          <div className="font-display font-bold text-sm text-foreground">{formatKES(stats.monthlyRent)}</div>
+                        </div>
+                        <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
+                          <div className="text-xs text-muted-foreground mb-1">Occupancy</div>
+                          <div className="font-display font-bold text-sm text-foreground">{stats.occupancy}%</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-3">
+                        {stats.paid > 0 && (
+                          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "#DCFCE7", color: "#166534" }}>
+                            {stats.paid} paid
+                          </span>
+                        )}
+                        {stats.partial > 0 && (
+                          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "#FEF9C3", color: "#854D0E" }}>
+                            {stats.partial} partial
+                          </span>
+                        )}
+                        {stats.unpaid > 0 && (
+                          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "#FEE2E2", color: "#991B1B" }}>
+                            {stats.unpaid} unpaid
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center justify-end mt-3 text-xs font-medium" style={{ color: "#166534" }}>
+                    View Dashboard →
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          <button
+            onClick={() => setAdding(true)}
+            className="card-surface flex flex-col items-center justify-center p-8 border-2 border-dashed hover:border-primary transition-colors min-h-[200px]"
+            style={{ borderColor: "#D1D5DB" }}
+          >
+            <div className="grid h-12 w-12 place-items-center rounded-xl mb-3" style={{ background: "#F0F0EB" }}>
+              <Plus className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="font-medium text-sm text-foreground">Add New Property</div>
+            <div className="text-xs text-muted-foreground mt-1">Register a property to get started</div>
           </button>
         </div>
       </div>
+    );
+  };
 
-      {/* Property cards grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {properties.map((p) => {
-          const stats = getPropertyStats(p.id);
-          return (
-            <div
-              key={p.id}
-              className="card-surface card-hover overflow-hidden cursor-pointer"
-              onClick={() => openProperty(p)}
-            >
-              {/* Green header */}
-              <div className="relative h-28 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}>
-                {stats.occupancy > 0 && (
-                  <div className="absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ background: "rgba(0,0,0,0.25)" }}>
-                    {stats.occupancy}% occupied
-                  </div>
-                )}
-                {stats.totalTenants > 0 && (
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#F59E0B", color: "#FFFFFF" }}>
-                    <Users className="h-3 w-3" />
-                    {stats.totalTenants} units
-                  </div>
-                )}
-                <Building2 className="h-12 w-12 opacity-20 text-white" />
-              </div>
-
-              {/* Card body */}
-              <div className="p-4">
-                <h3 className="font-display font-bold text-foreground">{p.name}</h3>
-                {p.location && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                    <MapPin className="h-3 w-3" />
-                    {p.location}
-                  </div>
-                )}
-
-                {stats.totalTenants > 0 && (
-                  <>
-                    <div className="grid grid-cols-2 gap-2 mt-3">
-                      <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                          <TrendingUp className="h-3 w-3" /> Monthly Rent
-                        </div>
-                        <div className="font-display font-bold text-sm text-foreground">{formatKES(stats.monthlyRent)}</div>
-                      </div>
-                      <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                          Occupancy
-                        </div>
-                        <div className="font-display font-bold text-sm text-foreground">{stats.occupancy}%</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-3">
-                      {stats.paid > 0 && (
-                        <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "#DCFCE7", color: "#166534" }}>
-                          {stats.paid} paid
-                        </span>
-                      )}
-                      {stats.partial > 0 && (
-                        <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "#FEF9C3", color: "#854D0E" }}>
-                          {stats.partial} partial
-                        </span>
-                      )}
-                      {stats.unpaid > 0 && (
-                        <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "#FEE2E2", color: "#991B1B" }}>
-                          {stats.unpaid} unpaid
-                        </span>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                <div className="flex items-center justify-end mt-3 text-xs font-medium" style={{ color: "#166534" }}>
-                  View Dashboard →
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Add new property card */}
-        <button
-          onClick={() => setAdding(true)}
-          className="card-surface flex flex-col items-center justify-center p-8 border-2 border-dashed hover:border-primary transition-colors min-h-[200px]"
-          style={{ borderColor: "#D1D5DB" }}
-        >
-          <div className="grid h-12 w-12 place-items-center rounded-xl mb-3" style={{ background: "#F0F0EB" }}>
-            <Plus className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <div className="font-medium text-sm text-foreground">Add New Property</div>
-          <div className="text-xs text-muted-foreground mt-1">Register a property to get started</div>
-        </button>
-      </div>
-
+  return (
+    <div>
+      {renderContent()}
       {adding && (
         <PropertyForm
           onSave={(p) => addProperty.mutate(p)}
@@ -281,7 +255,6 @@ function PropertiesPage() {
           saving={addProperty.isPending}
         />
       )}
-
       {showInviteModal && generatedCode && (
         <InviteCodeModal
           code={generatedCode}
@@ -328,9 +301,7 @@ function InviteCodeModal({ code, onClose }: { code: string; onClose: () => void 
 }
 
 function PropertyForm({
-  onSave,
-  onClose,
-  saving,
+  onSave, onClose, saving,
 }: {
   onSave: (p: { name: string; location: string; description: string }) => void;
   onClose: () => void;
@@ -350,43 +321,19 @@ function PropertyForm({
         <form onSubmit={(e) => { e.preventDefault(); onSave({ name, location, description }); }} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Property name *</label>
-            <input
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Kindaruma Apartments"
-              className="form-input"
-            />
+            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Kindaruma Apartments" className="form-input" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Location</label>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Nairobi, Westlands"
-              className="form-input"
-            />
+            <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Nairobi, Westlands" className="form-input" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Description (optional)</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Any notes about this property..."
-              rows={3}
-              className="form-input resize-none"
-            />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Any notes about this property..." rows={3} className="form-input resize-none" />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary"
-              style={{ background: "#166534" }}
-            >
+            <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
+            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
               {saving ? "Saving…" : "Save property"}
             </button>
           </div>
