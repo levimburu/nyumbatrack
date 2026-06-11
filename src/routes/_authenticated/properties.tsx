@@ -50,6 +50,7 @@ function PropertiesPage() {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+      console.log("isAgent value in query:", isAgent);
       if (isAgent) {
         const { data: agentLinks } = await (supabase as any)
           .from("agent_landlord")
