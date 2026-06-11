@@ -18,10 +18,7 @@ export function StatusPill({ status }: { status: "paid" | "partial" | "unpaid" }
   };
   const labels = { paid: "Paid", partial: "Partial", unpaid: "Unpaid" };
   return (
-    <span
-      className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
-      style={styles[status]}
-    >
+    <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" style={styles[status]}>
       {labels[status]}
     </span>
   );
@@ -49,6 +46,20 @@ function Dashboard() {
     },
   });
 
+  const { data: propertyData } = useQuery({
+    queryKey: ["property-detail", selectedProperty?.id],
+    enabled: !!selectedProperty,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("properties")
+        .select("total_units")
+        .eq("id", selectedProperty!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { total_units: number };
+    },
+  });
+
   const { data: payments } = useQuery({
     queryKey: ["payments-recent", selectedProperty?.id],
     enabled: !!selectedProperty,
@@ -70,113 +81,142 @@ function Dashboard() {
   const collected = expected - outstanding;
   const collectionRate = expected ? Math.round((collected / expected) * 100) : 0;
 
-  // Occupancy
+  const totalUnits = propertyData?.total_units && propertyData.total_units > 0 ? propertyData.total_units : totalTenants;
   const occupied = totalTenants;
-  const vacant = 0;
-  const occupancyRate = totalTenants > 0 ? 100 : 0;
+  const vacant = Math.max(0, totalUnits - occupied);
+  const occupancyRate = totalUnits > 0 ? Math.round((occupied / totalUnits) * 100) : 0;
 
   if (!selectedProperty) return null;
 
-  const statCards = [
-    {
-      label: "Total Tenants",
-      value: String(totalTenants),
-      icon: Users,
-      iconBg: "#EFF6FF",
-      iconColor: "#2563EB",
-    },
-    {
-      label: "Expected Rent",
-      value: formatKES(expected),
-      icon: Wallet,
-      iconBg: "#FEF9C3",
-      iconColor: "#D97706",
-    },
-    {
-      label: "Collected",
-      value: formatKES(collected),
-      icon: TrendingUp,
-      iconBg: "#DCFCE7",
-      iconColor: "#16A34A",
-    },
-    {
-      label: "Outstanding",
-      value: formatKES(outstanding),
-      icon: AlertCircle,
-      iconBg: "#FEE2E2",
-      iconColor: "#DC2626",
-    },
-  ];
-
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="font-display text-2xl font-bold text-foreground">{selectedProperty.name}</h1>
-        {selectedProperty.location && (
-          <p className="text-sm text-muted-foreground mt-0.5">{selectedProperty.location}</p>
-        )}
+
+      {/* Hero header */}
+      <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2818 0%, #166534 100%)" }}>
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-64 h-64 rounded-full" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
+          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full" style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }} />
+        </div>
+        <div className="relative">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-white/60 text-sm font-medium mb-1">Current Property</p>
+              <h1 className="font-display text-2xl font-bold text-white">{selectedProperty.name}</h1>
+              {selectedProperty.location && (
+                <p className="text-white/60 text-sm mt-0.5">{selectedProperty.location}</p>
+              )}
+            </div>
+            <div className="grid h-12 w-12 place-items-center rounded-2xl" style={{ background: "rgba(255,255,255,0.15)" }}>
+              <Building2 className="h-6 w-6 text-white" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <div className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "#F59E0B", color: "#fff" }}>
+              {occupancyRate}% Occupied
+            </div>
+            <div className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}>
+              {totalTenants} Tenants
+            </div>
+            <div className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}>
+              {collectionRate}% Collected
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((s) => {
-          const Icon = s.icon;
-          return (
-            <div key={s.label} className="card-surface p-5">
-              <div className="flex items-start justify-between mb-3">
-                <div
-                  className="grid h-10 w-10 place-items-center rounded-xl"
-                  style={{ background: s.iconBg }}
-                >
-                  <Icon className="h-5 w-5" style={{ color: s.iconColor }} />
-                </div>
-              </div>
-              <div className="text-xs font-medium text-muted-foreground mb-1">{s.label}</div>
-              <div className="font-display text-xl font-bold text-foreground">{s.value}</div>
+      {/* Stat cards — 2x2 on mobile, 4 across on desktop */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="card-surface p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
+              <Users className="h-4 w-4" style={{ color: "#2563EB" }} />
             </div>
-          );
-        })}
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "#EFF6FF", color: "#2563EB" }}>
+              {totalTenants}
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground mb-0.5">Total Tenants</div>
+          <div className="font-display text-lg font-bold text-foreground">{totalTenants}</div>
+        </div>
+
+        <div className="card-surface p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEF9C3" }}>
+              <Wallet className="h-4 w-4" style={{ color: "#D97706" }} />
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground mb-0.5">Expected Rent</div>
+          <div className="font-display text-lg font-bold text-foreground">{formatKES(expected)}</div>
+        </div>
+
+        <div className="card-surface p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
+              <TrendingUp className="h-4 w-4" style={{ color: "#16A34A" }} />
+            </div>
+            {collected > 0 && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "#DCFCE7", color: "#166534" }}>
+                {collectionRate}%
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground mb-0.5">Collected</div>
+          <div className="font-display text-lg font-bold" style={{ color: "#16A34A" }}>{formatKES(collected)}</div>
+        </div>
+
+        <div className="card-surface p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEE2E2" }}>
+              <AlertCircle className="h-4 w-4" style={{ color: "#DC2626" }} />
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground mb-0.5">Outstanding</div>
+          <div className="font-display text-lg font-bold" style={{ color: outstanding > 0 ? "#DC2626" : "#16A34A" }}>
+            {formatKES(outstanding)}
+          </div>
+        </div>
       </div>
 
       {/* Occupancy Overview */}
       <div className="card-surface p-5">
-        <h2 className="font-display text-base font-semibold mb-4">Occupancy Overview</h2>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-xl p-4 text-center" style={{ background: "#F5F5F0" }}>
-            <div className="grid h-10 w-10 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#EFF6FF" }}>
-              <Building2 className="h-5 w-5" style={{ color: "#2563EB" }} />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-base font-semibold">Occupancy Overview</h2>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: occupancyRate >= 75 ? "#DCFCE7" : occupancyRate >= 50 ? "#FEF9C3" : "#FEE2E2", color: occupancyRate >= 75 ? "#166534" : occupancyRate >= 50 ? "#854D0E" : "#991B1B" }}>
+            {occupancyRate}% full
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="rounded-xl p-3 text-center" style={{ background: "#EFF6FF" }}>
+            <div className="grid h-9 w-9 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#DBEAFE" }}>
+              <Building2 className="h-4 w-4" style={{ color: "#2563EB" }} />
             </div>
-            <div className="font-display text-2xl font-bold text-foreground">{totalTenants}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">Total Units</div>
+            <div className="font-display text-2xl font-bold text-foreground">{totalUnits}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Total</div>
           </div>
-          <div className="rounded-xl p-4 text-center" style={{ background: "#F5F5F0" }}>
-            <div className="grid h-10 w-10 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#DCFCE7" }}>
-              <DoorOpen className="h-5 w-5" style={{ color: "#16A34A" }} />
+          <div className="rounded-xl p-3 text-center" style={{ background: "#F0FDF4" }}>
+            <div className="grid h-9 w-9 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#DCFCE7" }}>
+              <DoorOpen className="h-4 w-4" style={{ color: "#16A34A" }} />
             </div>
             <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{occupied}</div>
             <div className="text-xs text-muted-foreground mt-0.5">Occupied</div>
           </div>
-          <div className="rounded-xl p-4 text-center" style={{ background: "#F5F5F0" }}>
-            <div className="grid h-10 w-10 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#FEE2E2" }}>
-              <DoorClosed className="h-5 w-5" style={{ color: "#DC2626" }} />
+          <div className="rounded-xl p-3 text-center" style={{ background: vacant > 0 ? "#FFF7ED" : "#F0FDF4" }}>
+            <div className="grid h-9 w-9 place-items-center rounded-xl mx-auto mb-2" style={{ background: vacant > 0 ? "#FEE2E2" : "#DCFCE7" }}>
+              <DoorClosed className="h-4 w-4" style={{ color: vacant > 0 ? "#DC2626" : "#16A34A" }} />
             </div>
-            <div className="font-display text-2xl font-bold" style={{ color: "#DC2626" }}>{vacant}</div>
+            <div className="font-display text-2xl font-bold" style={{ color: vacant > 0 ? "#DC2626" : "#16A34A" }}>{vacant}</div>
             <div className="text-xs text-muted-foreground mt-0.5">Vacant</div>
           </div>
         </div>
-        {/* Occupancy bar */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-            <span>Occupancy Rate</span>
-            <span className="font-semibold text-foreground">{occupancyRate}%</span>
-          </div>
-          <div className="h-2.5 rounded-full w-full" style={{ background: "#E5E7EB" }}>
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${occupancyRate}%`, background: "#166534" }}
-            />
-          </div>
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+          <span>Occupancy Rate</span>
+          <span className="font-semibold text-foreground">{occupancyRate}%</span>
+        </div>
+        <div className="h-3 rounded-full w-full overflow-hidden" style={{ background: "#E5E7EB" }}>
+          <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{ width: `${occupancyRate}%`, background: occupancyRate >= 75 ? "#166534" : occupancyRate >= 50 ? "#F59E0B" : "#DC2626" }}
+          />
         </div>
       </div>
 
@@ -186,12 +226,14 @@ function Dashboard() {
         <div className="card-surface lg:col-span-2">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h2 className="font-display text-base font-semibold">Tenant Overview</h2>
-            <span className="text-xs text-muted-foreground">{collectionRate}% collected</span>
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: "#DCFCE7", color: "#166534" }}>
+              {collectionRate}% collected
+            </span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border">
+                <tr className="border-b border-border" style={{ background: "#F9FAFB" }}>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Tenant</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Unit</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Rent</th>
@@ -216,7 +258,7 @@ function Dashboard() {
                         </div>
                       </td>
                       <td className="py-3 text-muted-foreground">{t.unit}</td>
-                      <td className="py-3">{formatKES(t.rent_amount)}</td>
+                      <td className="py-3 font-medium">{formatKES(t.rent_amount)}</td>
                       <td className="py-3"><StatusPill status={status} /></td>
                     </tr>
                   );

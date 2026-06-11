@@ -198,31 +198,31 @@ function PropertiesPage() {
 
     return (
       <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">My Properties</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {properties.length} {properties.length === 1 ? "property" : "properties"} managed
-            </p>
-          </div>
-          {!isAgent && (
-            <div className="flex gap-2">
-              <button
-                onClick={generateInviteCode}
-                className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-              >
-                <Key className="h-4 w-4" /> Invite Agent
-              </button>
-              <button
-                onClick={() => setAdding(true)}
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
-                style={{ background: "#166534" }}
-              >
-                <Plus className="h-4 w-4" /> Add Property
-              </button>
+        <div className="space-y-3">
+            <div>
+              <h1 className="font-display text-2xl font-bold text-foreground">My Properties</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {properties.length} {properties.length === 1 ? "property" : "properties"} managed
+              </p>
             </div>
-          )}
-        </div>
+            {!isAgent && (
+              <div className="flex gap-2">
+                <button
+                  onClick={generateInviteCode}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <Key className="h-4 w-4" /> Invite Agent
+                </button>
+                <button
+                  onClick={() => setAdding(true)}
+                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
+                  style={{ background: "#166534" }}
+                >
+                  <Plus className="h-4 w-4" /> Add Property
+                </button>
+              </div>
+            )}
+          </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((p) => {
