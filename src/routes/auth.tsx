@@ -304,6 +304,7 @@ function AuthPage() {
     welcome: 0, role: 1, name: 2, email: 3, password: 4,
     invite_code: 4, pin_setup: 5, pin_confirm: 6,
     signin_email: 1, signin_password: 2, signin_pin: 1,
+    reset_password: 1,
   }[step];
 
   const totalSteps = isSignIn ? 2 : 6;
@@ -346,7 +347,7 @@ function AuthPage() {
           <div className="h-1 rounded-full bg-white/10">
             <div
               className="h-full rounded-full bg-amber-400 transition-all duration-500"
-              style={{ width: `${(progress / totalSteps) * 100}%` }}
+              style={{ width: `${((progress ?? 0) / totalSteps) * 100}%` }}
             />
           </div>
         </div>
