@@ -20,7 +20,8 @@ type Step =
   | "pin_confirm"
   | "signin_email"
   | "signin_password"
-  | "signin_pin";
+  | "signin_pin"
+  | "reset_password";
 
 function hashPin(pin: string): string {
   let hash = 0;
@@ -47,6 +48,8 @@ function AuthPage() {
   const [isSignIn, setIsSignIn] = useState(false);
   const [rememberedEmail, setRememberedEmail] = useState<string | null>(null);
   const [rememberedUserId, setRememberedUserId] = useState<string | null>(null);
+  const [newResetPassword, setNewResetPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   // On mount — check if this device has a remembered user
   useEffect(() => {
@@ -56,8 +59,16 @@ function AuthPage() {
       setRememberedEmail(savedEmail);
       setRememberedUserId(savedUserId);
     }
+
+    // Check if this is a password reset redirect
+    const hash = window.location.hash;
+    if (hash && hash.includes("type=recovery")) {
+      setStep("reset_password");
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate({ to: "/", replace: true });
+      if (session && !hash.includes("type=recovery")) navigate({ to: "/", replace: true });
     });
   }, [navigate]);
 
@@ -109,6 +120,25 @@ function AuthPage() {
       setStep("signin_password");
     } catch {
       toast.error("Sign in failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle password reset
+  const handleResetPassword = async () => {
+    if (newResetPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newResetPassword });
+      if (error) throw error;
+      toast.success("Password updated! Please sign in.");
+      localStorage.removeItem("nyumbatrack_selected_property");
+      navigate({ to: "/auth", replace: true });
+      setStep("signin_email");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to reset password";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -549,6 +579,53 @@ function AuthPage() {
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
               Sign In
+            </button>
+            <button
+              onClick={async () => {
+                if (!email.trim()) { toast.error("Enter your email first"); return; }
+                const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                  redirectTo: `${window.location.origin}/auth#type=recovery`,
+                });
+                if (error) toast.error(error.message);
+                else toast.success("Password reset link sent to " + email);
+              }}
+              className="mt-3 w-full text-center text-sm text-white/50 hover:text-white/80 transition"
+            >
+              Forgot password?
+            </button>
+          </div>
+        )}
+
+        {/* RESET PASSWORD */}
+        {step === "reset_password" && (
+          <div className="flex flex-col flex-1">
+            <h1 className="font-display text-2xl font-bold text-white mb-2">Set new password</h1>
+            <p className="text-white/60 text-sm mb-8">Choose a new password for your account.</p>
+            <div className="relative">
+              <input
+                autoFocus
+                type={showResetPassword ? "text" : "password"}
+                value={newResetPassword}
+                onChange={(e) => setNewResetPassword(e.target.value)}
+                placeholder="New password"
+                minLength={6}
+                className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14"
+              />
+              <button
+                type="button"
+                onClick={() => setShowResetPassword(!showResetPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40"
+              >
+                {showResetPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+            <button
+              onClick={handleResetPassword}
+              disabled={loading || newResetPassword.length < 6}
+              className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+              Update Password
             </button>
           </div>
         )}
