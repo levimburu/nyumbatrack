@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Building2, MapPin, Key, Copy, Users, TrendingUp } from "lucide-react";
+import { Plus, X, Building2, MapPin, Key, Copy, Users, TrendingUp, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useProperty } from "@/context/PropertyContext";
 import { formatKES } from "@/lib/format";
@@ -25,6 +25,7 @@ function PropertiesPage() {
   const navigate = useNavigate();
   const { setSelectedProperty } = useProperty();
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Property | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isAgent, setIsAgent] = useState(false);
@@ -49,15 +50,12 @@ function PropertiesPage() {
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
       if (isAgent) {
         const { data: agentLinks } = await (supabase as any)
           .from("agent_landlord")
           .select("landlord_id")
           .eq("agent_id", user.id);
-
         if (!agentLinks?.length) return [] as Property[];
-
         const landlordIds = agentLinks.map((l: any) => l.landlord_id);
         const { data, error } = await (supabase as any)
           .from("properties")
@@ -106,6 +104,24 @@ function PropertiesPage() {
       qc.invalidateQueries({ queryKey: ["properties"] });
       setAdding(false);
       toast.success("Property added!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const editProperty = useMutation({
+    mutationFn: async (p: { id: string; name: string; location: string; description: string; total_units: number }) => {
+      const { error } = await (supabase as any).from("properties").update({
+        name: p.name,
+        location: p.location || null,
+        description: p.description || null,
+        total_units: p.total_units ?? 0,
+      }).eq("id", p.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["properties"] });
+      setEditing(null);
+      toast.success("Property updated!");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -244,7 +260,7 @@ function PropertiesPage() {
                       <div className="grid grid-cols-3 gap-2 mt-3">
                         <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                            <TrendingUp className="h-3 w-3" /> Monthly Rent
+                            <TrendingUp className="h-3 w-3" /> Rent
                           </div>
                           <div className="font-display font-bold text-sm text-foreground">{formatKES(stats.monthlyRent)}</div>
                         </div>
@@ -254,7 +270,7 @@ function PropertiesPage() {
                         </div>
                         <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
                           <div className="text-xs text-muted-foreground mb-1">Vacant</div>
-                          <div className="font-display font-bold text-sm text-foreground">{stats.vacant}</div>
+                          <div className="font-display font-bold text-sm" style={{ color: stats.vacant > 0 ? "#DC2626" : "#16A34A" }}>{stats.vacant}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-3">
@@ -276,8 +292,18 @@ function PropertiesPage() {
                       </div>
                     </>
                   )}
-                  <div className="flex items-center justify-end mt-3 text-xs font-medium" style={{ color: "#166534" }}>
-                    View Dashboard →
+                  <div className="flex items-center justify-between mt-3">
+                    {!isAgent && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setEditing(p); }}
+                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        <Pencil className="h-3 w-3" /> Edit
+                      </button>
+                    )}
+                    <span className="text-xs font-medium ml-auto" style={{ color: "#166534" }}>
+                      View Dashboard →
+                    </span>
                   </div>
                 </div>
               </div>
@@ -310,6 +336,14 @@ function PropertiesPage() {
           onSave={(p) => addProperty.mutate(p)}
           onClose={() => setAdding(false)}
           saving={addProperty.isPending}
+        />
+      )}
+      {editing && (
+        <PropertyForm
+          initial={editing}
+          onSave={(p) => editProperty.mutate({ id: editing.id, ...p })}
+          onClose={() => setEditing(null)}
+          saving={editProperty.isPending}
         />
       )}
       {showInviteModal && generatedCode && (
@@ -358,22 +392,23 @@ function InviteCodeModal({ code, onClose }: { code: string; onClose: () => void 
 }
 
 function PropertyForm({
-  onSave, onClose, saving,
+  initial, onSave, onClose, saving,
 }: {
+  initial?: Property;
   onSave: (p: { name: string; location: string; description: string; total_units: number }) => void;
   onClose: () => void;
   saving: boolean;
 }) {
-  const [name, setName] = useState("");
-  const [location, setLocation] = useState("");
-  const [description, setDescription] = useState("");
-  const [totalUnits, setTotalUnits] = useState(0);
+  const [name, setName] = useState(initial?.name ?? "");
+  const [location, setLocation] = useState(initial?.location ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [totalUnits, setTotalUnits] = useState(initial?.total_units ?? 0);
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="card-surface w-full max-w-lg p-6 animate-slide-up">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-display text-xl font-semibold">Add property</h2>
+          <h2 className="font-display text-xl font-semibold">{initial ? "Edit Property" : "Add Property"}</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); onSave({ name, location, description, total_units: totalUnits }); }} className="space-y-4">
@@ -396,7 +431,7 @@ function PropertyForm({
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
             <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
-              {saving ? "Saving…" : "Save property"}
+              {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
