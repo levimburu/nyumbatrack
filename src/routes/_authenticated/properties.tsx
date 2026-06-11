@@ -28,7 +28,7 @@ function PropertiesPage() {
   const [editing, setEditing] = useState<Property | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
-  const [isAgent, setIsAgent] = useState(false);
+  const [isAgent, setIsAgent] = useState<boolean | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
@@ -46,7 +46,7 @@ function PropertiesPage() {
 
   const { data: properties, isLoading } = useQuery({
     queryKey: ["properties", profileLoaded, isAgent],
-    enabled: profileLoaded,
+    enabled: profileLoaded && isAgent !== undefined,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
