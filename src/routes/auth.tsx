@@ -136,6 +136,7 @@ function AuthPage() {
       }
 
       toast.success("Welcome back!");
+      localStorage.removeItem("nyumbatrack_selected_property");
       navigate({ to: "/", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
@@ -218,6 +219,7 @@ function AuthPage() {
       localStorage.setItem(`nyumbatrack_pin_${userId}`, pinHash);
 
       toast.success("Account created! Welcome to NyumbaTrack.");
+      localStorage.removeItem("nyumbatrack_selected_property");
       navigate({ to: "/", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign up failed";
