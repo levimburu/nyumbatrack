@@ -188,11 +188,11 @@ function AuthPage() {
         pin_hash: pinHash,
       } as any);
 
-      const { error: roleError } = const { error: roleError } = await (supabase as any).from("user_roles").upsert({
+      const { error: roleError } = const { error: userRoleError } = await (supabase as any).from("user_roles").upsert({
         user_id: userId,
         role: "admin",
       } as any);
-      if (roleError) toast.error("Role error: " + roleError.message);
+      if (userRoleError) toast.error("Role error: " + userRoleError.message);
       if (roleError) toast.error("Role error: " + roleError.message);
 
       if (role === "agent") {
