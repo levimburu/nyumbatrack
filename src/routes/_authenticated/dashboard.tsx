@@ -72,7 +72,7 @@ function Dashboard() {
 
   // Occupancy
   const occupied = totalTenants;
-  const vacant = 0; // no vacant unit tracking yet — shows occupied count
+  const vacant = 0;
   const occupancyRate = totalTenants > 0 ? 100 : 0;
 
   if (!selectedProperty) return null;

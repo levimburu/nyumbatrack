@@ -16,6 +16,7 @@ interface Property {
   name: string;
   location: string | null;
   description: string | null;
+  total_units: number;
   created_at: string;
 }
 
@@ -89,13 +90,14 @@ function PropertiesPage() {
   });
 
   const addProperty = useMutation({
-    mutationFn: async (p: { name: string; location: string; description: string }) => {
+    mutationFn: async (p: { name: string; location: string; description: string; total_units: number }) => {
       const { data: { user: u } } = await supabase.auth.getUser();
       if (!u) throw new Error("Not authenticated");
       const { error } = await (supabase as any).from("properties").insert({
         name: p.name,
         location: p.location || null,
         description: p.description || null,
+        total_units: p.total_units ?? 0,
         user_id: u.id,
       });
       if (error) throw error;
@@ -126,15 +128,17 @@ function PropertiesPage() {
     navigate({ to: "/dashboard" });
   };
 
-  const getStats = (propertyId: string) => {
-    const tenants = allTenants?.filter((t) => t.property_id === propertyId) ?? [];
-    const total = tenants.length;
+  const getStats = (property: Property) => {
+    const tenants = allTenants?.filter((t) => t.property_id === property.id) ?? [];
+    const occupied = tenants.length;
+    const totalUnits = property.total_units > 0 ? property.total_units : occupied;
+    const vacant = Math.max(0, totalUnits - occupied);
     const monthlyRent = tenants.reduce((s, t) => s + Number(t.rent_amount), 0);
     const paid = tenants.filter((t) => Number(t.balance) === 0).length;
     const partial = tenants.filter((t) => Number(t.balance) > 0 && Number(t.balance) < Number(t.rent_amount)).length;
     const unpaid = tenants.filter((t) => Number(t.balance) >= Number(t.rent_amount)).length;
-    const occupancy = total > 0 ? Math.round((paid / total) * 100) : 0;
-    return { total, monthlyRent, paid, partial, unpaid, occupancy };
+    const occupancyRate = totalUnits > 0 ? Math.round((occupied / totalUnits) * 100) : 0;
+    return { occupied, totalUnits, vacant, monthlyRent, paid, partial, unpaid, occupancyRate };
   };
 
   const renderContent = () => {
@@ -206,7 +210,7 @@ function PropertiesPage() {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((p) => {
-            const stats = getStats(p.id);
+            const stats = getStats(p);
             return (
               <div
                 key={p.id}
@@ -214,15 +218,15 @@ function PropertiesPage() {
                 onClick={() => openProperty(p)}
               >
                 <div className="relative h-28 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}>
-                  {stats.occupancy > 0 && (
+                  {stats.occupancyRate > 0 && (
                     <div className="absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ background: "rgba(0,0,0,0.25)" }}>
-                      {stats.occupancy}% occupied
+                      {stats.occupancyRate}% occupied
                     </div>
                   )}
-                  {stats.total > 0 && (
+                  {stats.totalUnits > 0 && (
                     <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#F59E0B", color: "#FFFFFF" }}>
                       <Users className="h-3 w-3" />
-                      {stats.total} units
+                      {stats.totalUnits} units
                     </div>
                   )}
                   <Building2 className="h-12 w-12 opacity-20 text-white" />
@@ -235,7 +239,7 @@ function PropertiesPage() {
                       {p.location}
                     </div>
                   )}
-                  {stats.total > 0 && (
+                  {stats.totalUnits > 0 && (
                     <>
                       <div className="grid grid-cols-3 gap-2 mt-3">
                         <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
@@ -246,11 +250,11 @@ function PropertiesPage() {
                         </div>
                         <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
                           <div className="text-xs text-muted-foreground mb-1">Occupied</div>
-                          <div className="font-display font-bold text-sm text-foreground">{stats.total}</div>
+                          <div className="font-display font-bold text-sm text-foreground">{stats.occupied} / {stats.totalUnits}</div>
                         </div>
                         <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
-                          <div className="text-xs text-muted-foreground mb-1">Occupancy</div>
-                          <div className="font-display font-bold text-sm text-foreground">{stats.occupancy}%</div>
+                          <div className="text-xs text-muted-foreground mb-1">Vacant</div>
+                          <div className="font-display font-bold text-sm text-foreground">{stats.vacant}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-3">
@@ -356,13 +360,14 @@ function InviteCodeModal({ code, onClose }: { code: string; onClose: () => void 
 function PropertyForm({
   onSave, onClose, saving,
 }: {
-  onSave: (p: { name: string; location: string; description: string }) => void;
+  onSave: (p: { name: string; location: string; description: string; total_units: number }) => void;
   onClose: () => void;
   saving: boolean;
 }) {
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
+  const [totalUnits, setTotalUnits] = useState(0);
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
@@ -371,7 +376,7 @@ function PropertyForm({
           <h2 className="font-display text-xl font-semibold">Add property</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); onSave({ name, location, description }); }} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); onSave({ name, location, description, total_units: totalUnits }); }} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Property name *</label>
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Kindaruma Apartments" className="form-input" />
@@ -379,6 +384,10 @@ function PropertyForm({
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Location</label>
             <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Nairobi, Westlands" className="form-input" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">Total Units</label>
+            <input type="number" min={0} value={totalUnits} onChange={(e) => setTotalUnits(Number(e.target.value))} className="form-input" placeholder="e.g. 20" />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Description (optional)</label>
