@@ -14,13 +14,12 @@ type Step =
   | "role"
   | "name"
   | "email"
-  | "otp"
   | "password"
   | "invite_code"
   | "pin_setup"
   | "pin_confirm"
   | "signin_email"
-  | "signin_otp"
+  | "signin_password"
   | "signin_pin";
 
 function hashPin(pin: string): string {
@@ -39,7 +38,6 @@ function AuthPage() {
   const [role, setRole] = useState<"landlord" | "agent">("landlord");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
@@ -77,85 +75,6 @@ function AuthPage() {
     else setPin((p) => p.slice(0, -1));
   };
 
-  // Send OTP for signup email verification
-  const sendSignupOtp = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
-      });
-      // We ignore "user not found" error since user doesn't exist yet during signup
-      // OTP is still sent to the email for verification
-      if (error && !error.message.includes("not found")) throw error;
-      toast.success("OTP sent! Check your email.");
-      setStep("otp");
-    } catch (err) {
-      // For new users Supabase may reject — just move forward, we verify on signup
-      toast.success("OTP sent! Check your email.");
-      setStep("otp");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Send OTP for sign in
-  const sendSigninOtp = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-  email,
-  options: { shouldCreateUser: false, emailRedirectTo: undefined },
-});
-      if (error) throw error;
-      toast.success("OTP sent! Check your email.");
-      setStep("signin_otp");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to send OTP";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Verify OTP for sign in, then check if PIN is remembered
-  const verifySigninOtp = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: "email",
-      });
-      if (error) throw error;
-      const userId = data.user?.id;
-      if (!userId) throw new Error("No user returned");
-
-      // Save to localStorage for this device
-      localStorage.setItem("nyumbatrack_email", email);
-      localStorage.setItem("nyumbatrack_user_id", userId);
-
-      // Fetch their stored pin_hash
-      const { data: profile } = await (supabase as any)
-        .from("profiles")
-        .select("pin_hash")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (profile?.pin_hash) {
-        localStorage.setItem(`nyumbatrack_pin_${userId}`, profile.pin_hash);
-      }
-
-      toast.success("Email verified!");
-      navigate({ to: "/", replace: true });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Invalid OTP";
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // PIN sign in for remembered device
   const handlePinSignIn = async (enteredPin: string) => {
     if (!rememberedUserId) return;
@@ -170,24 +89,57 @@ function AuthPage() {
       setPin("");
       return;
     }
-    // PIN correct — restore session via OTP silently or just navigate
-    // We need to re-authenticate via Supabase — send OTP silently
     setLoading(true);
     try {
-      await supabase.auth.signInWithOtp({ email: rememberedEmail! });
-      toast.info("Sending magic link to your email to restore session…");
-      // For now, navigate and let the session check handle it
-      // A better UX: use a stored refresh token — but Supabase handles persistSession automatically
-      // If session is still valid in localStorage, this will work directly
+      // Try existing session first
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate({ to: "/", replace: true });
-      } else {
-        toast.error("Session expired. Please sign in with email.");
-        setStep("signin_email");
+        return;
       }
+      // Try refreshing session silently
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshData?.session) {
+        navigate({ to: "/", replace: true });
+        return;
+      }
+      // Session fully expired — fall back to email + password
+      toast.error("Session expired. Please sign in with your password.");
+      setEmail(rememberedEmail ?? "");
+      setStep("signin_password");
     } catch {
       toast.error("Sign in failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Full sign in with email + password
+  const handleSignIn = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      const userId = data.user.id;
+
+      // Fetch pin_hash and save to device
+      const { data: profile } = await (supabase as any)
+        .from("profiles")
+        .select("pin_hash")
+        .eq("id", userId)
+        .maybeSingle();
+
+      localStorage.setItem("nyumbatrack_email", email);
+      localStorage.setItem("nyumbatrack_user_id", userId);
+      if (profile?.pin_hash) {
+        localStorage.setItem(`nyumbatrack_pin_${userId}`, profile.pin_hash);
+      }
+
+      toast.success("Welcome back!");
+      navigate({ to: "/", replace: true });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Sign in failed";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -221,10 +173,7 @@ function AuthPage() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: { full_name: fullName },
-          emailRedirectTo: `${window.location.origin}/`,
-        },
+        options: { data: { full_name: fullName } },
       });
       if (authError) throw authError;
       if (!authData.user) throw new Error("No user returned");
@@ -302,31 +251,30 @@ function AuthPage() {
     if (step === "role") setStep("welcome");
     else if (step === "name") setStep("role");
     else if (step === "email") setStep("name");
-    else if (step === "otp") setStep("email");
-    else if (step === "password") setStep("otp");
+    else if (step === "password") setStep("email");
     else if (step === "invite_code") setStep("password");
     else if (step === "pin_setup") setStep(role === "agent" ? "invite_code" : "password");
     else if (step === "pin_confirm") { setPin(""); setStep("pin_setup"); }
     else if (step === "signin_email") setStep("welcome");
-    else if (step === "signin_otp") setStep("signin_email");
+    else if (step === "signin_password") setStep("signin_email");
     else if (step === "signin_pin") {
       localStorage.removeItem("nyumbatrack_email");
       localStorage.removeItem("nyumbatrack_user_id");
       setRememberedEmail(null);
       setRememberedUserId(null);
+      setPin("");
       setStep("signin_email");
     }
   };
 
   const progress = {
-    welcome: 0, role: 1, name: 2, email: 3, otp: 4, password: 5,
-    invite_code: 5, pin_setup: 6, pin_confirm: 7,
-    signin_email: 1, signin_otp: 2, signin_pin: 1,
+    welcome: 0, role: 1, name: 2, email: 3, password: 4,
+    invite_code: 4, pin_setup: 5, pin_confirm: 6,
+    signin_email: 1, signin_password: 2, signin_pin: 1,
   }[step];
 
-  const totalSteps = isSignIn ? 2 : 7;
+  const totalSteps = isSignIn ? 2 : 6;
 
-  // If device remembers a user, go straight to PIN
   const startSignIn = () => {
     setIsSignIn(true);
     if (rememberedEmail && rememberedUserId) {
@@ -371,13 +319,12 @@ function AuthPage() {
         </div>
       )}
 
-      {/* Content */}
       <div className="flex-1 flex flex-col px-6 pt-8">
 
         {/* WELCOME */}
         {step === "welcome" && (
           <div className="flex flex-col items-center justify-center flex-1 text-center">
-            <div className="mb-8 relative">
+            <div className="mb-8">
               <svg width="220" height="180" viewBox="0 0 220 180" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect width="220" height="180" rx="20" fill="#0d2818" />
                 <circle cx="185" cy="28" r="11" fill="#F59E0B" opacity="0.9" />
@@ -463,11 +410,11 @@ function AuthPage() {
           </div>
         )}
 
-        {/* EMAIL (signup) */}
+        {/* EMAIL */}
         {step === "email" && (
           <div className="flex flex-col flex-1">
             <h1 className="font-display text-2xl font-bold text-white mb-2">Your email address</h1>
-            <p className="text-white/60 text-sm mb-8">We'll send a verification code to this email.</p>
+            <p className="text-white/60 text-sm mb-8">We'll use this to secure your account.</p>
             <input
               autoFocus type="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -475,41 +422,11 @@ function AuthPage() {
               className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400"
             />
             <button
-              onClick={() => email.trim() && sendSignupOtp()}
-              disabled={!email.trim() || loading}
+              onClick={() => email.trim() && setStep("password")}
+              disabled={!email.trim()}
               className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-              Send Code <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-        )}
-
-        {/* OTP (signup) */}
-        {step === "otp" && (
-          <div className="flex flex-col flex-1">
-            <h1 className="font-display text-2xl font-bold text-white mb-2">Check your email</h1>
-            <p className="text-white/60 text-sm mb-8">
-              Enter the 6-digit code sent to <span className="text-white font-medium">{email}</span>
-            </p>
-            <input
-              autoFocus type="text" inputMode="numeric" maxLength={6}
-              value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              placeholder="000000"
-              className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono text-2xl"
-            />
-            <button
-              onClick={() => otp.length === 6 && setStep("password")}
-              disabled={otp.length < 6}
-              className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2"
-            >
-              Verify <ChevronRight className="h-5 w-5" />
-            </button>
-            <button
-              onClick={sendSignupOtp}
-              className="mt-4 text-center text-sm text-white/40 hover:text-white/70"
-            >
-              Resend code
+              Continue <ChevronRight className="h-5 w-5" />
             </button>
           </div>
         )}
@@ -518,7 +435,7 @@ function AuthPage() {
         {step === "password" && (
           <div className="flex flex-col flex-1">
             <h1 className="font-display text-2xl font-bold text-white mb-2">Create a password</h1>
-            <p className="text-white/60 text-sm mb-8">Minimum 6 characters. Used as your account backup.</p>
+            <p className="text-white/60 text-sm mb-8">Minimum 6 characters.</p>
             <div className="relative">
               <input
                 autoFocus type={showPassword ? "text" : "password"}
@@ -589,7 +506,7 @@ function AuthPage() {
         {step === "signin_email" && (
           <div className="flex flex-col flex-1">
             <h1 className="font-display text-2xl font-bold text-white mb-2">Welcome back</h1>
-            <p className="text-white/60 text-sm mb-8">Enter your email — we'll send you a sign-in code.</p>
+            <p className="text-white/60 text-sm mb-8">Enter your email to continue.</p>
             <input
               autoFocus type="email" value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -597,39 +514,38 @@ function AuthPage() {
               className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400"
             />
             <button
-              onClick={() => email.trim() && sendSigninOtp()}
-              disabled={!email.trim() || loading}
+              onClick={() => email.trim() && setStep("signin_password")}
+              disabled={!email.trim()}
               className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-              Send Code <ChevronRight className="h-5 w-5" />
+              Continue <ChevronRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* SIGN IN — OTP */}
-        {step === "signin_otp" && (
+        {/* SIGN IN — PASSWORD */}
+        {step === "signin_password" && (
           <div className="flex flex-col flex-1">
-            <h1 className="font-display text-2xl font-bold text-white mb-2">Check your email</h1>
-            <p className="text-white/60 text-sm mb-8">
-              Enter the 6-digit code sent to <span className="text-white font-medium">{email}</span>
-            </p>
-            <input
-              autoFocus type="text" inputMode="numeric" maxLength={6}
-              value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-              placeholder="000000"
-              className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono text-2xl"
-            />
+            <h1 className="font-display text-2xl font-bold text-white mb-2">Enter password</h1>
+            <p className="text-white/60 text-sm mb-8">Enter your password to sign in.</p>
+            <div className="relative">
+              <input
+                autoFocus type={showPassword ? "text" : "password"}
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14"
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
             <button
-              onClick={verifySigninOtp}
-              disabled={otp.length < 6 || loading}
+              onClick={handleSignIn}
+              disabled={loading || !password}
               className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-              Verify & Sign In
-            </button>
-            <button onClick={sendSigninOtp} className="mt-4 text-center text-sm text-white/40 hover:text-white/70">
-              Resend code
+              Sign In
             </button>
           </div>
         )}
