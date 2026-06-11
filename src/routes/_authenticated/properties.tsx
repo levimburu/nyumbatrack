@@ -46,7 +46,7 @@ function PropertiesPage() {
 
   const { data: properties, isLoading } = useQuery({
     queryKey: ["properties", profileLoaded, isAgent],
-    enabled: profileLoaded && isAgent !== undefined,
+    enabled: profileLoaded && isAgent !== null,
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
