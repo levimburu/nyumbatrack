@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Receipt, BarChart3, LogOut, Building2, Menu, X, Home } from "lucide-react";
+import { LayoutDashboard, Users, Receipt, BarChart3, LogOut, Building2, Menu, X, Home, Wallet } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ const adminNav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/tenants", label: "Tenants", icon: Users },
   { to: "/payments", label: "Payments", icon: Receipt },
+  { to: "/deposits", label: "Deposits", icon: Wallet },
   { to: "/reports", label: "Reports", icon: BarChart3 },
 ];
 
