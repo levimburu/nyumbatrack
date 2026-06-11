@@ -237,12 +237,16 @@ function PropertiesPage() {
                   )}
                   {stats.total > 0 && (
                     <>
-                      <div className="grid grid-cols-2 gap-2 mt-3">
+                      <div className="grid grid-cols-3 gap-2 mt-3">
                         <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <TrendingUp className="h-3 w-3" /> Monthly Rent
                           </div>
                           <div className="font-display font-bold text-sm text-foreground">{formatKES(stats.monthlyRent)}</div>
+                        </div>
+                        <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
+                          <div className="text-xs text-muted-foreground mb-1">Occupied</div>
+                          <div className="font-display font-bold text-sm text-foreground">{stats.total}</div>
                         </div>
                         <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
                           <div className="text-xs text-muted-foreground mb-1">Occupancy</div>

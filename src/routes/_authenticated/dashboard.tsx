@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Wallet, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Users, Wallet, TrendingUp, AlertCircle, CheckCircle2, Building2, DoorOpen, DoorClosed } from "lucide-react";
 import { formatKES, formatDate } from "@/lib/format";
 import { useProperty } from "@/context/PropertyContext";
 
@@ -70,6 +70,11 @@ function Dashboard() {
   const collected = expected - outstanding;
   const collectionRate = expected ? Math.round((collected / expected) * 100) : 0;
 
+  // Occupancy
+  const occupied = totalTenants;
+  const vacant = 0; // no vacant unit tracking yet — shows occupied count
+  const occupancyRate = totalTenants > 0 ? 100 : 0;
+
   if (!selectedProperty) return null;
 
   const statCards = [
@@ -132,6 +137,47 @@ function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Occupancy Overview */}
+      <div className="card-surface p-5">
+        <h2 className="font-display text-base font-semibold mb-4">Occupancy Overview</h2>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="rounded-xl p-4 text-center" style={{ background: "#F5F5F0" }}>
+            <div className="grid h-10 w-10 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#EFF6FF" }}>
+              <Building2 className="h-5 w-5" style={{ color: "#2563EB" }} />
+            </div>
+            <div className="font-display text-2xl font-bold text-foreground">{totalTenants}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Total Units</div>
+          </div>
+          <div className="rounded-xl p-4 text-center" style={{ background: "#F5F5F0" }}>
+            <div className="grid h-10 w-10 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#DCFCE7" }}>
+              <DoorOpen className="h-5 w-5" style={{ color: "#16A34A" }} />
+            </div>
+            <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{occupied}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Occupied</div>
+          </div>
+          <div className="rounded-xl p-4 text-center" style={{ background: "#F5F5F0" }}>
+            <div className="grid h-10 w-10 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#FEE2E2" }}>
+              <DoorClosed className="h-5 w-5" style={{ color: "#DC2626" }} />
+            </div>
+            <div className="font-display text-2xl font-bold" style={{ color: "#DC2626" }}>{vacant}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Vacant</div>
+          </div>
+        </div>
+        {/* Occupancy bar */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+            <span>Occupancy Rate</span>
+            <span className="font-semibold text-foreground">{occupancyRate}%</span>
+          </div>
+          <div className="h-2.5 rounded-full w-full" style={{ background: "#E5E7EB" }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${occupancyRate}%`, background: "#166534" }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Content grid */}
