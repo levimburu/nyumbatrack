@@ -188,7 +188,7 @@ function AuthPage() {
         pin_hash: pinHash,
       } as any);
 
-      const { error: roleError } = const { error: userRoleError } = await (supabase as any).from("user_roles").upsert({
+      const { error: userRoleError } = await (supabase as any).from("user_roles").upsert({
         user_id: userId,
         role: "admin",
       } as any);
