@@ -192,7 +192,6 @@ function AuthPage() {
         user_id: userId,
         role: "admin",
       } as any);
-      if (userRoleError) toast.error("Role error: " + userRoleError.message);
 
       if (role === "agent") {
         const { data: codeData } = await (supabase as any)
