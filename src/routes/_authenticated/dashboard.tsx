@@ -2,7 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Wallet, TrendingUp, AlertCircle, CheckCircle2, Building2, DoorOpen, DoorClosed } from "lucide-react";
+import { Users, Wallet, TrendingUp, AlertCircle, CheckCircle2, Building2, DoorOpen, DoorClosed, Key, Copy } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { formatKES, formatDate } from "@/lib/format";
 import { useProperty } from "@/context/PropertyContext";
 
@@ -27,6 +29,35 @@ export function StatusPill({ status }: { status: "paid" | "partial" | "unpaid" }
 function Dashboard() {
   const { selectedProperty } = useProperty();
   const navigate = useNavigate();
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [isAgent, setIsAgent] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await (supabase as any)
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data?.role === "agent") setIsAgent(true);
+    });
+  }, []);
+
+  const generateInviteCode = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !selectedProperty) return;
+    const code = "NYM-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const { error } = await (supabase as any).from("invite_codes").insert({
+      landlord_id: user.id,
+      property_id: selectedProperty.id,
+      code,
+    });
+    if (error) { toast.error("Failed to generate code"); return; }
+    setGeneratedCode(code);
+    setShowInviteModal(true);
+  };
 
   useEffect(() => {
     if (!selectedProperty) navigate({ to: "/properties" });
@@ -106,8 +137,19 @@ function Dashboard() {
                 <p className="text-white/60 text-sm mt-0.5">{selectedProperty.location}</p>
               )}
             </div>
-            <div className="grid h-12 w-12 place-items-center rounded-2xl" style={{ background: "rgba(255,255,255,0.15)" }}>
-              <Building2 className="h-6 w-6 text-white" />
+            <div className="flex items-center gap-2">
+              {!isAgent && (
+                <button
+                  onClick={generateInviteCode}
+                  className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold"
+                  style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
+                >
+                  <Key className="h-3.5 w-3.5" /> Invite Agent
+                </button>
+              )}
+              <div className="grid h-12 w-12 place-items-center rounded-2xl" style={{ background: "rgba(255,255,255,0.15)" }}>
+                <Building2 className="h-6 w-6 text-white" />
+              </div>
             </div>
           </div>
           <div className="mt-4 flex items-center gap-3">
@@ -305,6 +347,37 @@ function Dashboard() {
           </ul>
         </div>
       </div>
+    {showInviteModal && generatedCode && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
+              <Key className="h-7 w-7" style={{ color: "#166534" }} />
+            </div>
+            <h2 className="font-display text-xl font-semibold mb-2">Agent Invite Code</h2>
+            <p className="text-sm text-muted-foreground mb-2">
+              Share this code with your agent for <span className="font-semibold text-foreground">{selectedProperty.name}</span>.
+            </p>
+            <p className="text-xs text-muted-foreground mb-6">They'll only have access to this property.</p>
+            <div className="flex items-center justify-between rounded-xl border-2 px-4 py-3 mb-4" style={{ borderColor: "#166534", background: "#F0FDF4" }}>
+              <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: "#166534" }}>{generatedCode}</span>
+              <button
+                onClick={() => { navigator.clipboard.writeText(generatedCode); toast.success("Code copied!"); }}
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
+                <Copy className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">This code can only be used once.</p>
+            <button
+              onClick={() => { setShowInviteModal(false); setGeneratedCode(null); }}
+              className="w-full rounded-xl py-3 text-sm font-semibold text-white"
+              style={{ background: "#166534" }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

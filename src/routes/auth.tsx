@@ -209,6 +209,7 @@ function AuthPage() {
           await (supabase as any).from("agent_landlord").insert({
             agent_id: userId,
             landlord_id: codeData.landlord_id,
+            property_id: codeData.property_id,
           } as any);
         }
       }
