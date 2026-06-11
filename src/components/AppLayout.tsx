@@ -87,6 +87,7 @@ export function AppLayout({ children, role, email, displayName }: {
 
   useEffect(() => {
     if (!userId) return;
+    console.log("Fetching notifications for userId:", userId);
     const fetchNotifs = async () => {
       const { data } = await (supabase as any)
         .from("notifications")
@@ -97,6 +98,9 @@ export function AppLayout({ children, role, email, displayName }: {
       if (data) setNotifications(data as Notification[]);
     };
     fetchNotifs();
+
+    // Refetch every 30 seconds as fallback
+    const interval = setInterval(fetchNotifs, 30000);
 
     const channel = supabase
       .channel("notifications-channel")
@@ -114,7 +118,10 @@ export function AppLayout({ children, role, email, displayName }: {
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { 
+      clearInterval(interval);
+      supabase.removeChannel(channel); 
+    };
   }, [userId]);
 
   useEffect(() => {
