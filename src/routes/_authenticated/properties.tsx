@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Building2, MapPin, Key, Copy, Users, TrendingUp, Pencil } from "lucide-react";
+import { Plus, X, Building2, MapPin, Users, TrendingUp, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useProperty } from "@/context/PropertyContext";
 import { formatKES } from "@/lib/format";
@@ -26,8 +26,6 @@ function PropertiesPage() {
   const { setSelectedProperty } = useProperty();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Property | null>(null);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isAgent, setIsAgent] = useState<boolean | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
 
@@ -127,19 +125,6 @@ function PropertiesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const generateInviteCode = async () => {
-    const { data: { user: u } } = await supabase.auth.getUser();
-    if (!u) return;
-    const code = "NYM-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-    const { error } = await (supabase as any).from("invite_codes").insert({
-      landlord_id: u.id,
-      code,
-    });
-    if (error) { toast.error("Failed to generate code"); return; }
-    setGeneratedCode(code);
-    setShowInviteModal(true);
-  };
-
   const openProperty = (property: Property) => {
     setSelectedProperty({ id: property.id, name: property.name, location: property.location });
     navigate({ to: "/dashboard" });
@@ -208,12 +193,6 @@ function PropertiesPage() {
             </div>
             {!isAgent && (
               <div className="flex gap-2">
-                <button
-                  onClick={generateInviteCode}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-                >
-                  <Key className="h-4 w-4" /> Invite Agent
-                </button>
                 <button
                   onClick={() => setAdding(true)}
                   className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
@@ -347,48 +326,7 @@ function PropertiesPage() {
           saving={editProperty.isPending}
         />
       )}
-      {showInviteModal && generatedCode && (
-        <InviteCodeModal
-          code={generatedCode}
-          onClose={() => { setShowInviteModal(false); setGeneratedCode(null); }}
-        />
-      )}
-    </div>
-  );
-}
-
-function InviteCodeModal({ code, onClose }: { code: string; onClose: () => void }) {
-  const copyCode = () => {
-    navigator.clipboard.writeText(code);
-    toast.success("Code copied!");
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-          <Key className="h-7 w-7" style={{ color: "#166534" }} />
-        </div>
-        <h2 className="font-display text-xl font-semibold mb-2">Agent Invite Code</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Share this code with your agent. They'll use it when creating their account.
-        </p>
-        <div className="flex items-center justify-between rounded-xl border-2 px-4 py-3 mb-4" style={{ borderColor: "#166534", background: "#F0FDF4" }}>
-          <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: "#166534" }}>{code}</span>
-          <button onClick={copyCode} className="text-muted-foreground hover:text-primary transition-colors">
-            <Copy className="h-5 w-5" />
-          </button>
-        </div>
-        <p className="text-xs text-muted-foreground mb-4">This code can only be used once.</p>
-        <button
-          onClick={onClose}
-          className="w-full rounded-xl py-3 text-sm font-semibold text-white transition-all"
-          style={{ background: "#166534" }}
-        >
-          Done
-        </button>
       </div>
-    </div>
   );
 }
 
