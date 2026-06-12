@@ -21,7 +21,9 @@ type Step =
   | "signin_email"
   | "signin_password"
   | "signin_pin"
-  | "reset_password";
+  | "reset_password"
+  | "new_pin_setup"
+  | "new_pin_confirm";
 
 function hashPin(pin: string): string {
   let hash = 0;
@@ -50,6 +52,12 @@ function AuthPage() {
   const [rememberedUserId, setRememberedUserId] = useState<string | null>(null);
   const [newResetPassword, setNewResetPassword] = useState("");
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [forgotPinFlow, setForgotPinFlow] = useState(false);
+  const [newPin, setNewPin] = useState("");
+  const [newPinConfirm, setNewPinConfirm] = useState("");
+  const [forgotPinFlow, setForgotPinFlow] = useState(false);
+  const [newPin, setNewPin] = useState("");
+  const [newPinConfirm, setNewPinConfirm] = useState("");
 
   useEffect(() => {
     const savedEmail = localStorage.getItem("nyumbatrack_email");
@@ -137,6 +145,13 @@ function AuthPage() {
       localStorage.setItem("nyumbatrack_user_id", userId);
       if (profile?.pin_hash) localStorage.setItem(`nyumbatrack_pin_${userId}`, profile.pin_hash);
       localStorage.removeItem("nyumbatrack_selected_property");
+      if (forgotPinFlow) {
+        setForgotPinFlow(false);
+        setNewPin("");
+        setNewPinConfirm("");
+        setStep("new_pin_setup");
+        return;
+      }
       toast.success("Welcome back!");
       navigate({ to: "/", replace: true });
     } catch (err) {
@@ -197,6 +212,14 @@ function AuthPage() {
     if (step === "signin_pin" && pin.length === 4) setTimeout(() => handlePinSignIn(pin), 300);
   }, [pin, step]);
 
+  useEffect(() => {
+    if (step === "new_pin_setup" && newPin.length === 4) setTimeout(() => setStep("new_pin_confirm"), 300);
+  }, [newPin, step]);
+
+  useEffect(() => {
+    if (step === "new_pin_confirm" && newPinConfirm.length === 4) setTimeout(() => handleSaveNewPin(), 300);
+  }, [newPinConfirm, step]);
+
   const back = () => {
     if (step === "role") setStep("welcome");
     else if (step === "name") setStep("role");
@@ -215,13 +238,51 @@ function AuthPage() {
     }
   };
 
-  const progress = { welcome: 0, role: 1, name: 2, email: 3, password: 4, invite_code: 4, pin_setup: 5, pin_confirm: 6, signin_email: 1, signin_password: 2, signin_pin: 1, reset_password: 1 }[step];
+  const progress = { welcome: 0, role: 1, name: 2, email: 3, password: 4, invite_code: 4, pin_setup: 5, pin_confirm: 6, signin_email: 1, signin_password: 2, signin_pin: 1, reset_password: 1, new_pin_setup: 1, new_pin_confirm: 2 }[step];
   const totalSteps = isSignIn ? 2 : 6;
 
   const startSignIn = () => {
     setIsSignIn(true);
     if (rememberedEmail && rememberedUserId) { setPin(""); setStep("signin_pin"); }
     else setStep("signin_email");
+  };
+
+  const handleNewPinInput = (digit: string, isConfirm = false) => {
+    if (isConfirm) {
+      if (newPinConfirm.length < 4) setNewPinConfirm((p) => p + digit);
+    } else {
+      if (newPin.length < 4) setNewPin((p) => p + digit);
+    }
+  };
+
+  const handleNewPinDelete = (isConfirm = false) => {
+    if (isConfirm) setNewPinConfirm((p) => p.slice(0, -1));
+    else setNewPin((p) => p.slice(0, -1));
+  };
+
+  const handleSaveNewPin = async () => {
+    if (newPin !== newPinConfirm) {
+      toast.error("PINs do not match");
+      setNewPin(""); setNewPinConfirm(""); setStep("new_pin_setup");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+      const pinHash = hashPin(newPin);
+      const { error } = await (supabase as any).from("profiles").update({ pin_hash: pinHash }).eq("id", user.id);
+      if (error) throw error;
+      localStorage.setItem("nyumbatrack_email", email);
+      localStorage.setItem("nyumbatrack_user_id", user.id);
+      localStorage.setItem(`nyumbatrack_pin_${user.id}`, pinHash);
+      toast.success("PIN updated! Welcome back.");
+      navigate({ to: "/", replace: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update PIN");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const forgotPassword = async () => {
@@ -365,6 +426,27 @@ function AuthPage() {
               <DesktopPinDots value={pin} />
               {loading ? <div className="mt-4 flex items-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Signing in...</span></div>
                 : <DesktopPinPad onPress={(d) => handlePinInput(d, false)} onDelete={() => handlePinDelete(false)} />}
+              <button
+                onClick={() => { setForgotPinFlow(true); setPin(""); setEmail(rememberedEmail ?? ""); setStep("signin_password"); }}
+                className="mt-6 text-sm"
+                style={{ color: "#9CA3AF" }}
+              >
+                Forgot PIN?
+              </button>
+            </div>
+          )}
+
+          {(step === "new_pin_setup" || step === "new_pin_confirm") && (
+            <div className="flex flex-col items-center">
+              <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>
+                {step === "new_pin_setup" ? "Set a new PIN" : "Confirm your new PIN"}
+              </h1>
+              <p className="text-sm mb-8 text-center" style={{ color: "#6B7280" }}>
+                {step === "new_pin_setup" ? "Choose a new 4-digit PIN for quick access." : "Enter it again to confirm."}
+              </p>
+              <DesktopPinDots value={step === "new_pin_setup" ? newPin : newPinConfirm} />
+              {loading ? <div className="mt-4 flex items-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Saving...</span></div>
+                : <DesktopPinPad onPress={(d) => handleNewPinInput(d, step === "new_pin_confirm")} onDelete={() => handleNewPinDelete(step === "new_pin_confirm")} />}
             </div>
           )}
 
@@ -561,6 +643,26 @@ function AuthPage() {
               <PinDots value={pin} />
               {loading ? <div className="mt-6 flex items-center gap-2 text-white/60"><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Signing in...</span></div>
                 : <PinPad onPress={(d) => handlePinInput(d, false)} onDelete={() => handlePinDelete(false)} />}
+              <button
+                onClick={() => { setForgotPinFlow(true); setPin(""); setEmail(rememberedEmail ?? ""); setStep("signin_password"); }}
+                className="mt-6 text-sm text-white/50"
+              >
+                Forgot PIN?
+              </button>
+            </div>
+          )}
+
+          {(step === "new_pin_setup" || step === "new_pin_confirm") && (
+            <div className="flex flex-col flex-1 items-center">
+              <h1 className="font-display text-2xl font-bold text-white mb-2 text-center">
+                {step === "new_pin_setup" ? "Set a new PIN" : "Confirm your new PIN"}
+              </h1>
+              <p className="text-white/60 text-sm mb-10 text-center">
+                {step === "new_pin_setup" ? "Choose a new 4-digit PIN for quick access." : "Enter it again to confirm."}
+              </p>
+              <PinDots value={step === "new_pin_setup" ? newPin : newPinConfirm} />
+              {loading ? <div className="mt-6 flex items-center gap-2 text-white/60"><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Saving...</span></div>
+                : <PinPad onPress={(d) => handleNewPinInput(d, step === "new_pin_confirm")} onDelete={() => handleNewPinDelete(step === "new_pin_confirm")} />}
             </div>
           )}
 
