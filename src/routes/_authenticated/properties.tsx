@@ -192,7 +192,7 @@ function PropertiesPage() {
                   {properties.length} {properties.length === 1 ? "property" : "properties"} managed
                 </p>
               </div>
-              <img src="/icon-512.png" alt="NyumbaTrack" className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl" />
+              <img src="/icon-512.png" alt="NyumbaTrack" className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl" style={{ background: "#0d2818" }} />
             </div>
             {!isAgent && (
               <div className="flex gap-2">
