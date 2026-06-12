@@ -50,14 +50,6 @@ function IndexPage() {
         return;
       }
 
-      const remembered = localStorage.getItem("nyumbatrack_remember");
-      const localPin = localStorage.getItem(`nyumbatrack_pin_${uid}`);
-
-      if (remembered && localPin) {
-        setLoading(false);
-        return;
-      }
-
       setLoading(false);
     });
   }, [navigate]);
@@ -89,6 +81,7 @@ function IndexPage() {
 
     const localPin = localStorage.getItem(`nyumbatrack_pin_${userId}`);
     if (localPin && localPin === enteredHash) {
+      localStorage.removeItem("nyumbatrack_selected_property");
       await redirectUser(userId);
       return;
     }
@@ -102,6 +95,7 @@ function IndexPage() {
     if (profile?.pin_hash === enteredHash || enteredPin === "0000") {
       localStorage.setItem(`nyumbatrack_pin_${userId}`, enteredHash);
       localStorage.setItem("nyumbatrack_remember", "true");
+      localStorage.removeItem("nyumbatrack_selected_property");
       await redirectUser(userId);
     } else {
       setError("Incorrect PIN. Please try again.");
