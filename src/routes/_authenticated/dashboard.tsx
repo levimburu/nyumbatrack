@@ -108,8 +108,12 @@ function Dashboard() {
 
   const totalTenants = tenants?.length ?? 0;
   const expected = tenants?.reduce((s, t) => s + Number(t.rent_amount), 0) ?? 0;
-  const outstanding = tenants?.reduce((s, t) => s + Number(t.balance), 0) ?? 0;
-  const collected = expected - outstanding;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const isTenantPaid = (t: any) => t.next_due_date && t.next_due_date > today;
+
+  const collected = tenants?.reduce((s, t) => s + (isTenantPaid(t) ? Number(t.rent_amount) : 0), 0) ?? 0;
+  const outstanding = tenants?.reduce((s, t) => s + (!isTenantPaid(t) ? Number(t.rent_amount) : 0), 0) ?? 0;
   const collectionRate = expected ? Math.round((collected / expected) * 100) : 0;
 
   const totalUnits = propertyData?.total_units && propertyData.total_units > 0 ? propertyData.total_units : totalTenants;
@@ -284,7 +288,7 @@ function Dashboard() {
               </thead>
               <tbody>
                 {tenants?.map((t) => {
-                  const status = Number(t.balance) === 0 ? "paid" : Number(t.balance) < Number(t.rent_amount) ? "partial" : "unpaid";
+                  const status = isTenantPaid(t) ? "paid" : "unpaid";
                   const initials = t.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
                   return (
                     <tr key={t.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
