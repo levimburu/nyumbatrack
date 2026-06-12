@@ -55,9 +55,6 @@ function AuthPage() {
   const [forgotPinFlow, setForgotPinFlow] = useState(false);
   const [newPin, setNewPin] = useState("");
   const [newPinConfirm, setNewPinConfirm] = useState("");
-  const [forgotPinFlow, setForgotPinFlow] = useState(false);
-  const [newPin, setNewPin] = useState("");
-  const [newPinConfirm, setNewPinConfirm] = useState("");
 
   useEffect(() => {
     const savedEmail = localStorage.getItem("nyumbatrack_email");
