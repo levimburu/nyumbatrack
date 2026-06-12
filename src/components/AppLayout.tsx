@@ -346,6 +346,26 @@ export function AppLayout({ children, role, email, displayName }: {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* Desktop top bar */}
+        <header className="hidden md:flex items-center justify-end border-b border-border bg-white px-6 py-3">
+          <button
+            onClick={() => setNotifOpen(true)}
+            className="relative grid h-9 w-9 place-items-center rounded-full hover:opacity-80 transition-opacity"
+            style={{ background: "#F59E0B" }}
+            aria-label="Notifications"
+          >
+            <Bell className="h-4 w-4 text-white" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white"
+                style={{ background: "#DC2626" }}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+        </header>
+
         <header className="flex items-center justify-between border-b border-border bg-white px-4 py-3 md:hidden">
           <button onClick={() => setMobileOpen(true)} aria-label="Open menu">
             <Menu className="h-5 w-5 text-foreground" />
