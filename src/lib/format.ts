@@ -15,3 +15,9 @@ export const formatDate = (d: string | Date | null | undefined) => {
     year: "numeric",
   });
 };
+export const formatKESCompact = (n: number | string | null | undefined) => {
+  const v = Number(n ?? 0);
+  if (v >= 1_000_000) return `Ksh ${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `Ksh ${(v / 1_000).toFixed(0)}K`;
+  return new Intl.NumberFormat("en-KE", { style: "currency", currency: "KES", maximumFractionDigits: 0 }).format(v);
+};
