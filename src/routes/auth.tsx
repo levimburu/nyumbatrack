@@ -68,6 +68,12 @@ function AuthPage() {
       setStep("reset_password");
       return;
     }
+    if (savedEmail && savedUserId && !(hash && hash.includes("type=recovery"))) {
+      // Remembered device — always require PIN, even if session is still valid
+      setStep("signin_pin");
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && !hash.includes("type=recovery")) navigate({ to: "/", replace: true });
     });
@@ -102,7 +108,11 @@ function AuthPage() {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) { navigate({ to: "/", replace: true }); return; }
+      if (session) {
+        localStorage.removeItem("nyumbatrack_selected_property");
+        navigate({ to: "/", replace: true });
+        return;
+      }
       const { data: refreshData } = await supabase.auth.refreshSession();
       if (refreshData?.session) { navigate({ to: "/", replace: true }); return; }
       toast.error("Session expired. Please sign in with your password.");
