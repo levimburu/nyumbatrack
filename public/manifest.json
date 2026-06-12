@@ -1,0 +1,25 @@
+{
+  "name": "NyumbaTrack",
+  "short_name": "NyumbaTrack",
+  "description": "Property management made simple — built for Kenyan landlords.",
+  "start_url": "/properties",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0d2818",
+  "theme_color": "#166534",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
