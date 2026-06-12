@@ -235,9 +235,6 @@ function PropertiesPage() {
                       {p.location}
                     </div>
                   )}
-                  {p.description && (
-                    <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{p.description}</p>
-                  )}
                   {stats.totalUnits > 0 && (
                     <>
                       <div className="grid grid-cols-3 gap-2 mt-3">
