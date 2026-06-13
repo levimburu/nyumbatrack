@@ -347,7 +347,7 @@ export function AppLayout({ children, role, email, displayName }: {
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <div className="hidden md:block">{Sidebar}</div>
+      <div className="hidden md:block md:sticky md:top-0 md:h-screen md:overflow-y-auto">{Sidebar}</div>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
