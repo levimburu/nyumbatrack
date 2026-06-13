@@ -114,14 +114,13 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("payments")
-        .select("amount, tenants(property_id)")
+        .select("amount, tenant_id, tenants(id, property_id)")
         .eq("payment_month", currentMonthLabel);
       if (error) throw error;
       const all = data as any[];
       return all.filter((p) => p.tenants?.property_id === selectedProperty!.id);
     },
   });
-
   const totalTenants = tenants?.length ?? 0;
   const expected = tenants?.reduce((s, t) => s + Number(t.rent_amount), 0) ?? 0;
 
