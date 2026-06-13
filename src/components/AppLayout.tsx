@@ -421,7 +421,7 @@ export function AppLayout({ children, role, email, displayName }: {
           )}
         </header>
 
-        <main className="flex-1 p-4 md:p-8 animate-fade-in">{children}</main>
+        <main className="flex-1 p-4 md:px-8 md:py-5 animate-fade-in">{children}</main>
       </div>
 
       {/* NOTIFICATIONS PANEL */}
