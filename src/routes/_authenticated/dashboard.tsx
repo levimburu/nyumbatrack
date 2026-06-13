@@ -129,7 +129,7 @@ function Dashboard() {
 
   const collected = allPaymentsThisMonth?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
   const outstanding = Math.max(0, expected - collected);
-  const collectionRate = expected ? Math.round((collected / expected) * 100) : 0;
+  const collectionRate = expected ? Math.min(100, Math.round((collected / expected) * 100)) : 0;
 
   const totalUnits = propertyData?.total_units && propertyData.total_units > 0 ? propertyData.total_units : totalTenants;
   const occupied = totalTenants;
