@@ -198,7 +198,7 @@ function PropertiesPage() {
     return (
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm md:hidden">
               <span className="font-semibold text-foreground">{getGreeting()}, {(fullName || "there").split(" ")[0]}</span>
               <span className="text-muted-foreground">· {getTodayDate()}</span>
             </div>
