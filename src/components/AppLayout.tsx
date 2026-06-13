@@ -125,7 +125,9 @@ export function AppLayout({ children, role, email, displayName }: {
           filter: `user_id=eq.${userId}`,
         },
         (payload: any) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
+          const n = payload.new as Notification;
+          setNotifications((prev) => [n, ...prev]);
+          toast(n.title, { description: n.message });
         }
       )
       .subscribe();
