@@ -348,7 +348,11 @@ export function AppLayout({ children, role, email, displayName }: {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Desktop top bar */}
-        <header className="hidden md:flex items-center justify-end border-b border-border bg-white px-6 py-3">
+        <header className="hidden md:flex items-center justify-between border-b border-border bg-white px-6 py-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">{getGreeting()}, {(displayName || "there").split(" ")[0]}</p>
+            <p className="text-xs text-muted-foreground">{getTodayDate()}</p>
+          </div>
           <button
             onClick={() => setNotifOpen(true)}
             className="relative grid h-9 w-9 place-items-center rounded-full hover:opacity-80 transition-opacity"
