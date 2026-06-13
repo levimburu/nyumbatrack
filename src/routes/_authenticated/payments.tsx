@@ -129,18 +129,20 @@ function PaymentsPage() {
       reference: string;
       note: string;
       payment_month: string;
+      full_payment: boolean;
     }) => {
       const tenant = tenants?.find((t) => t.id === p.tenant_id);
-      const paidDate = new Date(p.paid_on);
-      const nextDue = new Date(
-        paidDate.getFullYear(),
-        paidDate.getMonth() + 1,
-        tenant?.due_day ?? 1
-      );
-      const nextDueStr = nextDue.toISOString().slice(0, 10);
-      const { error } = await supabase.from("payments").insert({ ...p } as any);
+      const { full_payment, ...paymentData } = p;
+      const { error } = await supabase.from("payments").insert({ ...paymentData } as any);
       if (error) throw error;
-      if (tenant) {
+      if (tenant && full_payment) {
+        const paidDate = new Date(p.paid_on);
+        const nextDue = new Date(
+          paidDate.getFullYear(),
+          paidDate.getMonth() + 1,
+          tenant?.due_day ?? 1
+        );
+        const nextDueStr = nextDue.toISOString().slice(0, 10);
         await (supabase.from("tenants") as any).update({ next_due_date: nextDueStr }).eq("id", p.tenant_id);
       }
     },
@@ -533,7 +535,7 @@ function PaymentForm({
   tenants, onSave, onClose, saving, monthOptions,
 }: {
   tenants: { id: string; full_name: string; unit: string; rent_amount: number; due_day: number }[];
-  onSave: (p: { tenant_id: string; amount: number; paid_on: string; method: string; reference: string; note: string; payment_month: string }) => void;
+  onSave: (p: { tenant_id: string; amount: number; paid_on: string; method: string; reference: string; note: string; payment_month: string; full_payment: boolean }) => void;
   onClose: () => void;
   saving: boolean;
   monthOptions: string[];
@@ -545,6 +547,7 @@ function PaymentForm({
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [paymentMonth, setPaymentMonth] = useState(monthOptions[2] ?? "");
+  const [fullPayment, setFullPayment] = useState(true);
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
@@ -554,7 +557,7 @@ function PaymentForm({
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
         <form
-          onSubmit={(e) => { e.preventDefault(); onSave({ tenant_id: tenantId, amount: Number(amount), paid_on: paidOn, method, reference, note, payment_month: paymentMonth }); }}
+          onSubmit={(e) => { e.preventDefault(); onSave({ tenant_id: tenantId, amount: Number(amount), paid_on: paidOn, method, reference, note, payment_month: paymentMonth, full_payment: fullPayment }); }}
           className="space-y-4"
         >
           <div>
@@ -589,6 +592,13 @@ function PaymentForm({
             <label className="mb-1.5 block text-xs font-medium text-foreground">Date Paid</label>
             <input required type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} className="form-input" />
           </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={fullPayment} onChange={(e) => setFullPayment(e.target.checked)} className="h-4 w-4 rounded" style={{ accentColor: "#166534" }} />
+            <span className="text-sm text-foreground">Full payment for {paymentMonth || "this month"}</span>
+          </label>
+          {!fullPayment && (
+            <p className="text-xs text-muted-foreground -mt-2">Partial payment — tenant will remain marked as unpaid/behind for this month.</p>
+          )}
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
             <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary" style={{ background: "#166534" }}>
