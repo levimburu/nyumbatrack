@@ -106,14 +106,30 @@ function Dashboard() {
     },
   });
 
+  const currentMonthLabel = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  const { data: allPaymentsThisMonth } = useQuery({
+    queryKey: ["payments-this-month", selectedProperty?.id, currentMonthLabel],
+    enabled: !!selectedProperty,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("payments")
+        .select("amount, tenants(property_id)")
+        .eq("payment_month", currentMonthLabel);
+      if (error) throw error;
+      const all = data as any[];
+      return all.filter((p) => p.tenants?.property_id === selectedProperty!.id);
+    },
+  });
+
   const totalTenants = tenants?.length ?? 0;
   const expected = tenants?.reduce((s, t) => s + Number(t.rent_amount), 0) ?? 0;
 
   const today = new Date().toISOString().slice(0, 10);
   const isTenantPaid = (t: any) => t.next_due_date && t.next_due_date > today;
 
-  const collected = tenants?.reduce((s, t) => s + (isTenantPaid(t) ? Number(t.rent_amount) : 0), 0) ?? 0;
-  const outstanding = tenants?.reduce((s, t) => s + (!isTenantPaid(t) ? Number(t.rent_amount) : 0), 0) ?? 0;
+  const collected = allPaymentsThisMonth?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
+  const outstanding = Math.max(0, expected - collected);
   const collectionRate = expected ? Math.round((collected / expected) * 100) : 0;
 
   const totalUnits = propertyData?.total_units && propertyData.total_units > 0 ? propertyData.total_units : totalTenants;
