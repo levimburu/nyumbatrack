@@ -74,7 +74,25 @@ function TenantsPage() {
     if (error) { toast.error("Failed to generate code"); return; }
     setTenantCode({ code, name: tenantName });
   };
-
+const { data: vacantUnits } = useQuery({
+    queryKey: ["vacant-units", selectedProperty?.id],
+    enabled: !!selectedProperty,
+    queryFn: async () => {
+      const { data: units, error: unitsError } = await (supabase as any)
+        .from("units")
+        .select("id, unit_name, rent_price")
+        .eq("property_id", selectedProperty!.id)
+        .order("unit_name");
+      if (unitsError) throw unitsError;
+      const { data: tenantsData, error: tenantsError } = await (supabase as any)
+        .from("tenants")
+        .select("unit")
+        .eq("property_id", selectedProperty!.id);
+      if (tenantsError) throw tenantsError;
+      const occupied = new Set((tenantsData ?? []).map((t: any) => t.unit));
+      return (units ?? []).filter((u: any) => !occupied.has(u.unit_name));
+    },
+  });
   const { data } = useQuery({
     queryKey: ["tenants", selectedProperty?.id],
     enabled: !!selectedProperty,
@@ -363,6 +381,7 @@ function TenantsPage() {
           onSave={(t) => upsert.mutate(t)}
           onClose={() => setEditing(null)}
           saving={upsert.isPending}
+          vacantUnits={vacantUnits ?? []}
         />
       )}
 
@@ -568,14 +587,16 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
   );
 }
 
-function TenantForm({ initial, onSave, onClose, saving }: {
+function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
   initial: Partial<Tenant>;
   onSave: (t: Partial<Tenant>) => void;
   onClose: () => void;
   saving: boolean;
+  vacantUnits: { id: string; unit_name: string; rent_price: number }[];
 }) {
   const [form, setForm] = useState<Partial<Tenant>>(initial);
   const set = <K extends keyof Tenant>(k: K, v: Tenant[K]) => setForm((p) => ({ ...p, [k]: v }));
+  const [useDropdown, setUseDropdown] = useState(!initial.id && vacantUnits.length > 0);
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
@@ -595,7 +616,37 @@ function TenantForm({ initial, onSave, onClose, saving }: {
             <input value={form.phone ?? ""} onChange={(e) => set("phone", e.target.value)} className="form-input" placeholder="+254…" />
           </FormField>
           <FormField label="Unit">
-            <input required value={form.unit ?? ""} onChange={(e) => set("unit", e.target.value)} className="form-input" />
+            {!initial.id && vacantUnits.length > 0 && useDropdown ? (
+              <div className="space-y-1">
+                <select
+                  required
+                  value={form.unit ?? ""}
+                  onChange={(e) => {
+                    const u = vacantUnits.find((x) => x.unit_name === e.target.value);
+                    set("unit", e.target.value);
+                    if (u) set("rent_amount", Number(u.rent_price));
+                  }}
+                  className="form-input"
+                >
+                  <option value="">Select vacant unit…</option>
+                  {vacantUnits.map((u) => (
+                    <option key={u.id} value={u.unit_name}>{u.unit_name} — {formatKES(u.rent_price)}/mo</option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => { setUseDropdown(false); set("unit", ""); }} className="text-xs" style={{ color: "#166534" }}>
+                  Enter unit manually instead
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <input required value={form.unit ?? ""} onChange={(e) => set("unit", e.target.value)} className="form-input" />
+                {!initial.id && vacantUnits.length > 0 && (
+                  <button type="button" onClick={() => setUseDropdown(true)} className="text-xs" style={{ color: "#166534" }}>
+                    Choose from vacant units instead
+                  </button>
+                )}
+              </div>
+            )}
           </FormField>
           <FormField label="Due day (1-31)">
             <input type="number" min={1} max={31} value={form.due_day ?? 1} onChange={(e) => set("due_day", Math.min(31, Math.max(1, Number(e.target.value))))} className="form-input" />
