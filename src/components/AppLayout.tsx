@@ -353,7 +353,7 @@ export function AppLayout({ children, role, email, displayName }: {
         .sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
         .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
       `}</style>
-      <div className="hidden md:flex md:sticky md:top-0 md:self-start md:max-h-screen overflow-y-auto sidebar-scroll">{Sidebar}</div>
+      <div className="hidden md:block md:fixed md:top-0 md:left-0 md:h-screen md:w-64 overflow-y-auto sidebar-scroll z-30">{Sidebar}</div>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
@@ -365,7 +365,7 @@ export function AppLayout({ children, role, email, displayName }: {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col md:ml-64">
         {/* Desktop top bar */}
         <header className="hidden md:flex items-center justify-between border-b border-border bg-white px-6 py-3">
           <div>
