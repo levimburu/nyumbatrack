@@ -7,6 +7,17 @@ import { toast } from "sonner";
 import { useProperty } from "@/context/PropertyContext";
 import { formatKES, formatKESCompact } from "@/lib/format";
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function getTodayDate(): string {
+  return new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
 export const Route = createFileRoute("/_authenticated/properties" as any)({
   component: PropertiesPage,
 });
@@ -28,16 +39,18 @@ function PropertiesPage() {
   const [editing, setEditing] = useState<Property | null>(null);
   const [isAgent, setIsAgent] = useState<boolean | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [fullName, setFullName] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       const { data } = await (supabase as any)
         .from("profiles")
-        .select("role")
+        .select("role, full_name")
         .eq("id", user.id)
         .maybeSingle();
       setIsAgent(data?.role === "agent");
+      setFullName(data?.full_name ?? "");
       setProfileLoaded(true);
     });
   }, []);
@@ -185,6 +198,10 @@ function PropertiesPage() {
     return (
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">{getGreeting()}, {(fullName || "there").split(" ")[0]}</p>
+              <p className="text-xs text-muted-foreground">{getTodayDate()}</p>
+            </div>
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="font-display text-2xl font-bold text-foreground">My Properties</h1>
