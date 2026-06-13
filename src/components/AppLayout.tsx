@@ -37,6 +37,17 @@ interface Agent {
   profiles: { full_name: string } | null;
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function getTodayDate(): string {
+  return new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
 function hashPin(pin: string): string {
   let hash = 0;
   for (let i = 0; i < pin.length; i++) {
