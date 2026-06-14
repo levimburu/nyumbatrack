@@ -299,7 +299,7 @@ function Dashboard() {
             </span>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="border-b border-border" style={{ background: "#F9FAFB" }}>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Tenant</th>
