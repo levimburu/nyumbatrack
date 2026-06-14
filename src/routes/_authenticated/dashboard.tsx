@@ -298,8 +298,8 @@ function Dashboard() {
               {collectionRate}% collected
             </span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[500px]">
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <table style={{ width: "100%", minWidth: "600px", fontSize: "0.875rem", borderCollapse: "collapse" }}>
               <thead>
                 <tr className="border-b border-border" style={{ background: "#F9FAFB" }}>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Tenant</th>
