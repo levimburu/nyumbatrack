@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
-import { Plus, X, Download, Eye, Search, Receipt, Trash2 } from "lucide-react";
+import { Plus, X, Download, Search, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { downloadReceipt, getReceiptDataUrl, type ReceiptData } from "@/lib/receipt";
 import { useProperty } from "@/context/PropertyContext";
@@ -71,6 +71,8 @@ function isWithin96Hours(createdAt: string): boolean {
   return diffHours <= 96;
 }
 
+type PaymentType = "full" | "partial" | "topup";
+
 function PaymentsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -104,7 +106,7 @@ function PaymentsPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("tenants")
-        .select("id, full_name, unit, rent_amount, due_day")
+        .select("id, full_name, unit, rent_amount, due_day, next_due_date")
         .eq("property_id", selectedProperty!.id)
         .order("unit");
       if (error) throw error;
@@ -129,27 +131,49 @@ function PaymentsPage() {
       reference: string;
       note: string;
       payment_month: string;
-      full_payment: boolean;
+      payment_type: PaymentType;
     }) => {
       const tenant = tenants?.find((t) => t.id === p.tenant_id);
-      const { full_payment, ...paymentData } = p;
+      const { payment_type, ...paymentData } = p;
+
+      // Insert the payment row
       const { error } = await supabase.from("payments").insert({ ...paymentData } as any);
       if (error) throw error;
-      if (tenant && full_payment) {
+
+      if (!tenant) return;
+
+      if (payment_type === "full") {
+        // Full payment — advance next_due_date by 1 month
         const paidDate = new Date(p.paid_on);
-        const nextDue = new Date(
-          paidDate.getFullYear(),
-          paidDate.getMonth() + 1,
-          tenant?.due_day ?? 1
-        );
-        const nextDueStr = nextDue.toISOString().slice(0, 10);
-        await (supabase.from("tenants") as any).update({ next_due_date: nextDueStr }).eq("id", p.tenant_id);
+        const nextDue = new Date(paidDate.getFullYear(), paidDate.getMonth() + 1, tenant.due_day ?? 1);
+        await (supabase.from("tenants") as any).update({ next_due_date: nextDue.toISOString().slice(0, 10) }).eq("id", p.tenant_id);
+
+      } else if (payment_type === "topup") {
+        // Top-up — check if total paid this month now equals full rent
+        const { data: monthPayments } = await (supabase as any)
+          .from("payments")
+          .select("amount")
+          .eq("tenant_id", p.tenant_id)
+          .eq("payment_month", p.payment_month);
+
+        const totalPaid = (monthPayments ?? []).reduce((s: number, row: any) => s + Number(row.amount), 0);
+
+        if (totalPaid >= Number(tenant.rent_amount)) {
+          // Fully paid after top-up — advance next_due_date
+          const paidDate = new Date(p.paid_on);
+          const nextDue = new Date(paidDate.getFullYear(), paidDate.getMonth() + 1, tenant.due_day ?? 1);
+          await (supabase.from("tenants") as any).update({ next_due_date: nextDue.toISOString().slice(0, 10) }).eq("id", p.tenant_id);
+        }
+        // else still partial — don't advance
       }
+      // partial: do nothing to next_due_date
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payments", selectedProperty?.id] });
       qc.invalidateQueries({ queryKey: ["tenants", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["tenants-min", selectedProperty?.id] });
       qc.invalidateQueries({ queryKey: ["payments-recent", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["payments-this-month", selectedProperty?.id] });
       setAdding(false);
       toast.success("Payment recorded");
     },
@@ -237,10 +261,7 @@ function PaymentsPage() {
                   <td className="px-5 py-3 text-muted-foreground">{formatDate(p.paid_on)}</td>
                   <td className="py-3">
                     <div className="flex items-center gap-2">
-                      <div
-                        className="grid h-7 w-7 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0"
-                        style={{ background: "#166534" }}
-                      >
+                      <div className="grid h-7 w-7 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0" style={{ background: "#166534" }}>
                         {initials}
                       </div>
                       <span className="font-medium">{p.tenants?.full_name ?? "—"}</span>
@@ -254,9 +275,7 @@ function PaymentsPage() {
                   </td>
                   <td className="py-3"><MethodBadge method={p.method} /></td>
                   <td className="py-3 text-muted-foreground font-mono text-xs">{p.reference ?? "—"}</td>
-                  <td className="py-3 font-display font-bold" style={{ color: "#16A34A" }}>
-                    {formatKES(p.amount)}
-                  </td>
+                  <td className="py-3 font-display font-bold" style={{ color: "#16A34A" }}>{formatKES(p.amount)}</td>
                   <td className="py-3 pr-5 text-right">
                     <div className="inline-flex gap-1">
                       <button
@@ -309,10 +328,7 @@ function PaymentsPage() {
             <div key={p.id} className="card-surface p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <div
-                    className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0"
-                    style={{ background: "#166534" }}
-                  >
+                  <div className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0" style={{ background: "#166534" }}>
                     {initials}
                   </div>
                   <div>
@@ -355,6 +371,7 @@ function PaymentsPage() {
       {adding && (
         <PaymentForm
           tenants={tenants ?? []}
+          payments={payments ?? []}
           onSave={(p) => add.mutate(p)}
           onClose={() => setAdding(false)}
           saving={add.isPending}
@@ -402,21 +419,11 @@ function CancelPaymentModal({ payment, onConfirm, onClose, cancelling }: {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
-
         const enteredHash = hashPin(newPin);
         const localPin = localStorage.getItem(`nyumbatrack_pin_${user.id}`);
-
-        if (localPin && localPin === enteredHash) {
-          onConfirm();
-          return;
-        }
-
+        if (localPin && localPin === enteredHash) { onConfirm(); return; }
         const { data: profile } = await (supabase as any)
-          .from("profiles")
-          .select("pin_hash")
-          .eq("id", user.id)
-          .maybeSingle();
-
+          .from("profiles").select("pin_hash").eq("id", user.id).maybeSingle();
         if (profile?.pin_hash === enteredHash) {
           onConfirm();
         } else {
@@ -442,59 +449,30 @@ function CancelPaymentModal({ payment, onConfirm, onClose, cancelling }: {
         </div>
         <h2 className="font-display text-xl font-semibold mb-1">Cancel Payment</h2>
         <p className="text-sm text-muted-foreground mb-2">
-          You are cancelling a payment of <span className="font-bold text-foreground">{formatKES(payment.amount)}</span> for <span className="font-bold text-foreground">{payment.tenants?.full_name}</span>.
+          Cancelling <span className="font-bold text-foreground">{formatKES(payment.amount)}</span> for <span className="font-bold text-foreground">{payment.tenants?.full_name}</span>.
         </p>
-        <p className="text-xs text-muted-foreground mb-6">Enter your PIN to confirm cancellation.</p>
-
-        {/* PIN dots */}
+        <p className="text-xs text-muted-foreground mb-6">Enter your PIN to confirm.</p>
         <div className="flex justify-center gap-4 mb-4">
           {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-4 w-4 rounded-full border-2 transition-all duration-200"
-              style={{
-                background: i < pin.length ? "#DC2626" : "transparent",
-                borderColor: i < pin.length ? "#DC2626" : "#D1D5DB",
-              }}
-            />
+            <div key={i} className="h-4 w-4 rounded-full border-2 transition-all duration-200"
+              style={{ background: i < pin.length ? "#DC2626" : "transparent", borderColor: i < pin.length ? "#DC2626" : "#D1D5DB" }} />
           ))}
         </div>
-
         {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
         {verifying && <p className="text-muted-foreground text-sm mb-3">Verifying...</p>}
-
-        {/* PIN pad */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           {keys.map((k, i) => (
-            k === "" ? (
-              <div key={i} />
-            ) : k === "⌫" ? (
-              <button
-                key={i}
-                onClick={() => setPin((p) => p.slice(0, -1))}
-                className="h-12 rounded-xl border border-border text-foreground text-lg font-bold flex items-center justify-center hover:bg-muted transition-colors"
-              >
-                ⌫
-              </button>
+            k === "" ? <div key={i} /> :
+            k === "⌫" ? (
+              <button key={i} onClick={() => setPin((p) => p.slice(0, -1))}
+                className="h-12 rounded-xl border border-border text-foreground text-lg font-bold flex items-center justify-center hover:bg-muted transition-colors">⌫</button>
             ) : (
-              <button
-                key={i}
-                onClick={() => handlePinInput(k)}
-                disabled={verifying || cancelling}
-                className="h-12 rounded-xl border border-border text-foreground text-lg font-bold flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50"
-              >
-                {k}
-              </button>
+              <button key={i} onClick={() => handlePinInput(k)} disabled={verifying || cancelling}
+                className="h-12 rounded-xl border border-border text-foreground text-lg font-bold flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50">{k}</button>
             )
           ))}
         </div>
-
-        <button
-          onClick={onClose}
-          className="w-full rounded-xl border border-border py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-        >
-          Go back
-        </button>
+        <button onClick={onClose} className="w-full rounded-xl border border-border py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">Go back</button>
       </div>
     </div>
   );
@@ -508,17 +486,12 @@ function ReceiptPreview({ data, onClose }: { data: ReceiptData; onClose: () => v
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display text-lg font-semibold text-white">Receipt Preview</h2>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => downloadReceipt(data)}
+            <button onClick={() => downloadReceipt(data)}
               className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors"
-              style={{ background: "#166534" }}
-            >
+              style={{ background: "#166534" }}>
               <Download className="h-4 w-4" /> Download PDF
             </button>
-            <button
-              onClick={onClose}
-              className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors"
-            >
+            <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -532,44 +505,179 @@ function ReceiptPreview({ data, onClose }: { data: ReceiptData; onClose: () => v
 }
 
 function PaymentForm({
-  tenants, onSave, onClose, saving, monthOptions,
+  tenants, payments, onSave, onClose, saving, monthOptions,
 }: {
-  tenants: { id: string; full_name: string; unit: string; rent_amount: number; due_day: number }[];
-  onSave: (p: { tenant_id: string; amount: number; paid_on: string; method: string; reference: string; note: string; payment_month: string; full_payment: boolean }) => void;
+  tenants: { id: string; full_name: string; unit: string; rent_amount: number; due_day: number; next_due_date: string | null }[];
+  payments: PaymentRow[];
+  onSave: (p: { tenant_id: string; amount: number; paid_on: string; method: string; reference: string; note: string; payment_month: string; payment_type: PaymentType }) => void;
   onClose: () => void;
   saving: boolean;
   monthOptions: string[];
 }) {
+  const currentMonth = monthOptions[2] ?? "";
+  const [paymentType, setPaymentType] = useState<PaymentType>("full");
   const [tenantId, setTenantId] = useState(tenants[0]?.id ?? "");
   const [amount, setAmount] = useState<number>(tenants[0]?.rent_amount ?? 0);
   const [paidOn, setPaidOn] = useState(new Date().toISOString().slice(0, 10));
   const [method, setMethod] = useState("mpesa");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
-  const [paymentMonth, setPaymentMonth] = useState(monthOptions[2] ?? "");
-  const [fullPayment, setFullPayment] = useState(true);
+  const [paymentMonth, setPaymentMonth] = useState(currentMonth);
+
+  // Compute partial tenants: tenants who have payments for selected month but total < rent_amount
+  const partialTenants = tenants.filter((t) => {
+    const paid = payments
+      .filter((p) => p.tenant_id === t.id && p.payment_month === paymentMonth)
+      .reduce((s, p) => s + Number(p.amount), 0);
+    return paid > 0 && paid < Number(t.rent_amount);
+  }).map((t) => {
+    const paid = payments
+      .filter((p) => p.tenant_id === t.id && p.payment_month === paymentMonth)
+      .reduce((s, p) => s + Number(p.amount), 0);
+    return { ...t, alreadyPaid: paid, remaining: Number(t.rent_amount) - paid };
+  });
+
+  // When switching tabs, reset tenant selection and amount
+  const handleTypeChange = (type: PaymentType) => {
+    setPaymentType(type);
+    if (type === "topup") {
+      if (partialTenants.length > 0) {
+        setTenantId(partialTenants[0].id);
+        setAmount(partialTenants[0].remaining);
+      }
+    } else {
+      setTenantId(tenants[0]?.id ?? "");
+      setAmount(tenants[0]?.rent_amount ?? 0);
+    }
+  };
+
+  const handleTenantChange = (id: string) => {
+    setTenantId(id);
+    if (paymentType === "topup") {
+      const pt = partialTenants.find((t) => t.id === id);
+      if (pt) setAmount(pt.remaining);
+    } else {
+      const t = tenants.find((x) => x.id === id);
+      if (t) setAmount(Number(t.rent_amount));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (paymentType === "topup" && partialTenants.length === 0) {
+      toast.error("No tenants with partial payments for this month.");
+      return;
+    }
+    onSave({ tenant_id: tenantId, amount: Number(amount), paid_on: paidOn, method, reference, note, payment_month: paymentMonth, payment_type: paymentType });
+  };
+
+  const tabStyle = (active: boolean) => ({
+    flex: 1,
+    padding: "8px 0",
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    borderRadius: "10px",
+    border: "none",
+    cursor: "pointer",
+    background: active ? "#166534" : "transparent",
+    color: active ? "#fff" : "#6B7280",
+    transition: "all 0.15s",
+  });
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="card-surface w-full max-w-lg p-6 animate-slide-up">
+      <div className="card-surface w-full max-w-lg p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold">Record Payment</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
-        <form
-          onSubmit={(e) => { e.preventDefault(); onSave({ tenant_id: tenantId, amount: Number(amount), paid_on: paidOn, method, reference, note, payment_month: paymentMonth, full_payment: fullPayment }); }}
-          className="space-y-4"
-        >
+
+        {/* Payment type tabs */}
+        <div className="flex gap-1 rounded-xl p-1 mb-5" style={{ background: "#F5F5F0" }}>
+          <button type="button" style={tabStyle(paymentType === "full")} onClick={() => handleTypeChange("full")}>Full Payment</button>
+          <button type="button" style={tabStyle(paymentType === "partial")} onClick={() => handleTypeChange("partial")}>Partial</button>
+          <button type="button" style={tabStyle(paymentType === "topup")} onClick={() => handleTypeChange("topup")}>Top-up</button>
+        </div>
+
+        {/* Helper text per tab */}
+        {paymentType === "full" && (
+          <p className="text-xs text-muted-foreground mb-4 -mt-2">Tenant has paid rent in full. Their status will update to Paid.</p>
+        )}
+        {paymentType === "partial" && (
+          <p className="text-xs text-muted-foreground mb-4 -mt-2">Tenant is paying part of their rent. They will remain marked as Partial until fully paid.</p>
+        )}
+        {paymentType === "topup" && (
+          <p className="text-xs text-muted-foreground mb-4 -mt-2">Adding to a previous partial payment. If the total reaches full rent, tenant is marked as Paid.</p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* Month selector (shown for all types, affects partial list) */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">Tenant</label>
-            <select required value={tenantId} onChange={(e) => { const id = e.target.value; setTenantId(id); const t = tenants.find((x) => x.id === id); if (t) setAmount(Number(t.rent_amount)); }} className="form-input">
-              {tenants.map((t) => <option key={t.id} value={t.id}>{t.full_name} – Unit {t.unit}</option>)}
+            <label className="mb-1.5 block text-xs font-medium text-foreground">Month</label>
+            <select required value={paymentMonth} onChange={(e) => { setPaymentMonth(e.target.value); }} className="form-input">
+              {monthOptions.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
+
+          {/* Tenant selector */}
+          {paymentType === "topup" ? (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-foreground">Tenant with partial payment</label>
+              {partialTenants.length === 0 ? (
+                <div className="rounded-xl border border-border p-4 text-sm text-muted-foreground text-center">
+                  No tenants with partial payments for {paymentMonth}.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {partialTenants.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => handleTenantChange(t.id)}
+                      className="w-full rounded-xl border-2 p-3 text-left transition-all"
+                      style={{
+                        borderColor: tenantId === t.id ? "#166534" : "#E5E7EB",
+                        background: tenantId === t.id ? "#F0FDF4" : "#fff",
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold text-sm text-foreground">{t.full_name}</div>
+                          <div className="text-xs text-muted-foreground">Unit {t.unit}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-muted-foreground">Paid: <span className="font-semibold text-foreground">{formatKES(t.alreadyPaid)}</span></div>
+                          <div className="text-xs" style={{ color: "#DC2626" }}>Remaining: <span className="font-semibold">{formatKES(t.remaining)}</span></div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-foreground">Tenant</label>
+              <select required value={tenantId} onChange={(e) => handleTenantChange(e.target.value)} className="form-input">
+                {tenants.map((t) => <option key={t.id} value={t.id}>{t.full_name} – Unit {t.unit}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Amount */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">Amount (KSh)</label>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">
+              Amount (KSh)
+              {paymentType === "topup" && tenantId && (() => {
+                const pt = partialTenants.find((t) => t.id === tenantId);
+                return pt ? <span className="ml-1 text-muted-foreground font-normal">(Remaining: {formatKES(pt.remaining)})</span> : null;
+              })()}
+            </label>
             <input required type="number" min={1} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className="form-input" />
           </div>
+
+          {/* Method */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Payment Method</label>
             <select value={method} onChange={(e) => setMethod(e.target.value)} className="form-input">
@@ -578,30 +686,27 @@ function PaymentForm({
               <option value="bank">Bank Transfer</option>
             </select>
           </div>
+
+          {/* Reference */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Reference / Transaction Code</label>
             <input value={reference} onChange={(e) => setReference(e.target.value)} className="form-input" placeholder="e.g. QCA5H3K8JL" />
           </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">Month Paid</label>
-            <select required value={paymentMonth} onChange={(e) => setPaymentMonth(e.target.value)} className="form-input">
-              {monthOptions.map((m) => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
+
+          {/* Date */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Date Paid</label>
             <input required type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} className="form-input" />
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={fullPayment} onChange={(e) => setFullPayment(e.target.checked)} className="h-4 w-4 rounded" style={{ accentColor: "#166534" }} />
-            <span className="text-sm text-foreground">Full payment for {paymentMonth || "this month"}</span>
-          </label>
-          {!fullPayment && (
-            <p className="text-xs text-muted-foreground -mt-2">Partial payment — tenant will remain marked as unpaid/behind for this month.</p>
-          )}
+
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary" style={{ background: "#166534" }}>
+            <button
+              type="submit"
+              disabled={saving || (paymentType === "topup" && partialTenants.length === 0)}
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary"
+              style={{ background: "#166634" }}
+            >
               {saving ? "Saving…" : "Record Payment"}
             </button>
           </div>
