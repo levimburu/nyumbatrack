@@ -127,6 +127,13 @@ function Dashboard() {
   const today = new Date().toISOString().slice(0, 10);
   const isTenantPaid = (t: any) => t.next_due_date && t.next_due_date > today;
 
+  const getMonthsBehind = (t: any): number => {
+    if (!t.next_due_date || isTenantPaid(t)) return 0;
+    const due = new Date(t.next_due_date);
+    const now = new Date();
+    return Math.max(1, (now.getFullYear() - due.getFullYear()) * 12 + (now.getMonth() - due.getMonth()));
+  };
+
   const collected = allPaymentsThisMonth?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
   const outstanding = Math.max(0, expected - collected);
   const collectionRate = expected ? Math.min(100, Math.round((collected / expected) * 100)) : 0;
@@ -299,11 +306,13 @@ function Dashboard() {
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Unit</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Rent</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Arrears</th>
                 </tr>
               </thead>
               <tbody>
                 {tenants?.map((t) => {
-                  const status = isTenantPaid(t) ? "paid" : "unpaid";
+                  const status = isTenantPaid(t) ? "paid" : t.next_due_date ? "partial" : "unpaid";
+                  const monthsBehind = getMonthsBehind(t);
                   const initials = t.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
                   return (
                     <tr key={t.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
@@ -321,6 +330,15 @@ function Dashboard() {
                       <td className="py-3 text-muted-foreground">{t.unit}</td>
                       <td className="py-3 font-medium">{formatKES(t.rent_amount)}</td>
                       <td className="py-3"><StatusPill status={status} /></td>
+                      <td className="py-3">
+                        {monthsBehind > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#FEE2E2", color: "#991B1B" }}>
+                            {monthsBehind} {monthsBehind === 1 ? "month" : "months"} behind
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
