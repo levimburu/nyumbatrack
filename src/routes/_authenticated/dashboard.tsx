@@ -291,14 +291,14 @@ function Dashboard() {
       {/* Content grid */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Tenant overview */}
-        <div className="card-surface lg:col-span-2">
+        <div className="card-surface lg:col-span-2 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h2 className="font-display text-base font-semibold">Tenant Overview</h2>
             <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: "#DCFCE7", color: "#166534" }}>
               {collectionRate}% collected
             </span>
           </div>
-          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <div style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", minWidth: "600px", fontSize: "0.875rem", borderCollapse: "collapse" }}>
               <thead>
                 <tr className="border-b border-border" style={{ background: "#F9FAFB" }}>
