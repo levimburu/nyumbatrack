@@ -142,31 +142,35 @@ function PaymentsPage() {
 
       if (!tenant) return;
 
-      if (payment_type === "full") {
-        // Full payment — advance next_due_date by 1 month
-        const paidDate = new Date(p.paid_on);
-        const nextDue = new Date(paidDate.getFullYear(), paidDate.getMonth() + 1, tenant.due_day ?? 1);
-        await (supabase.from("tenants") as any).update({ next_due_date: nextDue.toISOString().slice(0, 10) }).eq("id", p.tenant_id);
+      // Parse payment_month (e.g. "June 2026") to compute next due date
+      // next_due_date = 1st day of the month AFTER the payment month + due_day offset
+      const advanceNextDueDate = async () => {
+        const parts = p.payment_month?.split(" ");
+        if (!parts || parts.length < 2) return;
+        const monthIndex = MONTHS.indexOf(parts[0]);
+        const year = parseInt(parts[1]);
+        if (monthIndex === -1 || isNaN(year)) return;
+        const nextDue = new Date(year, monthIndex + 1, tenant.due_day ?? 1);
+        await (supabase.from("tenants") as any)
+          .update({ next_due_date: nextDue.toISOString().slice(0, 10) })
+          .eq("id", p.tenant_id);
+      };
 
+      if (payment_type === "full") {
+        await advanceNextDueDate();
       } else if (payment_type === "topup") {
-        // Top-up — check if total paid this month now equals full rent
+        // Check if total paid this month now equals full rent
         const { data: monthPayments } = await (supabase as any)
           .from("payments")
           .select("amount")
           .eq("tenant_id", p.tenant_id)
           .eq("payment_month", p.payment_month);
-
         const totalPaid = (monthPayments ?? []).reduce((s: number, row: any) => s + Number(row.amount), 0);
-
         if (totalPaid >= Number(tenant.rent_amount)) {
-          // Fully paid after top-up — advance next_due_date
-          const paidDate = new Date(p.paid_on);
-          const nextDue = new Date(paidDate.getFullYear(), paidDate.getMonth() + 1, tenant.due_day ?? 1);
-          await (supabase.from("tenants") as any).update({ next_due_date: nextDue.toISOString().slice(0, 10) }).eq("id", p.tenant_id);
+          await advanceNextDueDate();
         }
-        // else still partial — don't advance
       }
-      // partial: do nothing to next_due_date
+      // partial: do not advance next_due_date
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payments", selectedProperty?.id] });
@@ -210,7 +214,7 @@ function PaymentsPage() {
         <button
           onClick={() => setAdding(true)}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white glow-primary"
-          style={{ background: "#166534" }}
+          style={{ background: "#166634" }}
         >
           <Plus className="h-4 w-4" /> Record Payment
         </button>
@@ -524,7 +528,6 @@ function PaymentForm({
   const [note, setNote] = useState("");
   const [paymentMonth, setPaymentMonth] = useState(currentMonth);
 
-  // Compute partial tenants: tenants who have payments for selected month but total < rent_amount
   const partialTenants = tenants.filter((t) => {
     const paid = payments
       .filter((p) => p.tenant_id === t.id && p.payment_month === paymentMonth)
@@ -537,7 +540,6 @@ function PaymentForm({
     return { ...t, alreadyPaid: paid, remaining: Number(t.rent_amount) - paid };
   });
 
-  // When switching tabs, reset tenant selection and amount
   const handleTypeChange = (type: PaymentType) => {
     setPaymentType(type);
     if (type === "topup") {
@@ -592,14 +594,12 @@ function PaymentForm({
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
 
-        {/* Payment type tabs */}
         <div className="flex gap-1 rounded-xl p-1 mb-5" style={{ background: "#F5F5F0" }}>
           <button type="button" style={tabStyle(paymentType === "full")} onClick={() => handleTypeChange("full")}>Full Payment</button>
           <button type="button" style={tabStyle(paymentType === "partial")} onClick={() => handleTypeChange("partial")}>Partial</button>
           <button type="button" style={tabStyle(paymentType === "topup")} onClick={() => handleTypeChange("topup")}>Top-up</button>
         </div>
 
-        {/* Helper text per tab */}
         {paymentType === "full" && (
           <p className="text-xs text-muted-foreground mb-4 -mt-2">Tenant has paid rent in full. Their status will update to Paid.</p>
         )}
@@ -611,8 +611,6 @@ function PaymentForm({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-
-          {/* Month selector (shown for all types, affects partial list) */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Month</label>
             <select required value={paymentMonth} onChange={(e) => { setPaymentMonth(e.target.value); }} className="form-input">
@@ -620,7 +618,6 @@ function PaymentForm({
             </select>
           </div>
 
-          {/* Tenant selector */}
           {paymentType === "topup" ? (
             <div>
               <label className="mb-1.5 block text-xs font-medium text-foreground">Tenant with partial payment</label>
@@ -665,7 +662,6 @@ function PaymentForm({
             </div>
           )}
 
-          {/* Amount */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">
               Amount (KSh)
@@ -677,7 +673,6 @@ function PaymentForm({
             <input required type="number" min={1} value={amount} onChange={(e) => setAmount(Number(e.target.value))} className="form-input" />
           </div>
 
-          {/* Method */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Payment Method</label>
             <select value={method} onChange={(e) => setMethod(e.target.value)} className="form-input">
@@ -687,13 +682,11 @@ function PaymentForm({
             </select>
           </div>
 
-          {/* Reference */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Reference / Transaction Code</label>
             <input value={reference} onChange={(e) => setReference(e.target.value)} className="form-input" placeholder="e.g. QCA5H3K8JL" />
           </div>
 
-          {/* Date */}
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Date Paid</label>
             <input required type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} className="form-input" />
@@ -705,7 +698,7 @@ function PaymentForm({
               type="submit"
               disabled={saving || (paymentType === "topup" && partialTenants.length === 0)}
               className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary"
-              style={{ background: "#166634" }}
+              style={{ background: "#166534" }}
             >
               {saving ? "Saving…" : "Record Payment"}
             </button>
