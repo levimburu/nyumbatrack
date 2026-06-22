@@ -99,7 +99,6 @@ export function AppLayout({ children, role, email, displayName }: {
 
   useEffect(() => {
     if (!userId) return;
-    console.log("Fetching notifications for userId:", userId);
     const fetchNotifs = async () => {
       const { data } = await (supabase as any)
         .from("notifications")
@@ -111,7 +110,6 @@ export function AppLayout({ children, role, email, displayName }: {
     };
     fetchNotifs();
 
-    // Refetch every 30 seconds as fallback
     const interval = setInterval(fetchNotifs, 30000);
 
     const channel = supabase
@@ -132,11 +130,69 @@ export function AppLayout({ children, role, email, displayName }: {
       )
       .subscribe();
 
-    return () => { 
+    return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel); 
+      supabase.removeChannel(channel);
     };
   }, [userId]);
+
+  // Check for overdue tenants and create notifications once per day
+  useEffect(() => {
+    if (!userId || profileRole !== "landlord") return;
+    const checkOverdue = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const todayKey = `overdue_notif_${userId}_${today}`;
+      // Only run once per day per user
+      if (localStorage.getItem(todayKey)) return;
+
+      // Get all properties belonging to this landlord
+      const { data: properties } = await (supabase as any)
+        .from("properties")
+        .select("id")
+        .eq("user_id", userId);
+      if (!properties?.length) return;
+
+      const propertyIds = properties.map((p: any) => p.id);
+
+      // Get all tenants with a past due date and outstanding balance
+      const { data: overdueTenants } = await (supabase as any)
+        .from("tenants")
+        .select("id, full_name, unit, next_due_date, balance, property_id")
+        .in("property_id", propertyIds)
+        .lt("next_due_date", today)
+        .gt("balance", 0);
+
+      if (!overdueTenants?.length) {
+        localStorage.setItem(todayKey, "1");
+        return;
+      }
+
+      // Create a notification for each overdue tenant, avoiding duplicates
+      for (const t of overdueTenants) {
+        const { data: existing } = await (supabase as any)
+          .from("notifications")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("type", "overdue")
+          .ilike("message", `%${t.full_name}%Unit ${t.unit}%`)
+          .gte("created_at", `${today}T00:00:00`)
+          .maybeSingle();
+
+        if (existing) continue;
+
+        await (supabase as any).from("notifications").insert({
+          user_id: userId,
+          title: "Overdue Rent",
+          message: `${t.full_name} — Unit ${t.unit} has not paid rent. Due date was ${t.next_due_date}.`,
+          type: "overdue",
+          read: false,
+        });
+      }
+
+      localStorage.setItem(todayKey, "1");
+    };
+    checkOverdue();
+  }, [userId, profileRole]);
 
   useEffect(() => {
     if (!userId || profileRole !== "landlord") return;
@@ -549,10 +605,7 @@ export function AppLayout({ children, role, email, displayName }: {
                 className="w-full flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div
-                    className="grid h-9 w-9 place-items-center rounded-xl"
-                    style={{ background: "#EFF6FF" }}
-                  >
+                  <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
                     <Key className="h-4 w-4" style={{ color: "#2563EB" }} />
                   </div>
                   <span className="text-sm font-medium text-foreground">Change PIN</span>
@@ -592,10 +645,7 @@ export function AppLayout({ children, role, email, displayName }: {
                 className="w-full flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div
-                    className="grid h-9 w-9 place-items-center rounded-xl"
-                    style={{ background: "#FEF9C3" }}
-                  >
+                  <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEF9C3" }}>
                     <Lock className="h-4 w-4" style={{ color: "#D97706" }} />
                   </div>
                   <span className="text-sm font-medium text-foreground">Change Password</span>
@@ -638,10 +688,7 @@ export function AppLayout({ children, role, email, displayName }: {
             {profileRole === "landlord" && (
               <div className="px-5 py-4 border-b border-border">
                 <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="grid h-9 w-9 place-items-center rounded-xl"
-                    style={{ background: "#F5F5F0" }}
-                  >
+                  <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#F5F5F0" }}>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <span className="text-sm font-medium text-foreground">Connected Agents</span>
@@ -672,14 +719,8 @@ export function AppLayout({ children, role, email, displayName }: {
 
             {/* Sign out all devices */}
             <div className="px-5 py-4 border-b border-border">
-              <button
-                onClick={handleSignOutAllDevices}
-                className="w-full flex items-center gap-3"
-              >
-                <div
-                  className="grid h-9 w-9 place-items-center rounded-xl"
-                  style={{ background: "#F5F5F0" }}
-                >
+              <button onClick={handleSignOutAllDevices} className="w-full flex items-center gap-3">
+                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#F5F5F0" }}>
                   <LogOut className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">Sign out of all devices</span>
