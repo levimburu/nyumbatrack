@@ -587,6 +587,8 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
   );
 }
 
+
+
 function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
   initial: Partial<Tenant>;
   onSave: (t: Partial<Tenant>) => void;
@@ -657,12 +659,9 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
           <FormField label="Deposit (KES) — optional">
             <input type="number" min={0} value={form.deposit ?? ""} onChange={(e) => set("deposit", e.target.value ? Number(e.target.value) : null as any)} className="form-input" placeholder="Leave blank if none" />
           </FormField>
-          <FormField label="Move-in date (YYYY-MM-DD)">
+          <FormField label="Move-in date">
             <input
-              type="text"
-              inputMode="numeric"
-              placeholder="e.g. 2017-01-15"
-              pattern="\d{4}-\d{2}-\d{2}"
+              type="date"
               value={form.move_in_date ?? ""}
               onChange={(e) => set("move_in_date", e.target.value)}
               className="form-input"
