@@ -134,9 +134,9 @@ function Dashboard() {
     return Math.max(1, (now.getFullYear() - due.getFullYear()) * 12 + (now.getMonth() - due.getMonth()));
   };
 
-  const collected = allPaymentsThisMonth?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
-  const outstanding = Math.max(0, expected - collected);
-  const collectionRate = expected ? Math.min(100, Math.round((collected / expected) * 100)) : 0;
+ const collected = tenants?.reduce((s, t) => s + Math.max(0, Number(t.rent_amount) - Number(t.balance)), 0) ?? 0;
+const outstanding = tenants?.reduce((s, t) => s + Math.max(0, Number(t.balance)), 0) ?? 0;
+const collectionRate = expected > 0 ? Math.min(100, Math.round((collected / expected) * 100)) : 0;
 
   const totalUnits = propertyData?.total_units && propertyData.total_units > 0 ? propertyData.total_units : totalTenants;
   const occupied = totalTenants;
