@@ -130,7 +130,7 @@ const { data: vacantUnits } = useQuery({
       } else {
         let nextDueDate = null;
         if (t.move_in_date) {
-          const moveIn = new Date(t.move_in_date);
+          const moveIn = new Date(t.move_in_date + "T00:00:00");
           const advanceMonths = t.advance_months ?? 0;
           const nextDue = new Date(
             moveIn.getFullYear(),
