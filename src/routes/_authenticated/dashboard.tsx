@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Wallet, TrendingUp, AlertCircle, CheckCircle2, Building2, DoorOpen, DoorClosed, Key, Copy } from "lucide-react";
+import { Users, Wallet, TrendingUp, AlertCircle, CheckCircle2, Building2, DoorOpen, DoorClosed, Key, Copy, X, Receipt } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { formatKES, formatDate } from "@/lib/format";
@@ -32,6 +32,7 @@ function Dashboard() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isAgent, setIsAgent] = useState(false);
+  const [breakdown, setBreakdown] = useState<null | "collected" | "outstanding" | "expected">(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -114,8 +115,9 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("payments")
-        .select("amount, tenant_id, payment_month, tenants(id, property_id)")
-        .eq("payment_month", currentMonthLabel);
+        .select("amount, tenant_id, payment_month, paid_on, method, reference, tenants(id, full_name, unit, property_id)")
+        .eq("payment_month", currentMonthLabel)
+        .order("paid_on", { ascending: false });
       if (error) throw error;
       const all = data as any[];
       return all.filter((p) => p.tenants?.property_id === selectedProperty!.id);
@@ -155,6 +157,37 @@ function Dashboard() {
     const now = new Date();
     return Math.max(1, (now.getFullYear() - due.getFullYear()) * 12 + (now.getMonth() - due.getMonth()));
   };
+
+  // --- Breakdown lists for the tappable stat cards ---
+
+  // Collected: the individual payments made for this month (name, unit, amount, date, method)
+  const collectedList = (allPaymentsThisMonth ?? []).map((p: any) => ({
+    id: p.tenant_id + "-" + p.paid_on + "-" + p.amount,
+    name: p.tenants?.full_name ?? "—",
+    unit: p.tenants?.unit ?? "—",
+    amount: Number(p.amount),
+    paidOn: p.paid_on,
+    method: p.method as string,
+  }));
+
+  // Outstanding: tenants who haven't fully paid this month, with how much they still owe
+  const outstandingList = (tenants ?? [])
+    .map((t: any) => {
+      const paid = paidThisMonthByTenant[t.id] ?? 0;
+      const rent = Number(t.rent_amount);
+      const owed = Math.max(0, rent - paid);
+      const status = getCurrentMonthStatus(t);
+      return { id: t.id, name: t.full_name, unit: t.unit, owed, paid, rent, status };
+    })
+    .filter((t) => t.owed > 0);
+
+  // Expected: the full rent roll — every tenant and their monthly rent
+  const expectedList = (tenants ?? []).map((t: any) => ({
+    id: t.id,
+    name: t.full_name,
+    unit: t.unit,
+    rent: Number(t.rent_amount),
+  }));
 
   const totalUnits = propertyData?.total_units && propertyData.total_units > 0 ? propertyData.total_units : totalTenants;
   const occupied = totalTenants;
@@ -225,7 +258,7 @@ function Dashboard() {
           <div className="font-display text-lg font-bold text-foreground">{totalTenants}</div>
         </div>
 
-        <div className="card-surface p-4">
+        <button onClick={() => setBreakdown("expected")} className="card-surface p-4 text-left hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEF9C3" }}>
               <Wallet className="h-4 w-4" style={{ color: "#D97706" }} />
@@ -233,9 +266,9 @@ function Dashboard() {
           </div>
           <div className="text-xs text-muted-foreground mb-0.5">Expected Rent</div>
           <div className="font-display text-lg font-bold text-foreground">{formatKES(expected)}</div>
-        </div>
+        </button>
 
-        <div className="card-surface p-4">
+        <button onClick={() => setBreakdown("collected")} className="card-surface p-4 text-left hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
               <TrendingUp className="h-4 w-4" style={{ color: "#16A34A" }} />
@@ -248,9 +281,9 @@ function Dashboard() {
           </div>
           <div className="text-xs text-muted-foreground mb-0.5">Collected</div>
           <div className="font-display text-lg font-bold" style={{ color: "#16A34A" }}>{formatKES(collected)}</div>
-        </div>
+        </button>
 
-        <div className="card-surface p-4">
+        <button onClick={() => setBreakdown("outstanding")} className="card-surface p-4 text-left hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEE2E2" }}>
               <AlertCircle className="h-4 w-4" style={{ color: "#DC2626" }} />
@@ -260,7 +293,7 @@ function Dashboard() {
           <div className="font-display text-lg font-bold" style={{ color: outstanding > 0 ? "#DC2626" : "#16A34A" }}>
             {formatKES(outstanding)}
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Occupancy Overview */}
@@ -430,6 +463,158 @@ function Dashboard() {
             >
               Done
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Breakdown modal for Collected / Outstanding / Expected cards */}
+      {breakdown && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setBreakdown(null)} />
+          <div className="relative w-full max-w-md h-full bg-white flex flex-col shadow-2xl">
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{
+                background:
+                  breakdown === "collected" ? "#166534" :
+                  breakdown === "outstanding" ? "#991B1B" : "#0d2818",
+              }}
+            >
+              <div>
+                <h2 className="font-display text-lg font-bold text-white">
+                  {breakdown === "collected" ? "Collected This Month" :
+                   breakdown === "outstanding" ? "Outstanding This Month" : "Expected Rent"}
+                </h2>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.7)" }}>
+                  {breakdown === "collected" ? `${currentMonthLabel} · ${formatKES(collected)}` :
+                   breakdown === "outstanding" ? `${currentMonthLabel} · ${formatKES(outstanding)} owed` :
+                   `Monthly rent roll · ${formatKES(expected)}`}
+                </p>
+              </div>
+              <button onClick={() => setBreakdown(null)} className="text-white/80 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto">
+              {/* COLLECTED */}
+              {breakdown === "collected" && (
+                collectedList.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                    <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#F5F5F0" }}>
+                      <Receipt className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="font-medium text-foreground mb-1">No payments yet this month</p>
+                    <p className="text-sm text-muted-foreground">Payments recorded for {currentMonthLabel} will appear here.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {collectedList.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between px-5 py-3">
+                        <div className="min-w-0">
+                          <div className="font-medium text-sm text-foreground truncate">{p.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Unit {p.unit} · {formatDate(p.paidOn)}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-3">
+                          <div className="font-display font-bold text-sm" style={{ color: "#16A34A" }}>
+                            +{formatKES(p.amount)}
+                          </div>
+                          <span
+                            className="inline-block rounded-md px-2 py-0.5 text-xs font-medium mt-0.5"
+                            style={
+                              p.method === "mpesa" ? { background: "#DCFCE7", color: "#166534" } :
+                              p.method === "bank" ? { background: "#EFF6FF", color: "#2563EB" } :
+                              { background: "#F5F5F0", color: "#6B7280" }
+                            }
+                          >
+                            {p.method === "mpesa" ? "M-Pesa" : p.method === "bank" ? "Bank Transfer" : "Cash"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+
+              {/* OUTSTANDING */}
+              {breakdown === "outstanding" && (
+                outstandingList.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                    <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#DCFCE7" }}>
+                      <CheckCircle2 className="h-8 w-8" style={{ color: "#16A34A" }} />
+                    </div>
+                    <p className="font-medium text-foreground mb-1">Everyone's paid up!</p>
+                    <p className="text-sm text-muted-foreground">No outstanding rent for {currentMonthLabel}.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {outstandingList.map((t) => (
+                      <div key={t.id} className="flex items-center justify-between px-5 py-3">
+                        <div className="min-w-0">
+                          <div className="font-medium text-sm text-foreground truncate">{t.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Unit {t.unit}
+                            {t.status === "partial" && ` · paid ${formatKES(t.paid)} of ${formatKES(t.rent)}`}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0 ml-3">
+                          <div className="font-display font-bold text-sm" style={{ color: "#DC2626" }}>
+                            {formatKES(t.owed)}
+                          </div>
+                          <span
+                            className="inline-block rounded-md px-2 py-0.5 text-xs font-medium mt-0.5"
+                            style={
+                              t.status === "partial"
+                                ? { background: "#FEF9C3", color: "#854D0E" }
+                                : { background: "#FEE2E2", color: "#991B1B" }
+                            }
+                          >
+                            {t.status === "partial" ? "Partial" : "Unpaid"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+
+              {/* EXPECTED */}
+              {breakdown === "expected" && (
+                expectedList.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                    <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#F5F5F0" }}>
+                      <Wallet className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="font-medium text-foreground mb-1">No tenants yet</p>
+                    <p className="text-sm text-muted-foreground">Add tenants to see the expected rent breakdown.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="divide-y divide-border">
+                      {expectedList.map((t) => (
+                        <div key={t.id} className="flex items-center justify-between px-5 py-3">
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm text-foreground truncate">{t.name}</div>
+                            <div className="text-xs text-muted-foreground">Unit {t.unit}</div>
+                          </div>
+                          <div className="font-display font-bold text-sm text-foreground flex-shrink-0 ml-3">
+                            {formatKES(t.rent)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between px-5 py-4 border-t-2 border-border" style={{ background: "#F9FAFB" }}>
+                      <span className="text-sm font-semibold text-foreground">Total Expected</span>
+                      <span className="font-display font-bold text-foreground">{formatKES(expected)}</span>
+                    </div>
+                  </>
+                )
+              )}
+            </div>
           </div>
         </div>
       )}
