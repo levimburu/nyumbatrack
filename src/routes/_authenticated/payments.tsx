@@ -10,9 +10,6 @@ import { useProperty } from "@/context/PropertyContext";
 
 export const Route = createFileRoute("/_authenticated/payments")({
   component: PaymentsPage,
-  validateSearch: (search: Record<string, unknown>): { tenant?: string } => {
-    return { tenant: typeof search.tenant === "string" ? search.tenant : undefined };
-  },
 });
 
 interface PaymentRow {
@@ -78,7 +75,7 @@ function isWithin96Hours(createdAt: string): boolean {
 
 type PaymentType = "full" | "partial" | "topup";
 
-interface TenantMin {
+export interface TenantMin {
   id: string;
   full_name: string;
   unit: string;
@@ -118,7 +115,6 @@ function PaymentsPage() {
   const { selectedProperty } = useProperty();
   const [search, setSearch] = useState("");
   const [openTenant, setOpenTenant] = useState<TenantMin | null>(null);
-  const { tenant: tenantParam } = Route.useSearch();
 
   useEffect(() => {
     if (!selectedProperty) navigate({ to: "/properties" });
@@ -138,17 +134,6 @@ function PaymentsPage() {
       return data as TenantMin[];
     },
   });
-
-  // If arriving with a ?tenant=<id> param (e.g. from the dashboard), auto-open
-  // that tenant's payment view once tenants have loaded, then clear the param.
-  useEffect(() => {
-    if (!tenantParam || !tenants) return;
-    const match = tenants.find((t) => t.id === tenantParam);
-    if (match) {
-      setOpenTenant(match);
-      navigate({ to: "/payments", search: {}, replace: true });
-    }
-  }, [tenantParam, tenants, navigate]);
 
   // All payments for this property (used to compute per-tenant current-month totals)
   const { data: payments } = useQuery({
@@ -267,7 +252,7 @@ function PaymentsPage() {
   );
 }
 
-function TenantPaymentView({ tenant, onClose }: {
+export function TenantPaymentView({ tenant, onClose }: {
   tenant: TenantMin;
   onClose: () => void;
 }) {

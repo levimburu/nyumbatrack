@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { formatKES, formatDate } from "@/lib/format";
 import { useProperty } from "@/context/PropertyContext";
+import { TenantPaymentView, type TenantMin } from "./payments";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -33,6 +34,7 @@ function Dashboard() {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isAgent, setIsAgent] = useState(false);
   const [breakdown, setBreakdown] = useState<null | "collected" | "outstanding" | "expected">(null);
+  const [openTenant, setOpenTenant] = useState<TenantMin | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -368,7 +370,7 @@ function Dashboard() {
                   return (
                     <tr
                       key={t.id}
-                      onClick={() => navigate({ to: "/payments", search: { tenant: t.id } })}
+                      onClick={() => setOpenTenant(t as TenantMin)}
                       className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
                     >
                       <td className="px-5 py-3">
@@ -621,6 +623,14 @@ function Dashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Tenant payment view — opens in place over the dashboard */}
+      {openTenant && (
+        <TenantPaymentView
+          tenant={openTenant}
+          onClose={() => setOpenTenant(null)}
+        />
       )}
     </div>
   );
