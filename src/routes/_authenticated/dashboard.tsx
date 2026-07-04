@@ -366,7 +366,11 @@ function Dashboard() {
                   const monthsBehind = getMonthsBehind(t);
                   const initials = t.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
                   return (
-                    <tr key={t.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <tr
+                      key={t.id}
+                      onClick={() => navigate({ to: "/payments", search: { tenant: t.id } })}
+                      className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                    >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <div

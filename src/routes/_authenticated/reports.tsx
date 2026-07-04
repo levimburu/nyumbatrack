@@ -52,8 +52,19 @@ function ReportsPage() {
   const byMonth: Record<string, number> = {};
   const byMethod: Record<string, number> = {};
   payments?.forEach((p) => {
-    const m = new Date(p.paid_on).toLocaleString("en", { month: "short", year: "2-digit" });
-    byMonth[m] = (byMonth[m] ?? 0) + Number(p.amount);
+    // Chart by the month the rent is FOR (payment_month), so a top-up paid
+    // in a later month still counts toward the month it was meant for —
+    // consistent with the Monthly Collection History below.
+    let label: string;
+    if (p.payment_month) {
+      const d = new Date(p.payment_month);
+      label = isNaN(d.getTime())
+        ? new Date(p.paid_on).toLocaleString("en", { month: "short", year: "2-digit" })
+        : d.toLocaleString("en", { month: "short", year: "2-digit" });
+    } else {
+      label = new Date(p.paid_on).toLocaleString("en", { month: "short", year: "2-digit" });
+    }
+    byMonth[label] = (byMonth[label] ?? 0) + Number(p.amount);
     byMethod[p.method] = (byMethod[p.method] ?? 0) + Number(p.amount);
   });
 

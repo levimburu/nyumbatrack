@@ -10,6 +10,9 @@ import { useProperty } from "@/context/PropertyContext";
 
 export const Route = createFileRoute("/_authenticated/payments")({
   component: PaymentsPage,
+  validateSearch: (search: Record<string, unknown>): { tenant?: string } => {
+    return { tenant: typeof search.tenant === "string" ? search.tenant : undefined };
+  },
 });
 
 interface PaymentRow {
@@ -33,7 +36,9 @@ const MONTHS = [
 function getMonthOptions() {
   const options = [];
   const now = new Date();
-  for (let i = -2; i <= 3; i++) {
+  // 12 months back to 3 months forward — lets landlords record for
+  // long-overdue months (existing tenants behind several months) and advances.
+  for (let i = -12; i <= 3; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
     options.push(`${MONTHS[d.getMonth()]} ${d.getFullYear()}`);
   }
@@ -80,6 +85,7 @@ interface TenantMin {
   rent_amount: number;
   due_day: number;
   next_due_date: string | null;
+  move_in_date: string | null;
 }
 
 function currentMonthLabelFn(): string {
@@ -112,6 +118,7 @@ function PaymentsPage() {
   const { selectedProperty } = useProperty();
   const [search, setSearch] = useState("");
   const [openTenant, setOpenTenant] = useState<TenantMin | null>(null);
+  const { tenant: tenantParam } = Route.useSearch();
 
   useEffect(() => {
     if (!selectedProperty) navigate({ to: "/properties" });
@@ -124,13 +131,24 @@ function PaymentsPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("tenants")
-        .select("id, full_name, unit, rent_amount, due_day, next_due_date")
+        .select("id, full_name, unit, rent_amount, due_day, next_due_date, move_in_date")
         .eq("property_id", selectedProperty!.id)
         .order("unit");
       if (error) throw error;
       return data as TenantMin[];
     },
   });
+
+  // If arriving with a ?tenant=<id> param (e.g. from the dashboard), auto-open
+  // that tenant's payment view once tenants have loaded, then clear the param.
+  useEffect(() => {
+    if (!tenantParam || !tenants) return;
+    const match = tenants.find((t) => t.id === tenantParam);
+    if (match) {
+      setOpenTenant(match);
+      navigate({ to: "/payments", search: {}, replace: true });
+    }
+  }, [tenantParam, tenants, navigate]);
 
   // All payments for this property (used to compute per-tenant current-month totals)
   const { data: payments } = useQuery({
@@ -345,7 +363,7 @@ function TenantPaymentView({ tenant, onClose }: {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Group payments by month to show status per month (paid / partial)
+  // Group payments by the month they are FOR (payment_month)
   const rent = Number(tenant.rent_amount);
   const byMonth: Record<string, number> = {};
   (tenantPayments ?? []).forEach((p) => {
@@ -353,22 +371,48 @@ function TenantPaymentView({ tenant, onClose }: {
     byMonth[key] = (byMonth[key] ?? 0) + Number(p.amount);
   });
 
-  // Sort months chronologically (most recent first). "Unknown" sinks to the bottom.
-  const monthKeys = Object.keys(byMonth).sort((a, b) => {
-    const da = a === "Unknown" ? 0 : new Date(a).getTime();
-    const db = b === "Unknown" ? 0 : new Date(b).getTime();
+  // Build the list of months to display: every month from move-in to the
+  // current month, PLUS any month that has a payment (e.g. advance months
+  // beyond today, or historical months before move-in). This way months a
+  // tenant skipped still appear as Unpaid instead of silently missing.
+  const MONTHS_FULL = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  const monthSet = new Set<string>();
+
+  // Months from move-in (or 11 months back if no move-in date) up to now
+  const now = new Date();
+  const start = tenant.move_in_date
+    ? new Date(tenant.move_in_date + "T00:00:00")
+    : new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const startYear = start.getFullYear();
+  const startMonth = start.getMonth();
+  const monthSpan =
+    (now.getFullYear() - startYear) * 12 + (now.getMonth() - startMonth);
+  for (let i = 0; i <= Math.max(0, monthSpan); i++) {
+    const d = new Date(startYear, startMonth + i, 1);
+    monthSet.add(`${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`);
+  }
+  // Plus any month that already has a payment (advances, or pre-move-in)
+  Object.keys(byMonth).forEach((m) => {
+    if (m !== "Unknown") monthSet.add(m);
+  });
+  if (byMonth["Unknown"]) monthSet.add("Unknown");
+
+  // Sort months chronologically, most recent first. "Unknown" sinks to bottom.
+  const monthKeys = Array.from(monthSet).sort((a, b) => {
+    const da = a === "Unknown" ? -Infinity : new Date(a).getTime();
+    const db = b === "Unknown" ? -Infinity : new Date(b).getTime();
     return db - da;
   });
 
   const totalPaidAllTime = (tenantPayments ?? []).reduce((s, p) => s + Number(p.amount), 0);
 
   // Count fully-paid months (advance + past)
-  const fullyPaidMonths = monthKeys.filter((m) => m !== "Unknown" && byMonth[m] >= rent && rent > 0).length;
+  const fullyPaidMonths = monthKeys.filter((m) => m !== "Unknown" && (byMonth[m] ?? 0) >= rent && rent > 0).length;
 
   const initials = tenant.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-
-  const methodLabel = (m: string) =>
-    m === "mpesa" ? "M-Pesa" : m === "bank" ? "Bank Transfer" : "Cash";
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -427,7 +471,7 @@ function TenantPaymentView({ tenant, onClose }: {
           ) : (
             <div className="px-5 py-4 space-y-4">
               {monthKeys.map((month) => {
-                const paidForMonth = byMonth[month];
+                const paidForMonth = byMonth[month] ?? 0;
                 const isFull = rent > 0 && paidForMonth >= rent;
                 const isPartial = paidForMonth > 0 && paidForMonth < rent;
                 const shortfall = Math.max(0, rent - paidForMonth);
@@ -447,6 +491,11 @@ function TenantPaymentView({ tenant, onClose }: {
                       )}
                     </div>
                     <div className="divide-y divide-border">
+                      {monthPayments.length === 0 && (
+                        <div className="px-3 py-2.5 text-xs text-muted-foreground">
+                          No payment recorded for this month.
+                        </div>
+                      )}
                       {monthPayments.map((p) => {
                         const receiptData: ReceiptData = {
                           tenantName: p.tenants?.full_name ?? tenant.full_name,
@@ -649,7 +698,10 @@ function PaymentForm({
   saving: boolean;
   monthOptions: string[];
 }) {
-  const currentMonth = monthOptions[2] ?? "";
+  // Compute the current month label directly so it doesn't depend on the
+  // position within monthOptions (which changed when the range widened).
+  const now = new Date();
+  const currentMonth = `${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
   const [paymentType, setPaymentType] = useState<PaymentType>("full");
   const [tenantId, setTenantId] = useState(tenants[0]?.id ?? "");
   const [amount, setAmount] = useState<number>(tenants[0]?.rent_amount ?? 0);
@@ -743,9 +795,9 @@ function PaymentForm({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground">Month</label>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">Month this payment is for</label>
             <select required value={paymentMonth} onChange={(e) => { setPaymentMonth(e.target.value); }} className="form-input">
-              {monthOptions.map((m) => <option key={m} value={m}>{m}</option>)}
+              {[...monthOptions].reverse().map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
 
