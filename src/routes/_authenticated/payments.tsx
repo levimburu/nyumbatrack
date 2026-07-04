@@ -696,6 +696,22 @@ function PaymentForm({
   const [note, setNote] = useState("");
   const [paymentMonth, setPaymentMonth] = useState(currentMonth);
 
+  // If the Top-up tab is no longer available (no partial for the selected
+  // month) but the form is still on "topup", fall back to "full".
+  useEffect(() => {
+    const hasPartial = tenants.some((t) => {
+      const paid = payments
+        .filter((p) => p.tenant_id === t.id && p.payment_month === paymentMonth)
+        .reduce((s, p) => s + Number(p.amount), 0);
+      return paid > 0 && paid < Number(t.rent_amount);
+    });
+    if (paymentType === "topup" && !hasPartial) {
+      setPaymentType("full");
+      setTenantId(tenants[0]?.id ?? "");
+      setAmount(tenants[0]?.rent_amount ?? 0);
+    }
+  }, [paymentMonth, paymentType, payments, tenants]);
+
   const partialTenants = tenants.filter((t) => {
     const paid = payments
       .filter((p) => p.tenant_id === t.id && p.payment_month === paymentMonth)
@@ -707,6 +723,20 @@ function PaymentForm({
       .reduce((s, p) => s + Number(p.amount), 0);
     return { ...t, alreadyPaid: paid, remaining: Number(t.rent_amount) - paid };
   });
+
+  // How much the currently-selected tenant has already paid for the selected month.
+  const selectedTenant = tenants.find((t) => t.id === tenantId);
+  const paidForSelectedMonth = payments
+    .filter((p) => p.tenant_id === tenantId && p.payment_month === paymentMonth)
+    .reduce((s, p) => s + Number(p.amount), 0);
+  // A month is "already settled" if payments for it already cover the full rent.
+  const monthAlreadyFullyPaid =
+    !!selectedTenant &&
+    Number(selectedTenant.rent_amount) > 0 &&
+    paidForSelectedMonth >= Number(selectedTenant.rent_amount);
+
+  // Top-up only makes sense when a partial payment exists for the selected month.
+  const showTopup = partialTenants.length > 0;
 
   const handleTypeChange = (type: PaymentType) => {
     setPaymentType(type);
@@ -738,6 +768,12 @@ function PaymentForm({
       toast.error("No tenants with partial payments for this month.");
       return;
     }
+    // Prevent recording against a month whose rent is already fully paid.
+    // (Top-up is exempt because it only ever targets a partial month.)
+    if (paymentType !== "topup" && monthAlreadyFullyPaid) {
+      toast.error(`${selectedTenant?.full_name ?? "This tenant"} has already fully paid for ${paymentMonth}.`);
+      return;
+    }
     onSave({ tenant_id: tenantId, amount: Number(amount), paid_on: paidOn, method, reference, note, payment_month: paymentMonth, payment_type: paymentType });
   };
 
@@ -765,7 +801,9 @@ function PaymentForm({
         <div className="flex gap-1 rounded-xl p-1 mb-5" style={{ background: "#F5F5F0" }}>
           <button type="button" style={tabStyle(paymentType === "full")} onClick={() => handleTypeChange("full")}>Full Payment</button>
           <button type="button" style={tabStyle(paymentType === "partial")} onClick={() => handleTypeChange("partial")}>Partial</button>
-          <button type="button" style={tabStyle(paymentType === "topup")} onClick={() => handleTypeChange("topup")}>Top-up</button>
+          {showTopup && (
+            <button type="button" style={tabStyle(paymentType === "topup")} onClick={() => handleTypeChange("topup")}>Top-up</button>
+          )}
         </div>
 
         {paymentType === "full" && (
@@ -867,11 +905,19 @@ function PaymentForm({
             <input required type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} className="form-input" />
           </div>
 
+          {paymentType !== "topup" && monthAlreadyFullyPaid && (
+            <div className="flex items-start gap-2 rounded-xl p-3" style={{ background: "#FEF9C3", border: "1px solid #FDE68A" }}>
+              <div className="text-xs" style={{ color: "#854D0E" }}>
+                <span className="font-semibold">{selectedTenant?.full_name}</span> has already fully paid rent for <span className="font-semibold">{paymentMonth}</span>. Choose a different month to record this payment.
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
             <button
               type="submit"
-              disabled={saving || (paymentType === "topup" && partialTenants.length === 0)}
+              disabled={saving || (paymentType === "topup" && partialTenants.length === 0) || (paymentType !== "topup" && monthAlreadyFullyPaid)}
               className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary"
               style={{ background: "#166534" }}
             >
