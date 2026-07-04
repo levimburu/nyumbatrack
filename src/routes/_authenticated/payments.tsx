@@ -73,19 +73,66 @@ function isWithin96Hours(createdAt: string): boolean {
 
 type PaymentType = "full" | "partial" | "topup";
 
+interface TenantMin {
+  id: string;
+  full_name: string;
+  unit: string;
+  rent_amount: number;
+  due_day: number;
+  next_due_date: string | null;
+}
+
+function currentMonthLabelFn(): string {
+  return new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+// Current-month status for a tenant, based on how much they've paid FOR this month.
+function tenantMonthStatus(paidThisMonth: number, rent: number): "paid" | "partial" | "unpaid" {
+  if (rent > 0 && paidThisMonth >= rent) return "paid";
+  if (paidThisMonth > 0) return "partial";
+  return "unpaid";
+}
+
+function StatusPill({ status }: { status: "paid" | "partial" | "unpaid" }) {
+  const styles = {
+    paid: { background: "#DCFCE7", color: "#166534" },
+    partial: { background: "#FEF9C3", color: "#854D0E" },
+    unpaid: { background: "#FEE2E2", color: "#991B1B" },
+  };
+  const labels = { paid: "Paid", partial: "Partial", unpaid: "Unpaid" };
+  return (
+    <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" style={styles[status]}>
+      {labels[status]}
+    </span>
+  );
+}
+
 function PaymentsPage() {
-  const qc = useQueryClient();
   const navigate = useNavigate();
   const { selectedProperty } = useProperty();
-  const [adding, setAdding] = useState(false);
-  const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
   const [search, setSearch] = useState("");
-  const [cancelTarget, setCancelTarget] = useState<PaymentRow | null>(null);
+  const [openTenant, setOpenTenant] = useState<TenantMin | null>(null);
 
   useEffect(() => {
     if (!selectedProperty) navigate({ to: "/properties" });
   }, [selectedProperty, navigate]);
 
+  // All tenants for this property
+  const { data: tenants } = useQuery({
+    queryKey: ["tenants-min", selectedProperty?.id],
+    enabled: !!selectedProperty,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("tenants")
+        .select("id, full_name, unit, rent_amount, due_day, next_due_date")
+        .eq("property_id", selectedProperty!.id)
+        .order("unit");
+      if (error) throw error;
+      return data as TenantMin[];
+    },
+  });
+
+  // All payments for this property (used to compute per-tenant current-month totals)
   const { data: payments } = useQuery({
     queryKey: ["payments", selectedProperty?.id],
     enabled: !!selectedProperty,
@@ -100,27 +147,131 @@ function PaymentsPage() {
     },
   });
 
-  const { data: tenants } = useQuery({
-    queryKey: ["tenants-min", selectedProperty?.id],
-    enabled: !!selectedProperty,
-    queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("tenants")
-        .select("id, full_name, unit, rent_amount, due_day, next_due_date")
-        .eq("property_id", selectedProperty!.id)
-        .order("unit");
-      if (error) throw error;
-      return data as any[];
-    },
+  const currentMonth = currentMonthLabelFn();
+
+  // Map tenant_id -> amount paid for the current month
+  const paidThisMonthByTenant: Record<string, number> = {};
+  (payments ?? []).forEach((p) => {
+    if (p.payment_month === currentMonth) {
+      paidThisMonthByTenant[p.tenant_id] =
+        (paidThisMonthByTenant[p.tenant_id] ?? 0) + Number(p.amount);
+    }
   });
 
-  const filtered = payments?.filter((p) =>
-    (p.tenants?.full_name ?? "").toLowerCase().includes(search.toLowerCase()) ||
-    (p.reference ?? "").toLowerCase().includes(search.toLowerCase()) ||
-    (p.tenants?.unit ?? "").toLowerCase().includes(search.toLowerCase())
+  const filteredTenants = (tenants ?? []).filter((t) =>
+    t.full_name.toLowerCase().includes(search.toLowerCase()) ||
+    t.unit.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalAmount = payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
+  const totalCollectedThisMonth = (payments ?? [])
+    .filter((p) => p.payment_month === currentMonth)
+    .reduce((s, p) => s + Number(p.amount), 0);
+
+  if (!selectedProperty) return null;
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-foreground">Payments</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {selectedProperty.name} · {tenants?.length ?? 0} tenants · {currentMonth} collected {formatKES(totalCollectedThisMonth)}
+          </p>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by tenant name or unit..."
+          className="w-full rounded-xl border border-border bg-white pl-10 pr-4 py-2.5 text-sm outline-none focus:border-primary transition-colors"
+        />
+      </div>
+
+      {/* Tenant list */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {filteredTenants.map((t) => {
+          const paid = paidThisMonthByTenant[t.id] ?? 0;
+          const status = tenantMonthStatus(paid, Number(t.rent_amount));
+          const initials = t.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+          return (
+            <button
+              key={t.id}
+              onClick={() => setOpenTenant(t)}
+              className="card-surface p-4 text-left hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className="grid h-10 w-10 place-items-center rounded-full text-sm font-bold text-white flex-shrink-0"
+                    style={{ background: "#166534" }}
+                  >
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm text-foreground truncate">{t.full_name}</div>
+                    <div className="text-xs text-muted-foreground">Unit {t.unit}</div>
+                  </div>
+                </div>
+                <StatusPill status={status} />
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Rent</span>
+                <span className="font-semibold text-foreground">{formatKES(t.rent_amount)}</span>
+              </div>
+              {status === "partial" && (
+                <div className="flex items-center justify-between text-xs mt-1">
+                  <span className="text-muted-foreground">Paid this month</span>
+                  <span className="font-semibold" style={{ color: "#854D0E" }}>{formatKES(paid)}</span>
+                </div>
+              )}
+            </button>
+          );
+        })}
+        {!filteredTenants.length && (
+          <div className="card-surface p-10 text-center text-sm text-muted-foreground sm:col-span-2 lg:col-span-3">
+            {search ? "No tenants match your search." : `No tenants yet for ${selectedProperty.name}.`}
+          </div>
+        )}
+      </div>
+
+      {openTenant && (
+        <TenantPaymentView
+          tenant={openTenant}
+          onClose={() => setOpenTenant(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function TenantPaymentView({ tenant, onClose }: {
+  tenant: TenantMin;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const { selectedProperty } = useProperty();
+  const [adding, setAdding] = useState(false);
+  const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<PaymentRow | null>(null);
+
+  // This tenant's payments
+  const { data: tenantPayments } = useQuery({
+    queryKey: ["tenant-payments-full", tenant.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("payments")
+        .select("*, tenants(full_name, unit, property_id)")
+        .eq("tenant_id", tenant.id)
+        .order("paid_on", { ascending: false });
+      if (error) throw error;
+      return data as PaymentRow[];
+    },
+  });
 
   const add = useMutation({
     mutationFn: async (p: {
@@ -133,17 +284,11 @@ function PaymentsPage() {
       payment_month: string;
       payment_type: PaymentType;
     }) => {
-      const tenant = tenants?.find((t) => t.id === p.tenant_id);
       const { payment_type, ...paymentData } = p;
 
-      // Insert the payment row
       const { error } = await supabase.from("payments").insert({ ...paymentData } as any);
       if (error) throw error;
 
-      if (!tenant) return;
-
-      // Parse payment_month (e.g. "June 2026") to compute next due date
-      // next_due_date = 1st day of the month AFTER the payment month + due_day offset
       const advanceNextDueDate = async () => {
         const parts = p.payment_month?.split(" ");
         if (!parts || parts.length < 2) return;
@@ -159,7 +304,6 @@ function PaymentsPage() {
       if (payment_type === "full") {
         await advanceNextDueDate();
       } else if (payment_type === "topup") {
-        // Check if total paid this month now equals full rent
         const { data: monthPayments } = await (supabase as any)
           .from("payments")
           .select("amount")
@@ -170,9 +314,9 @@ function PaymentsPage() {
           await advanceNextDueDate();
         }
       }
-      // partial: do not advance next_due_date
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tenant-payments-full", tenant.id] });
       qc.invalidateQueries({ queryKey: ["payments", selectedProperty?.id] });
       qc.invalidateQueries({ queryKey: ["tenants", selectedProperty?.id] });
       qc.invalidateQueries({ queryKey: ["tenants-min", selectedProperty?.id] });
@@ -190,8 +334,10 @@ function PaymentsPage() {
       if (error) throw error;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tenant-payments-full", tenant.id] });
       qc.invalidateQueries({ queryKey: ["payments", selectedProperty?.id] });
       qc.invalidateQueries({ queryKey: ["tenants", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["tenants-min", selectedProperty?.id] });
       qc.invalidateQueries({ queryKey: ["payments-recent", selectedProperty?.id] });
       setCancelTarget(null);
       toast.success("Payment cancelled successfully");
@@ -199,183 +345,167 @@ function PaymentsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (!selectedProperty) return null;
+  // Group payments by month to show status per month (paid / partial)
+  const rent = Number(tenant.rent_amount);
+  const byMonth: Record<string, number> = {};
+  (tenantPayments ?? []).forEach((p) => {
+    const key = p.payment_month ?? "Unknown";
+    byMonth[key] = (byMonth[key] ?? 0) + Number(p.amount);
+  });
+
+  // Sort months chronologically (most recent first). "Unknown" sinks to the bottom.
+  const monthKeys = Object.keys(byMonth).sort((a, b) => {
+    const da = a === "Unknown" ? 0 : new Date(a).getTime();
+    const db = b === "Unknown" ? 0 : new Date(b).getTime();
+    return db - da;
+  });
+
+  const totalPaidAllTime = (tenantPayments ?? []).reduce((s, p) => s + Number(p.amount), 0);
+
+  // Count fully-paid months (advance + past)
+  const fullyPaidMonths = monthKeys.filter((m) => m !== "Unknown" && byMonth[m] >= rent && rent > 0).length;
+
+  const initials = tenant.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+
+  const methodLabel = (m: string) =>
+    m === "mpesa" ? "M-Pesa" : m === "bank" ? "Bank Transfer" : "Cash";
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Payments</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {selectedProperty.name} · {payments?.length ?? 0} records · Total {formatKES(totalAmount)}
-          </p>
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md h-full bg-white flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4" style={{ background: "#166534" }}>
+          <div
+            className="grid h-11 w-11 place-items-center rounded-full text-base font-bold text-white flex-shrink-0"
+            style={{ background: "rgba(255,255,255,0.2)" }}
+          >
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-display text-lg font-bold text-white truncate">{tenant.full_name}</h2>
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.75)" }}>Unit {tenant.unit} · {formatKES(tenant.rent_amount)}/mo</p>
+          </div>
+          <button onClick={onClose} className="text-white/80 hover:text-white">
+            <X className="h-5 w-5" />
+          </button>
         </div>
-        <button
-          onClick={() => setAdding(true)}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white glow-primary"
-          style={{ background: "#166634" }}
-        >
-          <Plus className="h-4 w-4" /> Record Payment
-        </button>
-      </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by tenant or reference..."
-          className="w-full rounded-xl border border-border bg-white pl-10 pr-4 py-2.5 text-sm outline-none focus:border-primary transition-colors"
-        />
-      </div>
+        {/* Record payment button */}
+        <div className="px-5 py-4 border-b border-border">
+          <button
+            onClick={() => setAdding(true)}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white glow-primary"
+            style={{ background: "#166534" }}
+          >
+            <Plus className="h-4 w-4" /> Record Payment
+          </button>
+        </div>
 
-      {/* Desktop table */}
-      <div className="card-surface overflow-x-auto hidden md:block">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Date</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Tenant</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Unit</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Month Paid</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Method</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Reference</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Amount</th>
-              <th className="py-3 pr-5 text-right text-xs font-medium text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered?.map((p) => {
-              const receiptData: ReceiptData = {
-                tenantName: p.tenants?.full_name ?? "—",
-                unit: p.tenants?.unit ?? "—",
-                amount: Number(p.amount),
-                paidOn: p.paid_on,
-                method: p.method,
-                reference: p.reference,
-                receiptNo: p.id.slice(0, 8).toUpperCase(),
-                paymentMonth: p.payment_month,
-              };
-              const initials = (p.tenants?.full_name ?? "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-              const canCancel = p.created_at && isWithin96Hours(p.created_at);
-              return (
-                <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                  <td className="px-5 py-3 text-muted-foreground">{formatDate(p.paid_on)}</td>
-                  <td className="py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="grid h-7 w-7 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0" style={{ background: "#166534" }}>
-                        {initials}
-                      </div>
-                      <span className="font-medium">{p.tenants?.full_name ?? "—"}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 text-muted-foreground">{p.tenants?.unit}</td>
-                  <td className="py-3">
-                    <span className="rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: "#F5F5F0", color: "#374151" }}>
-                      {p.payment_month ?? "—"}
-                    </span>
-                  </td>
-                  <td className="py-3"><MethodBadge method={p.method} /></td>
-                  <td className="py-3 text-muted-foreground font-mono text-xs">{p.reference ?? "—"}</td>
-                  <td className="py-3 font-display font-bold" style={{ color: "#16A34A" }}>{formatKES(p.amount)}</td>
-                  <td className="py-3 pr-5 text-right">
-                    <div className="inline-flex gap-1">
-                      <button
-                        onClick={() => setPreviewReceipt(receiptData)}
-                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border border-border hover:bg-muted transition-colors"
-                      >
-                        <Receipt className="h-3.5 w-3.5" />
-                      </button>
-                      {canCancel && (
-                        <button
-                          onClick={() => setCancelTarget(p)}
-                          className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border transition-colors"
-                          style={{ borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Cancel
-                        </button>
+        {/* Summary */}
+        <div className="px-5 py-4 border-b border-border grid grid-cols-2 gap-3">
+          <div className="rounded-xl p-3" style={{ background: "#F0FDF4" }}>
+            <div className="text-xs text-muted-foreground mb-0.5">Months fully paid</div>
+            <div className="font-display text-lg font-bold" style={{ color: "#166534" }}>{fullyPaidMonths}</div>
+          </div>
+          <div className="rounded-xl p-3" style={{ background: "#F5F5F0" }}>
+            <div className="text-xs text-muted-foreground mb-0.5">Total paid</div>
+            <div className="font-display text-lg font-bold text-foreground">{formatKES(totalPaidAllTime)}</div>
+          </div>
+        </div>
+
+        {/* Months breakdown + payments */}
+        <div className="flex-1 overflow-y-auto">
+          {monthKeys.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+              <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#F5F5F0" }}>
+                <Receipt className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="font-medium text-foreground mb-1">No payments yet</p>
+              <p className="text-sm text-muted-foreground">Tap "Record Payment" to add the first one.</p>
+            </div>
+          ) : (
+            <div className="px-5 py-4 space-y-4">
+              {monthKeys.map((month) => {
+                const paidForMonth = byMonth[month];
+                const isFull = rent > 0 && paidForMonth >= rent;
+                const isPartial = paidForMonth > 0 && paidForMonth < rent;
+                const shortfall = Math.max(0, rent - paidForMonth);
+                const monthPayments = (tenantPayments ?? []).filter((p) => (p.payment_month ?? "Unknown") === month);
+                return (
+                  <div key={month} className="rounded-xl border border-border overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "#F9FAFB" }}>
+                      <span className="text-sm font-semibold text-foreground">{month}</span>
+                      {isFull ? (
+                        <StatusPill status="paid" />
+                      ) : isPartial ? (
+                        <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#FEF9C3", color: "#854D0E" }}>
+                          Partial · {formatKES(shortfall)} short
+                        </span>
+                      ) : (
+                        <StatusPill status="unpaid" />
                       )}
                     </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {!filtered?.length && (
-              <tr>
-                <td colSpan={8} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                  {search ? "No payments match your search." : `No payments recorded yet for ${selectedProperty.name}.`}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile cards */}
-      <div className="space-y-3 md:hidden">
-        {filtered?.map((p) => {
-          const receiptData: ReceiptData = {
-            tenantName: p.tenants?.full_name ?? "—",
-            unit: p.tenants?.unit ?? "—",
-            amount: Number(p.amount),
-            paidOn: p.paid_on,
-            method: p.method,
-            reference: p.reference,
-            receiptNo: p.id.slice(0, 8).toUpperCase(),
-            paymentMonth: p.payment_month,
-          };
-          const initials = (p.tenants?.full_name ?? "?").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-          const canCancel = p.created_at && isWithin96Hours(p.created_at);
-          return (
-            <div key={p.id} className="card-surface p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0" style={{ background: "#166534" }}>
-                    {initials}
+                    <div className="divide-y divide-border">
+                      {monthPayments.map((p) => {
+                        const receiptData: ReceiptData = {
+                          tenantName: p.tenants?.full_name ?? tenant.full_name,
+                          unit: p.tenants?.unit ?? tenant.unit,
+                          amount: Number(p.amount),
+                          paidOn: p.paid_on,
+                          method: p.method,
+                          reference: p.reference,
+                          receiptNo: p.id.slice(0, 8).toUpperCase(),
+                          paymentMonth: p.payment_month,
+                        };
+                        const canCancel = p.created_at && isWithin96Hours(p.created_at);
+                        return (
+                          <div key={p.id} className="px-3 py-2.5">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-display font-bold text-sm" style={{ color: "#16A34A" }}>
+                                +{formatKES(p.amount)}
+                              </span>
+                              <MethodBadge method={p.method} />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(p.paid_on)}{p.reference ? ` · ${p.reference}` : ""}
+                              </span>
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => setPreviewReceipt(receiptData)}
+                                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium border border-border hover:bg-muted transition-colors"
+                                >
+                                  <Receipt className="h-3 w-3" /> Receipt
+                                </button>
+                                {canCancel && (
+                                  <button
+                                    onClick={() => setCancelTarget(p)}
+                                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium border transition-colors"
+                                    style={{ borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-semibold text-sm">{p.tenants?.full_name ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground">Unit {p.tenants?.unit} · {formatDate(p.paid_on)} · {p.payment_month}</div>
-                  </div>
-                </div>
-                <div className="font-display font-bold" style={{ color: "#16A34A" }}>{formatKES(p.amount)}</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <MethodBadge method={p.method} />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPreviewReceipt(receiptData)}
-                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border border-border hover:bg-muted transition-colors"
-                  >
-                    <Receipt className="h-3.5 w-3.5" /> Receipt
-                  </button>
-                  {canCancel && (
-                    <button
-                      onClick={() => setCancelTarget(p)}
-                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border transition-colors"
-                      style={{ borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" /> Cancel
-                    </button>
-                  )}
-                </div>
-              </div>
+                );
+              })}
             </div>
-          );
-        })}
-        {!filtered?.length && (
-          <div className="card-surface p-10 text-center text-sm text-muted-foreground">
-            {search ? "No payments match your search." : `No payments recorded yet for ${selectedProperty.name}.`}
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {adding && (
         <PaymentForm
-          tenants={tenants ?? []}
-          payments={payments ?? []}
+          tenants={[tenant]}
+          payments={tenantPayments ?? []}
+          lockedTenantId={tenant.id}
           onSave={(p) => add.mutate(p)}
           onClose={() => setAdding(false)}
           saving={add.isPending}
@@ -509,9 +639,10 @@ function ReceiptPreview({ data, onClose }: { data: ReceiptData; onClose: () => v
 }
 
 function PaymentForm({
-  tenants, payments, onSave, onClose, saving, monthOptions,
+  tenants, payments, onSave, onClose, saving, monthOptions, lockedTenantId,
 }: {
   tenants: { id: string; full_name: string; unit: string; rent_amount: number; due_day: number; next_due_date: string | null }[];
+  lockedTenantId?: string;
   payments: PaymentRow[];
   onSave: (p: { tenant_id: string; amount: number; paid_on: string; method: string; reference: string; note: string; payment_month: string; payment_type: PaymentType }) => void;
   onClose: () => void;
@@ -652,6 +783,13 @@ function PaymentForm({
                   ))}
                 </div>
               )}
+            </div>
+          ) : lockedTenantId ? (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-foreground">Tenant</label>
+              <div className="rounded-xl border border-border px-3 py-2.5 text-sm bg-muted/30">
+                {tenants[0]?.full_name} – Unit {tenants[0]?.unit}
+              </div>
             </div>
           ) : (
             <div>

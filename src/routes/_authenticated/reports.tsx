@@ -28,11 +28,24 @@ function ReportsPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("payments")
-        .select("amount, paid_on, method, tenants(property_id)")
+        .select("amount, paid_on, method, payment_month, tenants(property_id)")
         .order("paid_on");
       if (error) throw error;
       const all = data as any[];
       return all.filter((p) => p.tenants?.property_id === selectedProperty!.id);
+    },
+  });
+
+  const { data: tenants } = useQuery({
+    queryKey: ["tenants-rent", selectedProperty?.id],
+    enabled: !!selectedProperty,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("tenants")
+        .select("rent_amount")
+        .eq("property_id", selectedProperty!.id);
+      if (error) throw error;
+      return data as { rent_amount: number }[];
     },
   });
 
@@ -43,6 +56,22 @@ function ReportsPage() {
     byMonth[m] = (byMonth[m] ?? 0) + Number(p.amount);
     byMethod[p.method] = (byMethod[p.method] ?? 0) + Number(p.amount);
   });
+
+  // Monthly history grouped by payment_month (the month rent is FOR)
+  const expectedPerMonth = (tenants ?? []).reduce((s, t) => s + Number(t.rent_amount), 0);
+  const collectedByPaymentMonth: Record<string, number> = {};
+  payments?.forEach((p) => {
+    const key = p.payment_month ?? "Unknown";
+    collectedByPaymentMonth[key] = (collectedByPaymentMonth[key] ?? 0) + Number(p.amount);
+  });
+  const monthHistory = Object.entries(collectedByPaymentMonth)
+    .filter(([month]) => month !== "Unknown")
+    .map(([month, collected]) => {
+      const outstanding = Math.max(0, expectedPerMonth - collected);
+      const rate = expectedPerMonth > 0 ? Math.min(100, Math.round((collected / expectedPerMonth) * 100)) : 0;
+      return { month, collected, expected: expectedPerMonth, outstanding, rate, ts: new Date(month).getTime() };
+    })
+    .sort((a, b) => b.ts - a.ts);
 
   const now = new Date();
   const currentMonthKey = now.toLocaleString("en", { month: "short", year: "2-digit" });
@@ -154,6 +183,56 @@ function ReportsPage() {
           <p className="text-xs text-muted-foreground text-right mt-2">
             * {currentMonthKey} is a partial month
           </p>
+        )}
+      </div>
+
+      {/* Monthly collection history (by rent month) */}
+      <div className="card-surface overflow-hidden">
+        <div className="px-5 py-4 border-b border-border">
+          <h2 className="font-display text-base font-semibold">Monthly Collection History</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Collected per rent month, including advance payments</p>
+        </div>
+        {monthHistory.length === 0 ? (
+          <div className="px-5 py-10 text-center text-sm text-muted-foreground">
+            No payment history yet.
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", minWidth: "560px", fontSize: "0.875rem", borderCollapse: "collapse" }}>
+              <thead>
+                <tr className="border-b border-border" style={{ background: "#F9FAFB" }}>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Month</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Collected</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Expected</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Outstanding</th>
+                  <th className="py-3 pr-5 text-right text-xs font-medium text-muted-foreground">Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthHistory.map((row) => (
+                  <tr key={row.month} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-3 font-medium text-foreground">{row.month}</td>
+                    <td className="py-3 font-semibold" style={{ color: "#16A34A" }}>{formatKES(row.collected)}</td>
+                    <td className="py-3 text-muted-foreground">{formatKES(row.expected)}</td>
+                    <td className="py-3 font-medium" style={{ color: row.outstanding > 0 ? "#DC2626" : "#6B7280" }}>
+                      {row.outstanding > 0 ? formatKES(row.outstanding) : "—"}
+                    </td>
+                    <td className="py-3 pr-5 text-right">
+                      <span
+                        className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                        style={{
+                          background: row.rate >= 90 ? "#DCFCE7" : row.rate >= 50 ? "#FEF9C3" : "#FEE2E2",
+                          color: row.rate >= 90 ? "#166534" : row.rate >= 50 ? "#854D0E" : "#991B1B",
+                        }}
+                      >
+                        {row.rate}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

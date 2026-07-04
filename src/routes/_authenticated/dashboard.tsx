@@ -114,7 +114,7 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("payments")
-        .select("amount, tenant_id, tenants(id, property_id)")
+        .select("amount, tenant_id, payment_month, tenants(id, property_id)")
         .eq("payment_month", currentMonthLabel);
       if (error) throw error;
       const all = data as any[];
@@ -124,19 +124,37 @@ function Dashboard() {
   const totalTenants = tenants?.length ?? 0;
   const expected = tenants?.reduce((s, t) => s + Number(t.rent_amount), 0) ?? 0;
 
-  const today = new Date().toISOString().slice(0, 10);
-  const isTenantPaid = (t: any) => t.next_due_date && t.next_due_date > today;
+  // Build a map of how much each tenant has paid FOR the current month
+  // (based on payment_month, so advance payments tagged for this month count).
+  const paidThisMonthByTenant: Record<string, number> = {};
+  (allPaymentsThisMonth ?? []).forEach((p: any) => {
+    paidThisMonthByTenant[p.tenant_id] =
+      (paidThisMonthByTenant[p.tenant_id] ?? 0) + Number(p.amount);
+  });
 
+  // Status for the CURRENT month, driven purely by what's been paid for this month.
+  // paid = full rent covered, partial = some but not full, unpaid = nothing yet.
+  const getCurrentMonthStatus = (t: any): "paid" | "partial" | "unpaid" => {
+    const paid = paidThisMonthByTenant[t.id] ?? 0;
+    const rent = Number(t.rent_amount);
+    if (paid >= rent && rent > 0) return "paid";
+    if (paid > 0) return "partial";
+    return "unpaid";
+  };
+
+  // Collected / outstanding / rate are all current-month based, using payment_month.
+  const collected = (allPaymentsThisMonth ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+  const outstanding = Math.max(0, expected - collected);
+  const collectionRate = expected > 0 ? Math.min(100, Math.round((collected / expected) * 100)) : 0;
+
+  // Arrears (historical): how many months behind, based on next_due_date.
+  const today = new Date().toISOString().slice(0, 10);
   const getMonthsBehind = (t: any): number => {
-    if (!t.next_due_date || isTenantPaid(t)) return 0;
+    if (!t.next_due_date || t.next_due_date > today) return 0;
     const due = new Date(t.next_due_date);
     const now = new Date();
     return Math.max(1, (now.getFullYear() - due.getFullYear()) * 12 + (now.getMonth() - due.getMonth()));
   };
-
- const collected = tenants?.reduce((s, t) => s + Math.max(0, Number(t.rent_amount) - Number(t.balance)), 0) ?? 0;
-const outstanding = tenants?.reduce((s, t) => s + Math.max(0, Number(t.balance)), 0) ?? 0;
-const collectionRate = expected > 0 ? Math.min(100, Math.round((collected / expected) * 100)) : 0;
 
   const totalUnits = propertyData?.total_units && propertyData.total_units > 0 ? propertyData.total_units : totalTenants;
   const occupied = totalTenants;
@@ -311,7 +329,7 @@ const collectionRate = expected > 0 ? Math.min(100, Math.round((collected / expe
               </thead>
               <tbody>
                 {tenants?.map((t) => {
-                  const status = isTenantPaid(t) ? "paid" : t.next_due_date ? "partial" : "unpaid";
+                  const status = getCurrentMonthStatus(t);
                   const monthsBehind = getMonthsBehind(t);
                   const initials = t.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
                   return (
