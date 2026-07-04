@@ -352,13 +352,14 @@ function Dashboard() {
             </span>
           </div>
           <div style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", minWidth: "600px", fontSize: "0.875rem", borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", minWidth: "680px", fontSize: "0.875rem", borderCollapse: "collapse" }}>
               <thead>
                 <tr className="border-b border-border" style={{ background: "#F9FAFB" }}>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Tenant</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Unit</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Rent</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Next Due</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Arrears</th>
                 </tr>
               </thead>
@@ -388,6 +389,18 @@ function Dashboard() {
                       <td className="py-3 font-medium">{formatKES(t.rent_amount)}</td>
                       <td className="py-3"><StatusPill status={status} /></td>
                       <td className="py-3">
+                        {t.next_due_date ? (
+                          <span
+                            className="text-xs font-medium"
+                            style={{ color: t.next_due_date < today && status !== "paid" ? "#DC2626" : "#6B7280" }}
+                          >
+                            {formatDate(t.next_due_date)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="py-3">
                         {monthsBehind > 0 ? (
                           <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#FEE2E2", color: "#991B1B" }}>
                             {monthsBehind} {monthsBehind === 1 ? "month" : "months"} behind
@@ -401,7 +414,7 @@ function Dashboard() {
                 })}
                 {!tenants?.length && (
                   <tr>
-                    <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                    <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
                       No tenants yet for this property.
                     </td>
                   </tr>
