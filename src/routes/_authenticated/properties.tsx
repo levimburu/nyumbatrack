@@ -93,7 +93,21 @@ function PropertiesPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("tenants")
-        .select("property_id, rent_amount, balance");
+        .select("id, property_id, rent_amount, balance");
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  // Payments made FOR the current month, used to compute paid/partial/unpaid per property
+  const currentMonthLabel = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const { data: monthPayments } = useQuery({
+    queryKey: ["all-payments-current-month", currentMonthLabel],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("payments")
+        .select("amount, tenant_id, payment_month")
+        .eq("payment_month", currentMonthLabel);
       if (error) throw error;
       return data as any[];
     },
@@ -149,9 +163,22 @@ function PropertiesPage() {
     const totalUnits = property.total_units > 0 ? property.total_units : occupied;
     const vacant = Math.max(0, totalUnits - occupied);
     const monthlyRent = tenants.reduce((s, t) => s + Number(t.rent_amount), 0);
-    const paid = tenants.filter((t) => Number(t.balance) === 0).length;
-    const partial = tenants.filter((t) => Number(t.balance) > 0 && Number(t.balance) < Number(t.rent_amount)).length;
-    const unpaid = tenants.filter((t) => Number(t.balance) >= Number(t.rent_amount)).length;
+
+    // How much each tenant has paid FOR the current month (by payment_month)
+    const paidByTenant: Record<string, number> = {};
+    (monthPayments ?? []).forEach((p) => {
+      paidByTenant[p.tenant_id] = (paidByTenant[p.tenant_id] ?? 0) + Number(p.amount);
+    });
+
+    let paid = 0, partial = 0, unpaid = 0;
+    tenants.forEach((t) => {
+      const paidAmt = paidByTenant[t.id] ?? 0;
+      const rent = Number(t.rent_amount);
+      if (rent > 0 && paidAmt >= rent) paid++;
+      else if (paidAmt > 0) partial++;
+      else unpaid++;
+    });
+
     const occupancyRate = totalUnits > 0 ? Math.round((occupied / totalUnits) * 100) : 0;
     return { occupied, totalUnits, vacant, monthlyRent, paid, partial, unpaid, occupancyRate };
   };
