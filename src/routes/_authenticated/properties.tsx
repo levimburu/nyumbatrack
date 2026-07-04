@@ -170,6 +170,12 @@ function PropertiesPage() {
       paidByTenant[p.tenant_id] = (paidByTenant[p.tenant_id] ?? 0) + Number(p.amount);
     });
 
+    // Total collected this month for this property (only tenants belonging to it)
+    const tenantIds = new Set(tenants.map((t) => t.id));
+    const collectedThisMonth = (monthPayments ?? [])
+      .filter((p) => tenantIds.has(p.tenant_id))
+      .reduce((s, p) => s + Number(p.amount), 0);
+
     let paid = 0, partial = 0, unpaid = 0;
     tenants.forEach((t) => {
       const paidAmt = paidByTenant[t.id] ?? 0;
@@ -180,7 +186,7 @@ function PropertiesPage() {
     });
 
     const occupancyRate = totalUnits > 0 ? Math.round((occupied / totalUnits) * 100) : 0;
-    return { occupied, totalUnits, vacant, monthlyRent, paid, partial, unpaid, occupancyRate };
+    return { occupied, totalUnits, vacant, monthlyRent, collectedThisMonth, paid, partial, unpaid, occupancyRate };
   };
 
   const renderContent = () => {
@@ -285,11 +291,11 @@ function PropertiesPage() {
                   {stats.totalUnits > 0 && (
                     <>
                       <div className="grid grid-cols-3 gap-2 mt-3">
-                        <div className={`rounded-lg p-2.5 ${formatKES(stats.monthlyRent).length > 11 ? "col-span-3" : ""}`} style={{ background: "#F5F5F0" }}>
+                        <div className={`rounded-lg p-2.5 ${formatKES(stats.collectedThisMonth).length > 11 ? "col-span-3" : ""}`} style={{ background: "#F5F5F0" }}>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                            <TrendingUp className="h-3 w-3" /> Rent
+                            <TrendingUp className="h-3 w-3" /> Collected
                           </div>
-                          <div className="font-display font-bold text-sm text-foreground whitespace-nowrap">{formatKES(stats.monthlyRent)}</div>
+                          <div className="font-display font-bold text-sm whitespace-nowrap" style={{ color: "#16A34A" }}>{formatKES(stats.collectedThisMonth)}</div>
                         </div>
                         <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
                           <div className="text-xs text-muted-foreground mb-1">Occupied</div>
