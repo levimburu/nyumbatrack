@@ -27,6 +27,7 @@ function DepositsPage() {
   const qc = useQueryClient();
   const { selectedProperty } = useProperty();
   const [editing, setEditing] = useState<Partial<Deposit> | null>(null);
+  const [refundTarget, setRefundTarget] = useState<Deposit | null>(null);
 
   const { data: deposits, isLoading } = useQuery({
     queryKey: ["deposits", selectedProperty?.id],
@@ -91,6 +92,24 @@ function DepositsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Mark a held deposit as refunded (today's date)
+  const refund = useMutation({
+    mutationFn: async (deposit: Deposit) => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { error } = await (supabase as any)
+        .from("deposits")
+        .update({ status: "refunded", refunded_on: today })
+        .eq("id", deposit.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["deposits", selectedProperty?.id] });
+      setRefundTarget(null);
+      toast.success("Deposit refunded");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const totalHeld = deposits
     ?.filter((d) => d.status === "held")
     .reduce((s, d) => s + Number(d.amount), 0) ?? 0;
@@ -101,6 +120,11 @@ function DepositsPage() {
 
   const heldCount = deposits?.filter((d) => d.status === "held").length ?? 0;
   const refundedCount = deposits?.filter((d) => d.status === "refunded").length ?? 0;
+
+  // Tenants who don't yet have a deposit record — only these are offered
+  // in the "Add Deposit" form, so you can't add a duplicate deposit.
+  const tenantIdsWithDeposit = new Set((deposits ?? []).map((d) => d.tenant_id));
+  const tenantsWithoutDeposit = (tenants ?? []).filter((t) => !tenantIdsWithDeposit.has(t.id));
 
   if (!selectedProperty) return null;
 
@@ -115,7 +139,13 @@ function DepositsPage() {
           </p>
         </div>
         <button
-          onClick={() => setEditing({})}
+          onClick={() => {
+            if (tenantsWithoutDeposit.length === 0) {
+              toast.error("All tenants already have a deposit recorded.");
+              return;
+            }
+            setEditing({});
+          }}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white glow-primary"
           style={{ background: "#166534" }}
         >
@@ -183,12 +213,23 @@ function DepositsPage() {
                   {d.notes ?? "—"}
                 </td>
                 <td className="py-3 pr-5 text-right">
-                  <button
-                    onClick={() => setEditing(d)}
-                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
+                  <div className="inline-flex items-center gap-1">
+                    {d.status === "held" && (
+                      <button
+                        onClick={() => setRefundTarget(d)}
+                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border transition-colors"
+                        style={{ borderColor: "#166534", color: "#166534", background: "#F0FDF4" }}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Refund
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setEditing(d)}
+                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -222,7 +263,16 @@ function DepositsPage() {
               </div>
             </div>
             {d.notes && <div className="text-xs text-muted-foreground mb-3">{d.notes}</div>}
-            <div className="flex justify-end pt-2 border-t border-border">
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+              {d.status === "held" && (
+                <button
+                  onClick={() => setRefundTarget(d)}
+                  className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border transition-colors"
+                  style={{ borderColor: "#166534", color: "#166534", background: "#F0FDF4" }}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Refund
+                </button>
+              )}
               <button
                 onClick={() => setEditing(d)}
                 className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
@@ -237,11 +287,42 @@ function DepositsPage() {
       {editing !== null && (
         <DepositForm
           initial={editing}
-          tenants={tenants ?? []}
+          tenants={editing.id ? (tenants ?? []) : tenantsWithoutDeposit}
           onSave={(d) => upsert.mutate(d)}
           onClose={() => setEditing(null)}
           saving={upsert.isPending}
         />
+      )}
+
+      {refundTarget && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
+              <CheckCircle2 className="h-7 w-7" style={{ color: "#166534" }} />
+            </div>
+            <h2 className="font-display text-xl font-semibold mb-1">Refund Deposit</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Mark <span className="font-semibold text-foreground">{formatKES(refundTarget.amount)}</span> deposit for{" "}
+              <span className="font-semibold text-foreground">{refundTarget.tenant?.full_name}</span> as refunded? Today's date will be recorded.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setRefundTarget(null)}
+                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => refund.mutate(refundTarget)}
+                disabled={refund.isPending}
+                className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                style={{ background: "#166534" }}
+              >
+                {refund.isPending ? "Refunding…" : "Confirm Refund"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
