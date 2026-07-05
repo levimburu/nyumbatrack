@@ -414,6 +414,11 @@ export function TenantPaymentView({ tenant, onClose }: {
           <div className="flex-1 min-w-0">
             <h2 className="font-display text-lg font-bold text-white truncate">{tenant.full_name}</h2>
             <p className="text-xs" style={{ color: "rgba(255,255,255,0.75)" }}>Unit {tenant.unit} · {formatKES(tenant.rent_amount)}/mo</p>
+            {tenant.next_due_date && (
+              <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
+                Next due: <span style={{ color: "#fff", fontWeight: 600 }}>{formatDate(tenant.next_due_date)}</span>
+              </p>
+            )}
           </div>
           <button onClick={onClose} className="text-white/80 hover:text-white">
             <X className="h-5 w-5" />
