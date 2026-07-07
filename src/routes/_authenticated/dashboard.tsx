@@ -136,18 +136,43 @@ function Dashboard() {
       (paidThisMonthByTenant[p.tenant_id] ?? 0) + Number(p.amount);
   });
 
-  // Status for the CURRENT month, driven purely by what's been paid for this month.
-  // paid = full rent covered, partial = some but not full, unpaid = nothing yet.
+  // A tenant is "covered by advance" for the current month when their
+  // next_due_date falls in a LATER month than the current one — i.e. their
+  // rent has already been settled through (at least) this month, typically
+  // via advance payments recorded when they were added.
+  const now = new Date();
+  const currentYM = now.getFullYear() * 12 + now.getMonth();
+  const isCoveredByAdvance = (t: any): boolean => {
+    if (!t.next_due_date) return false;
+    const due = new Date(t.next_due_date);
+    if (isNaN(due.getTime())) return false;
+    const dueYM = due.getFullYear() * 12 + due.getMonth();
+    return dueYM > currentYM;
+  };
+
+  // Status for the CURRENT month. Paid if either the full rent has been paid
+  // for this month OR the tenant is covered by advance (next_due beyond now).
   const getCurrentMonthStatus = (t: any): "paid" | "partial" | "unpaid" => {
-    const paid = paidThisMonthByTenant[t.id] ?? 0;
     const rent = Number(t.rent_amount);
+    if (isCoveredByAdvance(t)) return "paid";
+    const paid = paidThisMonthByTenant[t.id] ?? 0;
     if (paid >= rent && rent > 0) return "paid";
     if (paid > 0) return "partial";
     return "unpaid";
   };
 
-  // Collected / outstanding / rate are all current-month based, using payment_month.
-  const collected = (allPaymentsThisMonth ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+  // Collected for the current month: sum of payments tagged for this month,
+  // PLUS the full rent of any advance-covered tenant who has no payment tagged
+  // to this month (so their covered rent still counts once, without double-
+  // counting anyone who does have a payment recorded for the month).
+  const collectedFromPayments = (allPaymentsThisMonth ?? []).reduce((s: number, p: any) => s + Number(p.amount), 0);
+  const collectedFromAdvance = (tenants ?? []).reduce((s: number, t: any) => {
+    if (isCoveredByAdvance(t) && !(paidThisMonthByTenant[t.id] > 0)) {
+      return s + Number(t.rent_amount);
+    }
+    return s;
+  }, 0);
+  const collected = collectedFromPayments + collectedFromAdvance;
   const outstanding = Math.max(0, expected - collected);
   const collectionRate = expected > 0 ? Math.min(100, Math.round((collected / expected) * 100)) : 0;
 
@@ -163,16 +188,34 @@ function Dashboard() {
   // --- Breakdown lists for the tappable stat cards ---
 
   // Collected: the individual payments made for this month (name, unit, amount, date, method)
-  const collectedList = (allPaymentsThisMonth ?? []).map((p: any) => ({
-    id: p.tenant_id + "-" + p.paid_on + "-" + p.amount,
-    name: p.tenants?.full_name ?? "—",
-    unit: p.tenants?.unit ?? "—",
-    amount: Number(p.amount),
-    paidOn: p.paid_on,
-    method: p.method as string,
-  }));
+  const collectedList: Array<{ id: string; name: string; unit: string; amount: number; paidOn: string | null; method: string; advance?: boolean }> =
+    (allPaymentsThisMonth ?? []).map((p: any) => ({
+      id: p.tenant_id + "-" + p.paid_on + "-" + p.amount,
+      name: p.tenants?.full_name ?? "—",
+      unit: p.tenants?.unit ?? "—",
+      amount: Number(p.amount),
+      paidOn: p.paid_on,
+      method: p.method as string,
+    }));
 
-  // Outstanding: tenants who haven't fully paid this month, with how much they still owe
+  // Add advance-covered tenants (paid ahead, no payment tagged to this month)
+  // so their covered rent is visible in the Collected breakdown too.
+  (tenants ?? []).forEach((t: any) => {
+    if (isCoveredByAdvance(t) && !(paidThisMonthByTenant[t.id] > 0)) {
+      collectedList.push({
+        id: "advance-" + t.id,
+        name: t.full_name,
+        unit: t.unit,
+        amount: Number(t.rent_amount),
+        paidOn: null,
+        method: "advance",
+        advance: true,
+      });
+    }
+  });
+
+  // Outstanding: tenants who haven't covered this month (by payment or advance),
+  // with how much they still owe for the month.
   const outstandingList = (tenants ?? [])
     .map((t: any) => {
       const paid = paidThisMonthByTenant[t.id] ?? 0;
@@ -181,7 +224,7 @@ function Dashboard() {
       const status = getCurrentMonthStatus(t);
       return { id: t.id, name: t.full_name, unit: t.unit, owed, paid, rent, status };
     })
-    .filter((t) => t.owed > 0);
+    .filter((t) => t.status !== "paid" && t.owed > 0);
 
   // Expected: the full rent roll — every tenant and their monthly rent
   const expectedList = (tenants ?? []).map((t: any) => ({
@@ -535,7 +578,7 @@ function Dashboard() {
                         <div className="min-w-0">
                           <div className="font-medium text-sm text-foreground truncate">{p.name}</div>
                           <div className="text-xs text-muted-foreground">
-                            Unit {p.unit} · {formatDate(p.paidOn)}
+                            Unit {p.unit}{p.advance ? " · covered by advance" : ` · ${formatDate(p.paidOn as string)}`}
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-3">
@@ -545,12 +588,13 @@ function Dashboard() {
                           <span
                             className="inline-block rounded-md px-2 py-0.5 text-xs font-medium mt-0.5"
                             style={
+                              p.advance ? { background: "#EDE9FE", color: "#6D28D9" } :
                               p.method === "mpesa" ? { background: "#DCFCE7", color: "#166534" } :
                               p.method === "bank" ? { background: "#EFF6FF", color: "#2563EB" } :
                               { background: "#F5F5F0", color: "#6B7280" }
                             }
                           >
-                            {p.method === "mpesa" ? "M-Pesa" : p.method === "bank" ? "Bank Transfer" : "Cash"}
+                            {p.advance ? "Advance" : p.method === "mpesa" ? "M-Pesa" : p.method === "bank" ? "Bank Transfer" : "Cash"}
                           </span>
                         </div>
                       </div>

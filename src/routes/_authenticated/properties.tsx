@@ -93,7 +93,7 @@ function PropertiesPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("tenants")
-        .select("id, property_id, rent_amount, balance");
+        .select("id, property_id, rent_amount, balance, next_due_date");
       if (error) throw error;
       return data as any[];
     },
@@ -170,17 +170,37 @@ function PropertiesPage() {
       paidByTenant[p.tenant_id] = (paidByTenant[p.tenant_id] ?? 0) + Number(p.amount);
     });
 
-    // Total collected this month for this property (only tenants belonging to it)
+    // A tenant is covered by advance when their next_due_date is in a later
+    // month than the current one (rent already settled through this month).
+    const now = new Date();
+    const currentYM = now.getFullYear() * 12 + now.getMonth();
+    const coveredByAdvance = (t: any): boolean => {
+      if (!t.next_due_date) return false;
+      const due = new Date(t.next_due_date);
+      if (isNaN(due.getTime())) return false;
+      return due.getFullYear() * 12 + due.getMonth() > currentYM;
+    };
+
+    // Total collected this month: payments tagged for this month, plus the full
+    // rent of advance-covered tenants who have no payment tagged to this month.
     const tenantIds = new Set(tenants.map((t) => t.id));
-    const collectedThisMonth = (monthPayments ?? [])
+    const collectedFromPayments = (monthPayments ?? [])
       .filter((p) => tenantIds.has(p.tenant_id))
       .reduce((s, p) => s + Number(p.amount), 0);
+    const collectedFromAdvance = tenants.reduce((s, t) => {
+      if (coveredByAdvance(t) && !((paidByTenant[t.id] ?? 0) > 0)) {
+        return s + Number(t.rent_amount);
+      }
+      return s;
+    }, 0);
+    const collectedThisMonth = collectedFromPayments + collectedFromAdvance;
 
     let paid = 0, partial = 0, unpaid = 0;
     tenants.forEach((t) => {
       const paidAmt = paidByTenant[t.id] ?? 0;
       const rent = Number(t.rent_amount);
-      if (rent > 0 && paidAmt >= rent) paid++;
+      if (coveredByAdvance(t)) paid++;
+      else if (rent > 0 && paidAmt >= rent) paid++;
       else if (paidAmt > 0) partial++;
       else unpaid++;
     });

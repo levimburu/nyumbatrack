@@ -47,6 +47,7 @@ function MethodBadge({ method }: { method: string }) {
     mpesa: { bg: "#DCFCE7", color: "#166534", label: "M-Pesa" },
     bank: { bg: "#EFF6FF", color: "#2563EB", label: "Bank Transfer" },
     cash: { bg: "#F5F5F0", color: "#6B7280", label: "Cash" },
+    advance: { bg: "#EDE9FE", color: "#6D28D9", label: "Advance" },
   };
   const s = styles[method] ?? styles.cash;
   return (

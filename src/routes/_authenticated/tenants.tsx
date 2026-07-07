@@ -128,36 +128,79 @@ const { data: vacantUnits } = useQuery({
         } as any).eq("id", t.id);
         if (error) throw error;
       } else {
+        const advanceMonths = t.advance_months ?? 0;
         let nextDueDate = null;
+        // Determine the month the advance coverage starts from: the move-in
+        // month if provided, otherwise the current month.
+        const startBase = t.move_in_date
+          ? new Date(t.move_in_date + "T00:00:00")
+          : new Date();
         if (t.move_in_date) {
-          const moveIn = new Date(t.move_in_date + "T00:00:00");
-          const advanceMonths = t.advance_months ?? 0;
           const nextDue = new Date(
-            moveIn.getFullYear(),
-            moveIn.getMonth() + advanceMonths + 1,
+            startBase.getFullYear(),
+            startBase.getMonth() + advanceMonths + 1,
             t.due_day ?? 1
           );
           nextDueDate = nextDue.toISOString().slice(0, 10);
         }
-        const { error } = await supabase.from("tenants").insert({
-          full_name: t.full_name!,
-          email: t.email,
-          phone: t.phone,
-          unit: t.unit!,
-          rent_amount: t.rent_amount ?? 0,
-          deposit: t.deposit ?? null,
-          due_day: t.due_day ?? 1,
-          balance: t.rent_amount ?? 0,
-          property_id: selectedProperty!.id,
-          move_in_date: t.move_in_date ?? null,
-          advance_months: t.advance_months ?? 0,
-          next_due_date: nextDueDate,
-        } as any);
+
+        // Insert the tenant and get its id back so we can attach advance payments.
+        const { data: inserted, error } = await (supabase as any)
+          .from("tenants")
+          .insert({
+            full_name: t.full_name!,
+            email: t.email,
+            phone: t.phone,
+            unit: t.unit!,
+            rent_amount: t.rent_amount ?? 0,
+            deposit: t.deposit ?? null,
+            due_day: t.due_day ?? 1,
+            balance: t.rent_amount ?? 0,
+            property_id: selectedProperty!.id,
+            move_in_date: t.move_in_date ?? null,
+            advance_months: advanceMonths,
+            next_due_date: nextDueDate,
+          })
+          .select("id")
+          .single();
         if (error) throw error;
+
+        // If the tenant prepaid, auto-create one payment record per covered
+        // month (starting from the move-in/current month), each tagged to that
+        // month so it shows Paid everywhere. No advance = nothing created, so
+        // the tenant correctly stays Unpaid until a real payment is recorded.
+        if (inserted?.id && advanceMonths > 0 && (t.rent_amount ?? 0) > 0) {
+          const MONTHS_FULL = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December",
+          ];
+          const paidOn = new Date().toISOString().slice(0, 10);
+          const advanceRecords = [];
+          for (let i = 0; i < advanceMonths; i++) {
+            const d = new Date(startBase.getFullYear(), startBase.getMonth() + i, 1);
+            advanceRecords.push({
+              tenant_id: inserted.id,
+              amount: t.rent_amount ?? 0,
+              paid_on: paidOn,
+              method: "advance",
+              payment_month: `${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`,
+              reference: "Advance payment on enrollment",
+            });
+          }
+          const { error: payError } = await (supabase as any)
+            .from("payments")
+            .insert(advanceRecords);
+          if (payError) throw payError;
+        }
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tenants", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["tenants-min", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["payments", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["payments-this-month", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["all-payments-current-month"] });
+      qc.invalidateQueries({ queryKey: ["all-tenants-for-stats"] });
       setEditing(null);
       toast.success("Saved");
     },
