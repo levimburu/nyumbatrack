@@ -310,20 +310,22 @@ function PropertiesPage() {
                   )}
                   {stats.totalUnits > 0 && (
                     <>
-                      <div className="grid grid-cols-3 gap-2 mt-3">
-                        <div className={`rounded-lg p-2.5 ${formatKES(stats.collectedThisMonth).length > 11 ? "col-span-3" : ""}`} style={{ background: "#F5F5F0" }}>
+                      <div className="mt-3 space-y-2">
+                        <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <TrendingUp className="h-3 w-3" /> Collected
                           </div>
-                          <div className="font-display font-bold text-sm whitespace-nowrap" style={{ color: "#16A34A" }}>{formatKES(stats.collectedThisMonth)}</div>
+                          <div className="font-display font-bold text-base" style={{ color: "#16A34A" }}>{formatKES(stats.collectedThisMonth)}</div>
                         </div>
-                        <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
-                          <div className="text-xs text-muted-foreground mb-1">Occupied</div>
-                          <div className="font-display font-bold text-sm text-foreground">{stats.occupied} / {stats.totalUnits}</div>
-                        </div>
-                        <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
-                          <div className="text-xs text-muted-foreground mb-1">Vacant</div>
-                          <div className="font-display font-bold text-sm" style={{ color: stats.vacant > 0 ? "#DC2626" : "#16A34A" }}>{stats.vacant}</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
+                            <div className="text-xs text-muted-foreground mb-1">Occupied</div>
+                            <div className="font-display font-bold text-sm text-foreground">{stats.occupied} / {stats.totalUnits}</div>
+                          </div>
+                          <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
+                            <div className="text-xs text-muted-foreground mb-1">Vacant</div>
+                            <div className="font-display font-bold text-sm" style={{ color: stats.vacant > 0 ? "#DC2626" : "#16A34A" }}>{stats.vacant}</div>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-3">
