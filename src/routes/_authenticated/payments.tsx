@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
 import { Plus, X, Download, Search, Receipt, Trash2 } from "lucide-react";
@@ -262,23 +262,6 @@ export function TenantPaymentView({ tenant, onClose }: {
   const [adding, setAdding] = useState(false);
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
   const [cancelTarget, setCancelTarget] = useState<PaymentRow | null>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-
-  // When the panel opens, lock the background page from scrolling and make sure
-  // the panel's own content starts at the very top (so the header + Record
-  // Payment button are visible immediately, not scrolled into the middle).
-  useEffect(() => {
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    return () => { document.body.style.overflow = prevOverflow; };
-  }, []);
-
-  // The payment list loads asynchronously after mount, so reset the scroll
-  // position again once it renders, keeping the top in view.
-  useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [tenant.id]);
 
   // This tenant's payments
   const { data: tenantPayments } = useQuery({
@@ -418,9 +401,9 @@ export function TenantPaymentView({ tenant, onClose }: {
   const initials = tenant.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" style={{ top: 0, left: 0, right: 0, bottom: 0, height: "100dvh" }}>
+    <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white flex flex-col shadow-2xl" style={{ height: "100dvh" }}>
+      <div className="relative w-full max-w-md h-full bg-white flex flex-col shadow-2xl">
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4" style={{ background: "#166534" }}>
           <div
@@ -467,7 +450,7 @@ export function TenantPaymentView({ tenant, onClose }: {
         </div>
 
         {/* Months breakdown + payments */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {monthKeys.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-6">
               <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#F5F5F0" }}>
