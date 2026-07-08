@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
 import { Plus, X, Download, Search, Receipt, Trash2 } from "lucide-react";
@@ -262,6 +262,7 @@ export function TenantPaymentView({ tenant, onClose }: {
   const [adding, setAdding] = useState(false);
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
   const [cancelTarget, setCancelTarget] = useState<PaymentRow | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // This tenant's payments
   const { data: tenantPayments } = useQuery({
@@ -276,6 +277,13 @@ export function TenantPaymentView({ tenant, onClose }: {
       return data as PaymentRow[];
     },
   });
+
+  // Ensure the panel's scrollable list starts at the top when it opens, so the
+  // header and Record Payment button are visible immediately (not scrolled
+  // into the middle). Runs on open and again once payments load.
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [tenant.id, tenantPayments]);
 
   const add = useMutation({
     mutationFn: async (p: {
@@ -450,7 +458,7 @@ export function TenantPaymentView({ tenant, onClose }: {
         </div>
 
         {/* Months breakdown + payments */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {monthKeys.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-6">
               <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#F5F5F0" }}>
