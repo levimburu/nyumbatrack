@@ -117,6 +117,20 @@ function ReportsPage() {
     .map(Number)
     .sort((a, b) => b - a);
 
+  // Yearly Collection History: same idea as the monthly table below, but
+  // rolled up per year. Expected assumes 12 months for a completed year, and
+  // only Jan-through-now for the current year (so it isn't inflated by
+  // months that haven't happened yet).
+  const currentYear = now.getFullYear();
+  const yearHistory = breakdownYears.map((year) => {
+    const collected = collectedByYear[year].total;
+    const monthsInYear = year === currentYear ? now.getMonth() + 1 : 12;
+    const expected = expectedPerMonth * monthsInYear;
+    const outstanding = Math.max(0, expected - collected);
+    const rate = expected > 0 ? Math.min(100, Math.round((collected / expected) * 100)) : 0;
+    return { year, collected, expected, outstanding, rate };
+  });
+
   const methodLabels: Record<string, string> = {
     mpesa: "M-Pesa",
     bank: "Bank Transfer",
@@ -248,6 +262,56 @@ function ReportsPage() {
                 {monthHistory.map((row) => (
                   <tr key={row.month} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                     <td className="px-5 py-3 font-medium text-foreground">{row.month}</td>
+                    <td className="py-3 font-semibold" style={{ color: "#16A34A" }}>{formatKES(row.collected)}</td>
+                    <td className="py-3 text-muted-foreground">{formatKES(row.expected)}</td>
+                    <td className="py-3 font-medium" style={{ color: row.outstanding > 0 ? "#DC2626" : "#6B7280" }}>
+                      {row.outstanding > 0 ? formatKES(row.outstanding) : "—"}
+                    </td>
+                    <td className="py-3 pr-5 text-right">
+                      <span
+                        className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                        style={{
+                          background: row.rate >= 90 ? "#DCFCE7" : row.rate >= 50 ? "#FEF9C3" : "#FEE2E2",
+                          color: row.rate >= 90 ? "#166534" : row.rate >= 50 ? "#854D0E" : "#991B1B",
+                        }}
+                      >
+                        {row.rate}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Yearly collection history (by rent year) */}
+      <div className="card-surface overflow-hidden">
+        <div className="px-5 py-4 border-b border-border">
+          <h2 className="font-display text-base font-semibold">Yearly Collection History</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Collected per year, including advance payments</p>
+        </div>
+        {yearHistory.length === 0 ? (
+          <div className="px-5 py-10 text-center text-sm text-muted-foreground">
+            No payment history yet.
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", minWidth: "560px", fontSize: "0.875rem", borderCollapse: "collapse" }}>
+              <thead>
+                <tr className="border-b border-border" style={{ background: "#F9FAFB" }}>
+                  <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Year</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Collected</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Expected</th>
+                  <th className="py-3 text-left text-xs font-medium text-muted-foreground">Outstanding</th>
+                  <th className="py-3 pr-5 text-right text-xs font-medium text-muted-foreground">Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {yearHistory.map((row) => (
+                  <tr key={row.year} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="px-5 py-3 font-medium text-foreground">{row.year}</td>
                     <td className="py-3 font-semibold" style={{ color: "#16A34A" }}>{formatKES(row.collected)}</td>
                     <td className="py-3 text-muted-foreground">{formatKES(row.expected)}</td>
                     <td className="py-3 font-medium" style={{ color: row.outstanding > 0 ? "#DC2626" : "#6B7280" }}>
