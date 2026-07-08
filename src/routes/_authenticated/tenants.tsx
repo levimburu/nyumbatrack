@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
 import { Plus, Pencil, Trash2, X, Eye, Search, Key, Copy } from "lucide-react";
@@ -491,7 +492,7 @@ const { data: vacantUnits } = useQuery({
         />
       )}
 
-      {tenantCode && (
+      {tenantCode && createPortal(
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
           <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
             <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
@@ -519,7 +520,8 @@ const { data: vacantUnits } = useQuery({
               Done
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -549,7 +551,11 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
     amount: Number(p.amount),
   })) ?? [];
 
-  return (
+  // Render via a portal directly onto document.body so this modal isn't
+  // affected by the page's animated <main> wrapper (a transformed ancestor
+  // breaks `position: fixed`, making the modal open offset by the page's
+  // scroll position instead of pinned to the true top of the screen).
+  return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="card-surface w-full max-w-lg animate-slide-up max-h-[90vh] overflow-y-auto">
         {/* Header */}
@@ -682,7 +688,8 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -754,7 +761,11 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
     });
   };
 
-  return (
+  // Render via a portal directly onto document.body so this modal isn't
+  // affected by the page's animated <main> wrapper (a transformed ancestor
+  // breaks `position: fixed`, making the modal open offset by the page's
+  // scroll position instead of pinned to the true top of the screen).
+  return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="card-surface w-full max-w-lg p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
         <div className="mb-5 flex items-center justify-between">
@@ -949,7 +960,8 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
         </form>
         <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
