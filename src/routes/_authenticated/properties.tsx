@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, X, Building2, MapPin, Users, TrendingUp, Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -418,7 +419,11 @@ function PropertyForm({
   const [description, setDescription] = useState(initial?.description ?? "");
   const [totalUnits, setTotalUnits] = useState(initial?.total_units ?? 0);
 
-  return (
+  // Render via a portal directly onto document.body so this modal isn't
+  // affected by the page's animated <main> wrapper (a transformed ancestor
+  // breaks `position: fixed`, making the modal open offset by the page's
+  // scroll position instead of pinned to the true top of the screen).
+  return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="card-surface w-full max-w-lg p-6 animate-slide-up">
         <div className="mb-5 flex items-center justify-between">
@@ -451,6 +456,7 @@ function PropertyForm({
         </form>
         <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
