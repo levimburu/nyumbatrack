@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
 import { Plus, X, Download, Search, Receipt, Trash2 } from "lucide-react";
@@ -408,7 +409,13 @@ export function TenantPaymentView({ tenant, onClose }: {
 
   const initials = tenant.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
-  return (
+  // Render via a portal directly onto document.body. This is essential: the
+  // page's <main> wrapper uses an animation class that applies a CSS
+  // transform, and any transformed ancestor turns `position: fixed` into a
+  // relative-to-that-ancestor position instead of the true viewport. Without
+  // the portal, a scrolled page makes this panel open offset ("in the
+  // middle") instead of pinned to the actual top of the screen.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md h-full bg-white flex flex-col shadow-2xl">
@@ -576,7 +583,8 @@ export function TenantPaymentView({ tenant, onClose }: {
           cancelling={cancelPayment.isPending}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
