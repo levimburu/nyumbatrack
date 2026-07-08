@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES } from "@/lib/format";
-import { TrendingUp, CreditCard, BarChart2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, CreditCard, BarChart2, X, ChevronDown, ChevronUp, ChevronRight } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Cell
@@ -160,11 +160,14 @@ function ReportsPage() {
           onClick={() => setShowTotalBreakdown(true)}
           className="card-surface p-5 text-left hover:shadow-md transition-shadow"
         >
-          <div
-            className="grid h-10 w-10 place-items-center rounded-xl mb-3"
-            style={{ background: "#DCFCE7" }}
-          >
-            <TrendingUp className="h-5 w-5" style={{ color: "#16A34A" }} />
+          <div className="flex items-center justify-between mb-3">
+            <div
+              className="grid h-10 w-10 place-items-center rounded-xl"
+              style={{ background: "#DCFCE7" }}
+            >
+              <TrendingUp className="h-5 w-5" style={{ color: "#16A34A" }} />
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="text-xs text-muted-foreground mb-1">Total Collected (All Time)</div>
           <div className="font-display text-xl font-bold text-foreground">{formatKES(total)}</div>
