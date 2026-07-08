@@ -402,8 +402,8 @@ export function AppLayout({ children, role, email, displayName }: {
   );
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <div className="hidden md:block">{Sidebar}</div>
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      <div className="hidden md:block h-full">{Sidebar}</div>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
@@ -415,7 +415,7 @@ export function AppLayout({ children, role, email, displayName }: {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
         {/* Desktop top bar */}
         <header className="hidden md:flex items-center justify-between border-b border-border bg-white px-6 py-3">
           <div>
@@ -479,7 +479,7 @@ export function AppLayout({ children, role, email, displayName }: {
           )}
         </header>
 
-        <main className="flex-1 p-4 md:px-8 md:py-5 animate-fade-in">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 md:px-8 md:py-5 animate-fade-in">{children}</main>
       </div>
 
       {/* NOTIFICATIONS PANEL */}
