@@ -113,7 +113,7 @@ const { data: vacantUnits } = useQuery({
   );
 
   const upsert = useMutation({
-    mutationFn: async (t: Partial<Tenant>) => {
+    mutationFn: async (t: Partial<Tenant> & { paid_up_to?: string | null }) => {
       if (t.id) {
         const { error } = await supabase.from("tenants").update({
           full_name: t.full_name,
@@ -128,23 +128,63 @@ const { data: vacantUnits } = useQuery({
         } as any).eq("id", t.id);
         if (error) throw error;
       } else {
+        const MONTHS_FULL = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December",
+        ];
         const advanceMonths = t.advance_months ?? 0;
-        let nextDueDate = null;
-        // Determine the month the advance coverage starts from: the move-in
-        // month if provided, otherwise the current month.
+        const dueDay = t.due_day ?? 1;
+
+        // The month coverage starts from: the move-in month if provided,
+        // otherwise the current month.
         const startBase = t.move_in_date
           ? new Date(t.move_in_date + "T00:00:00")
           : new Date();
-        if (t.move_in_date) {
-          const nextDue = new Date(
-            startBase.getFullYear(),
-            startBase.getMonth() + advanceMonths + 1,
-            t.due_day ?? 1
-          );
+
+        // Figure out which months to mark Paid and what the next due date is.
+        // "Rent paid up to" takes priority over "advance months" when both set.
+        const monthsToFill: { year: number; month: number }[] = [];
+        let nextDueDate: string | null = null;
+
+        // Parse "paid up to" (a "Month Year" label) if provided.
+        let paidUpToDate: Date | null = null;
+        if (t.paid_up_to) {
+          const d = new Date(t.paid_up_to);
+          if (!isNaN(d.getTime())) paidUpToDate = d;
+        }
+
+        if (paidUpToDate) {
+          // Fill every month from move-in (or the paid-up-to month itself if no
+          // move-in date) through the paid-up-to month, inclusive.
+          const startY = t.move_in_date ? startBase.getFullYear() : paidUpToDate.getFullYear();
+          const startM = t.move_in_date ? startBase.getMonth() : paidUpToDate.getMonth();
+          const endY = paidUpToDate.getFullYear();
+          const endM = paidUpToDate.getMonth();
+          const span = (endY - startY) * 12 + (endM - startM);
+          for (let i = 0; i <= Math.max(0, span); i++) {
+            const d = new Date(startY, startM + i, 1);
+            monthsToFill.push({ year: d.getFullYear(), month: d.getMonth() });
+          }
+          // Next due = month right after "paid up to".
+          const nextDue = new Date(endY, endM + 1, dueDay);
+          nextDueDate = nextDue.toISOString().slice(0, 10);
+        } else if (advanceMonths > 0) {
+          // Advance months forward from the start month.
+          for (let i = 0; i < advanceMonths; i++) {
+            const d = new Date(startBase.getFullYear(), startBase.getMonth() + i, 1);
+            monthsToFill.push({ year: d.getFullYear(), month: d.getMonth() });
+          }
+          if (t.move_in_date) {
+            const nextDue = new Date(startBase.getFullYear(), startBase.getMonth() + advanceMonths + 1, dueDay);
+            nextDueDate = nextDue.toISOString().slice(0, 10);
+          }
+        } else if (t.move_in_date) {
+          // No prepaid months — next due is the month after move-in.
+          const nextDue = new Date(startBase.getFullYear(), startBase.getMonth() + 1, dueDay);
           nextDueDate = nextDue.toISOString().slice(0, 10);
         }
 
-        // Insert the tenant and get its id back so we can attach advance payments.
+        // Insert the tenant and get its id back so we can attach payments.
         const { data: inserted, error } = await (supabase as any)
           .from("tenants")
           .insert({
@@ -154,7 +194,7 @@ const { data: vacantUnits } = useQuery({
             unit: t.unit!,
             rent_amount: t.rent_amount ?? 0,
             deposit: t.deposit ?? null,
-            due_day: t.due_day ?? 1,
+            due_day: dueDay,
             balance: t.rent_amount ?? 0,
             property_id: selectedProperty!.id,
             move_in_date: t.move_in_date ?? null,
@@ -165,31 +205,22 @@ const { data: vacantUnits } = useQuery({
           .single();
         if (error) throw error;
 
-        // If the tenant prepaid, auto-create one payment record per covered
-        // month (starting from the move-in/current month), each tagged to that
-        // month so it shows Paid everywhere. No advance = nothing created, so
-        // the tenant correctly stays Unpaid until a real payment is recorded.
-        if (inserted?.id && advanceMonths > 0 && (t.rent_amount ?? 0) > 0) {
-          const MONTHS_FULL = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December",
-          ];
+        // Back-fill a Paid record for each covered month so it shows Paid
+        // everywhere (history, dashboard, collected). No covered months =
+        // nothing created, so the tenant correctly stays Unpaid until paid.
+        if (inserted?.id && monthsToFill.length > 0 && (t.rent_amount ?? 0) > 0) {
           const paidOn = new Date().toISOString().slice(0, 10);
-          const advanceRecords = [];
-          for (let i = 0; i < advanceMonths; i++) {
-            const d = new Date(startBase.getFullYear(), startBase.getMonth() + i, 1);
-            advanceRecords.push({
-              tenant_id: inserted.id,
-              amount: t.rent_amount ?? 0,
-              paid_on: paidOn,
-              method: "advance",
-              payment_month: `${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`,
-              reference: "Advance payment on enrollment",
-            });
-          }
+          const records = monthsToFill.map((m) => ({
+            tenant_id: inserted.id,
+            amount: t.rent_amount ?? 0,
+            paid_on: paidOn,
+            method: "advance",
+            payment_month: `${MONTHS_FULL[m.month]} ${m.year}`,
+            reference: "Recorded on enrollment",
+          }));
           const { error: payError } = await (supabase as any)
             .from("payments")
-            .insert(advanceRecords);
+            .insert(records);
           if (payError) throw payError;
         }
       }
@@ -634,7 +665,7 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
 
 function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
   initial: Partial<Tenant>;
-  onSave: (t: Partial<Tenant>) => void;
+  onSave: (t: Partial<Tenant> & { paid_up_to?: string | null }) => void;
   onClose: () => void;
   saving: boolean;
   vacantUnits: { id: string; unit_name: string; rent_price: number }[];
@@ -642,6 +673,22 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
   const [form, setForm] = useState<Partial<Tenant>>(initial);
   const set = <K extends keyof Tenant>(k: K, v: Tenant[K]) => setForm((p) => ({ ...p, [k]: v }));
   const [useDropdown, setUseDropdown] = useState(!initial.id && vacantUnits.length > 0);
+  const [paidUpTo, setPaidUpTo] = useState<string>("");
+
+  // Month options for "rent paid up to": 36 months back through the current
+  // month, newest first (covers tenants who moved in a while ago).
+  const MONTHS_FULL = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  const paidUpToOptions: string[] = [];
+  {
+    const now = new Date();
+    for (let i = 0; i >= -36; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      paidUpToOptions.push(`${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
@@ -650,7 +697,7 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
           <h2 className="font-display text-xl font-semibold">{initial.id ? "Edit Tenant" : "Add Tenant"}</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="grid gap-3 sm:grid-cols-2">
+        <form onSubmit={(e) => { e.preventDefault(); onSave({ ...form, paid_up_to: paidUpTo || null }); }} className="grid gap-3 sm:grid-cols-2">
           <FormField label="Full name" className="sm:col-span-2">
             <input required value={form.full_name ?? ""} onChange={(e) => set("full_name", e.target.value)} className="form-input" />
           </FormField>
@@ -713,6 +760,17 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
           <FormField label="Advance months paid">
             <input type="number" min={0} max={24} value={form.advance_months ?? 0} onChange={(e) => set("advance_months", Number(e.target.value))} className="form-input" />
           </FormField>
+          {!initial.id && (
+            <FormField label="Rent paid up to (optional)" className="sm:col-span-2">
+              <select value={paidUpTo} onChange={(e) => setPaidUpTo(e.target.value)} className="form-input">
+                <option value="">Not set — use advance months / none</option>
+                {paidUpToOptions.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                For a tenant who joined earlier and has already paid rent up to a certain month. Every month from move-in to this month is marked paid, and the next due date is set to the month after. Takes priority over advance months.
+              </p>
+            </FormField>
+          )}
           <div className="sm:col-span-2 mt-2 flex justify-end gap-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
             <button
