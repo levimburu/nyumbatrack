@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES } from "@/lib/format";
-import { TrendingUp, CreditCard, BarChart2 } from "lucide-react";
+import { TrendingUp, CreditCard, BarChart2, X, ChevronDown, ChevronUp } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Cell
@@ -95,6 +96,27 @@ function ReportsPage() {
   const total = payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
   const avg = monthData.length ? Math.round(total / monthData.length) : 0;
 
+  // Group all-time collected by year, then by month within each year — used
+  // by the tappable "Total Collected" breakdown. Grouped by payment_month
+  // (the month rent is FOR) so it lines up with the rest of the app; falls
+  // back to paid_on if payment_month is missing.
+  const [showTotalBreakdown, setShowTotalBreakdown] = useState(false);
+  const [openBreakdownYear, setOpenBreakdownYear] = useState<number | null>(null);
+
+  const collectedByYear: Record<number, { total: number; months: Record<string, number> }> = {};
+  (payments ?? []).forEach((p) => {
+    const label = p.payment_month || null;
+    const d = label ? new Date(label) : new Date(p.paid_on);
+    const year = isNaN(d.getTime()) ? new Date(p.paid_on).getFullYear() : d.getFullYear();
+    const monthLabel = label ?? new Date(p.paid_on).toLocaleString("en", { month: "long", year: "numeric" });
+    if (!collectedByYear[year]) collectedByYear[year] = { total: 0, months: {} };
+    collectedByYear[year].total += Number(p.amount);
+    collectedByYear[year].months[monthLabel] = (collectedByYear[year].months[monthLabel] ?? 0) + Number(p.amount);
+  });
+  const breakdownYears = Object.keys(collectedByYear)
+    .map(Number)
+    .sort((a, b) => b - a);
+
   const methodLabels: Record<string, string> = {
     mpesa: "M-Pesa",
     bank: "Bank Transfer",
@@ -120,16 +142,19 @@ function ReportsPage() {
 
       {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="card-surface p-5">
+        <button
+          onClick={() => setShowTotalBreakdown(true)}
+          className="card-surface p-5 text-left hover:shadow-md transition-shadow"
+        >
           <div
             className="grid h-10 w-10 place-items-center rounded-xl mb-3"
             style={{ background: "#DCFCE7" }}
           >
             <TrendingUp className="h-5 w-5" style={{ color: "#16A34A" }} />
           </div>
-          <div className="text-xs text-muted-foreground mb-1">Total Collected (YTD)</div>
+          <div className="text-xs text-muted-foreground mb-1">Total Collected (All Time)</div>
           <div className="font-display text-xl font-bold text-foreground">{formatKES(total)}</div>
-        </div>
+        </button>
         <div className="card-surface p-5">
           <div
             className="grid h-10 w-10 place-items-center rounded-xl mb-3"
@@ -287,6 +312,82 @@ function ReportsPage() {
           </div>
         )}
       </div>
+
+      {/* Total Collected (All Time) breakdown — by year, expandable to months */}
+      {showTotalBreakdown && createPortal(
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowTotalBreakdown(false)} />
+          <div className="relative w-full max-w-md h-full bg-white flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4" style={{ background: "#166534" }}>
+              <div>
+                <h2 className="font-display text-lg font-bold text-white">Total Collected (All Time)</h2>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.75)" }}>
+                  {selectedProperty?.name} · {formatKES(total)}
+                </p>
+              </div>
+              <button onClick={() => setShowTotalBreakdown(false)} className="text-white/80 hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {breakdownYears.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                  <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#F5F5F0" }}>
+                    <TrendingUp className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="font-medium text-foreground mb-1">No payments yet</p>
+                  <p className="text-sm text-muted-foreground">Collected amounts will appear here once payments are recorded.</p>
+                </div>
+              ) : (
+                <div className="px-5 py-4 space-y-3">
+                  {breakdownYears.map((year) => {
+                    const yearData = collectedByYear[year];
+                    const isOpen = openBreakdownYear === year;
+                    const monthEntries = Object.entries(yearData.months).sort((a, b) => {
+                      const da = new Date(a[0]).getTime();
+                      const db = new Date(b[0]).getTime();
+                      return (isNaN(db) ? 0 : db) - (isNaN(da) ? 0 : da);
+                    });
+                    return (
+                      <div key={year} className="rounded-xl border border-border overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setOpenBreakdownYear(isOpen ? null : year)}
+                          className="w-full flex items-center justify-between px-4 py-3"
+                          style={{ background: "#F9FAFB" }}
+                        >
+                          <span className="text-sm font-semibold text-foreground">{year}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-display font-bold text-sm" style={{ color: "#16A34A" }}>
+                              {formatKES(yearData.total)}
+                            </span>
+                            {isOpen ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </button>
+                        {isOpen && (
+                          <div className="divide-y divide-border">
+                            {monthEntries.map(([month, amount]) => (
+                              <div key={month} className="flex items-center justify-between px-4 py-2.5">
+                                <span className="text-sm text-foreground">{month}</span>
+                                <span className="text-sm font-semibold" style={{ color: "#16A34A" }}>{formatKES(amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
