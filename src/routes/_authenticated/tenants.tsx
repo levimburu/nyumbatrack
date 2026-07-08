@@ -113,8 +113,33 @@ const { data: vacantUnits } = useQuery({
   );
 
   const upsert = useMutation({
-    mutationFn: async (t: Partial<Tenant> & { paid_up_to?: string | null }) => {
+    mutationFn: async (t: Partial<Tenant> & { paid_months?: string[] }) => {
+      const MONTHS_FULL = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
+      ];
+      const dueDay = t.due_day ?? 1;
+
+      // Given a set of "Month Year" labels, compute the latest one and return
+      // the next due date as the month after it (at the tenant's due day).
+      const nextDueFromMonths = (months: string[]): string | null => {
+        if (!months.length) return null;
+        let latest = -Infinity;
+        let latestDate: Date | null = null;
+        for (const m of months) {
+          const d = new Date(m);
+          if (!isNaN(d.getTime())) {
+            const ym = d.getFullYear() * 12 + d.getMonth();
+            if (ym > latest) { latest = ym; latestDate = d; }
+          }
+        }
+        if (!latestDate) return null;
+        const nd = new Date(latestDate.getFullYear(), latestDate.getMonth() + 1, dueDay);
+        return nd.toISOString().slice(0, 10);
+      };
+
       if (t.id) {
+        // --- EDIT existing tenant ---
         const { error } = await supabase.from("tenants").update({
           full_name: t.full_name,
           email: t.email,
@@ -122,69 +147,74 @@ const { data: vacantUnits } = useQuery({
           unit: t.unit,
           rent_amount: t.rent_amount,
           deposit: t.deposit ?? null,
-          due_day: t.due_day,
+          due_day: dueDay,
           move_in_date: t.move_in_date ?? null,
           advance_months: t.advance_months ?? 0,
         } as any).eq("id", t.id);
         if (error) throw error;
-      } else {
-        const MONTHS_FULL = [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December",
-        ];
-        const advanceMonths = t.advance_months ?? 0;
-        const dueDay = t.due_day ?? 1;
 
-        // The month coverage starts from: the move-in month if provided,
-        // otherwise the current month.
+        // If the landlord marked paid months, back-fill records for any that
+        // don't already have a payment (skip months already recorded, so we
+        // never double up on real payments).
+        const selectedMonths = t.paid_months ?? [];
+        if (selectedMonths.length > 0 && (t.rent_amount ?? 0) > 0) {
+          const { data: existingPays } = await (supabase as any)
+            .from("payments")
+            .select("payment_month")
+            .eq("tenant_id", t.id);
+          const already = new Set((existingPays ?? []).map((p: any) => p.payment_month));
+          const paidOn = new Date().toISOString().slice(0, 10);
+          const toInsert = selectedMonths
+            .filter((m) => !already.has(m))
+            .map((m) => ({
+              tenant_id: t.id,
+              amount: t.rent_amount ?? 0,
+              paid_on: paidOn,
+              method: "advance",
+              payment_month: m,
+              reference: "Recorded on enrollment",
+            }));
+          if (toInsert.length > 0) {
+            const { error: payError } = await (supabase as any).from("payments").insert(toInsert);
+            if (payError) throw payError;
+          }
+          // Advance next_due_date if the marked months push it forward.
+          const nd = nextDueFromMonths(selectedMonths);
+          if (nd) {
+            await (supabase as any).from("tenants").update({ next_due_date: nd }).eq("id", t.id);
+          }
+        }
+      } else {
+        // --- ADD new tenant ---
+        const advanceMonths = t.advance_months ?? 0;
         const startBase = t.move_in_date
           ? new Date(t.move_in_date + "T00:00:00")
           : new Date();
 
-        // Figure out which months to mark Paid and what the next due date is.
-        // "Rent paid up to" takes priority over "advance months" when both set.
-        const monthsToFill: { year: number; month: number }[] = [];
+        // Months to mark Paid, and the resulting next due date.
+        const monthsToFill: string[] = [];
         let nextDueDate: string | null = null;
 
-        // Parse "paid up to" (a "Month Year" label) if provided.
-        let paidUpToDate: Date | null = null;
-        if (t.paid_up_to) {
-          const d = new Date(t.paid_up_to);
-          if (!isNaN(d.getTime())) paidUpToDate = d;
-        }
-
-        if (paidUpToDate) {
-          // Fill every month from move-in (or the paid-up-to month itself if no
-          // move-in date) through the paid-up-to month, inclusive.
-          const startY = t.move_in_date ? startBase.getFullYear() : paidUpToDate.getFullYear();
-          const startM = t.move_in_date ? startBase.getMonth() : paidUpToDate.getMonth();
-          const endY = paidUpToDate.getFullYear();
-          const endM = paidUpToDate.getMonth();
-          const span = (endY - startY) * 12 + (endM - startM);
-          for (let i = 0; i <= Math.max(0, span); i++) {
-            const d = new Date(startY, startM + i, 1);
-            monthsToFill.push({ year: d.getFullYear(), month: d.getMonth() });
-          }
-          // Next due = month right after "paid up to".
-          const nextDue = new Date(endY, endM + 1, dueDay);
-          nextDueDate = nextDue.toISOString().slice(0, 10);
+        const selectedMonths = t.paid_months ?? [];
+        if (selectedMonths.length > 0) {
+          // Existing-tenant mode: explicit list of paid months.
+          monthsToFill.push(...selectedMonths);
+          nextDueDate = nextDueFromMonths(selectedMonths);
         } else if (advanceMonths > 0) {
-          // Advance months forward from the start month.
+          // New-tenant mode: advance months forward from the start month.
           for (let i = 0; i < advanceMonths; i++) {
             const d = new Date(startBase.getFullYear(), startBase.getMonth() + i, 1);
-            monthsToFill.push({ year: d.getFullYear(), month: d.getMonth() });
+            monthsToFill.push(`${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`);
           }
           if (t.move_in_date) {
-            const nextDue = new Date(startBase.getFullYear(), startBase.getMonth() + advanceMonths + 1, dueDay);
-            nextDueDate = nextDue.toISOString().slice(0, 10);
+            const nd = new Date(startBase.getFullYear(), startBase.getMonth() + advanceMonths + 1, dueDay);
+            nextDueDate = nd.toISOString().slice(0, 10);
           }
         } else if (t.move_in_date) {
-          // No prepaid months — next due is the month after move-in.
-          const nextDue = new Date(startBase.getFullYear(), startBase.getMonth() + 1, dueDay);
-          nextDueDate = nextDue.toISOString().slice(0, 10);
+          const nd = new Date(startBase.getFullYear(), startBase.getMonth() + 1, dueDay);
+          nextDueDate = nd.toISOString().slice(0, 10);
         }
 
-        // Insert the tenant and get its id back so we can attach payments.
         const { data: inserted, error } = await (supabase as any)
           .from("tenants")
           .insert({
@@ -205,9 +235,6 @@ const { data: vacantUnits } = useQuery({
           .single();
         if (error) throw error;
 
-        // Back-fill a Paid record for each covered month so it shows Paid
-        // everywhere (history, dashboard, collected). No covered months =
-        // nothing created, so the tenant correctly stays Unpaid until paid.
         if (inserted?.id && monthsToFill.length > 0 && (t.rent_amount ?? 0) > 0) {
           const paidOn = new Date().toISOString().slice(0, 10);
           const records = monthsToFill.map((m) => ({
@@ -215,12 +242,10 @@ const { data: vacantUnits } = useQuery({
             amount: t.rent_amount ?? 0,
             paid_on: paidOn,
             method: "advance",
-            payment_month: `${MONTHS_FULL[m.month]} ${m.year}`,
+            payment_month: m,
             reference: "Recorded on enrollment",
           }));
-          const { error: payError } = await (supabase as any)
-            .from("payments")
-            .insert(records);
+          const { error: payError } = await (supabase as any).from("payments").insert(records);
           if (payError) throw payError;
         }
       }
@@ -665,7 +690,7 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
 
 function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
   initial: Partial<Tenant>;
-  onSave: (t: Partial<Tenant> & { paid_up_to?: string | null }) => void;
+  onSave: (t: Partial<Tenant> & { paid_months?: string[] }) => void;
   onClose: () => void;
   saving: boolean;
   vacantUnits: { id: string; unit_name: string; rent_price: number }[];
@@ -673,22 +698,61 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
   const [form, setForm] = useState<Partial<Tenant>>(initial);
   const set = <K extends keyof Tenant>(k: K, v: Tenant[K]) => setForm((p) => ({ ...p, [k]: v }));
   const [useDropdown, setUseDropdown] = useState(!initial.id && vacantUnits.length > 0);
-  const [paidUpTo, setPaidUpTo] = useState<string>("");
 
-  // Month options for "rent paid up to": 36 months back through the current
-  // month, newest first (covers tenants who moved in a while ago).
+  // Mode: "new" tenant (advance months) vs "existing" tenant (back-fill paid
+  // years/months). Editing an existing record defaults to "existing" so the
+  // landlord can fix their history.
+  const [mode, setMode] = useState<"new" | "existing">(initial.id ? "existing" : "new");
+
+  // Set of "Month Year" labels the landlord has marked as paid.
+  const [paidMonths, setPaidMonths] = useState<Set<string>>(new Set());
+  // Which year's month-dropdown is currently expanded (null = none).
+  const [openYear, setOpenYear] = useState<number | null>(null);
+
   const MONTHS_FULL = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
   ];
-  const paidUpToOptions: string[] = [];
-  {
-    const now = new Date();
-    for (let i = 0; i >= -36; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-      paidUpToOptions.push(`${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`);
+
+  // Compute the eligible months for each year between move-in and now.
+  // - move-in year: from the move-in month onward
+  // - current year: up to the current month
+  // - middle years: all 12 months
+  const now = new Date();
+  const moveIn = form.move_in_date ? new Date(form.move_in_date + "T00:00:00") : null;
+  const yearBlocks: { year: number; months: { label: string; monthIndex: number }[] }[] = [];
+  if (moveIn && !isNaN(moveIn.getTime())) {
+    const startYear = moveIn.getFullYear();
+    const endYear = now.getFullYear();
+    for (let y = startYear; y <= endYear; y++) {
+      const firstMonth = y === startYear ? moveIn.getMonth() : 0;
+      const lastMonth = y === endYear ? now.getMonth() : 11;
+      const months: { label: string; monthIndex: number }[] = [];
+      for (let m = firstMonth; m <= lastMonth; m++) {
+        months.push({ label: `${MONTHS_FULL[m]} ${y}`, monthIndex: m });
+      }
+      if (months.length > 0) yearBlocks.push({ year: y, months });
     }
   }
+
+  // Toggle a single month.
+  const toggleMonth = (label: string) => {
+    setPaidMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      return next;
+    });
+  };
+
+  // Toggle a whole year (all its eligible months on/off).
+  const toggleYear = (block: { year: number; months: { label: string; monthIndex: number }[] }) => {
+    const allSelected = block.months.every((m) => paidMonths.has(m.label));
+    setPaidMonths((prev) => {
+      const next = new Set(prev);
+      block.months.forEach((m) => { if (allSelected) next.delete(m.label); else next.add(m.label); });
+      return next;
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
@@ -697,7 +761,31 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
           <h2 className="font-display text-xl font-semibold">{initial.id ? "Edit Tenant" : "Add Tenant"}</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); onSave({ ...form, paid_up_to: paidUpTo || null }); }} className="grid gap-3 sm:grid-cols-2">
+
+        {/* New vs Existing tenant mode */}
+        <div className="flex gap-1 rounded-xl p-1 mb-5" style={{ background: "#F5F5F0" }}>
+          <button
+            type="button"
+            onClick={() => setMode("new")}
+            style={{ flex: 1, padding: "8px 0", fontSize: "0.8rem", fontWeight: 600, borderRadius: "10px", border: "none", cursor: "pointer", background: mode === "new" ? "#166534" : "transparent", color: mode === "new" ? "#fff" : "#6B7280", transition: "all 0.15s" }}
+          >
+            New Tenant
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("existing")}
+            style={{ flex: 1, padding: "8px 0", fontSize: "0.8rem", fontWeight: 600, borderRadius: "10px", border: "none", cursor: "pointer", background: mode === "existing" ? "#166534" : "transparent", color: mode === "existing" ? "#fff" : "#6B7280", transition: "all 0.15s" }}
+          >
+            Existing Tenant
+          </button>
+        </div>
+        {mode === "existing" && (
+          <p className="text-xs text-muted-foreground mb-4 -mt-2">
+            For a tenant who has been renting for a while. Set their move-in date, then tick the years or months they've already paid — those months will be marked Paid.
+          </p>
+        )}
+
+        <form onSubmit={(e) => { e.preventDefault(); onSave({ ...form, paid_months: mode === "existing" ? Array.from(paidMonths) : [] }); }} className="grid gap-3 sm:grid-cols-2">
           <FormField label="Full name" className="sm:col-span-2">
             <input required value={form.full_name ?? ""} onChange={(e) => set("full_name", e.target.value)} className="form-input" />
           </FormField>
@@ -757,19 +845,95 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
               className="form-input"
             />
           </FormField>
-          <FormField label="Advance months paid">
-            <input type="number" min={0} max={24} value={form.advance_months ?? 0} onChange={(e) => set("advance_months", Number(e.target.value))} className="form-input" />
-          </FormField>
-          {!initial.id && (
-            <FormField label="Rent paid up to (optional)" className="sm:col-span-2">
-              <select value={paidUpTo} onChange={(e) => setPaidUpTo(e.target.value)} className="form-input">
-                <option value="">Not set — use advance months / none</option>
-                {paidUpToOptions.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-              <p className="text-xs text-muted-foreground mt-1">
-                For a tenant who joined earlier and has already paid rent up to a certain month. Every month from move-in to this month is marked paid, and the next due date is set to the month after. Takes priority over advance months.
-              </p>
+          {mode === "new" && (
+            <FormField label="Advance months paid">
+              <input type="number" min={0} max={24} value={form.advance_months ?? 0} onChange={(e) => set("advance_months", Number(e.target.value))} className="form-input" />
             </FormField>
+          )}
+
+          {mode === "existing" && (
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-xs font-medium text-foreground">Months already paid</label>
+              {!form.move_in_date ? (
+                <div className="rounded-xl border border-border p-4 text-sm text-muted-foreground text-center">
+                  Set the move-in date above to choose paid months.
+                </div>
+              ) : yearBlocks.length === 0 ? (
+                <div className="rounded-xl border border-border p-4 text-sm text-muted-foreground text-center">
+                  No months to show for that move-in date.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {yearBlocks.map((block) => {
+                    const allSelected = block.months.every((m) => paidMonths.has(m.label));
+                    const someSelected = block.months.some((m) => paidMonths.has(m.label));
+                    const selectedCount = block.months.filter((m) => paidMonths.has(m.label)).length;
+                    const isOpen = openYear === block.year;
+                    return (
+                      <div key={block.year} className="rounded-xl border border-border overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "#F9FAFB" }}>
+                          <button
+                            type="button"
+                            onClick={() => toggleYear(block)}
+                            className="flex items-center gap-2 text-left"
+                          >
+                            <span
+                              className="grid h-5 w-5 place-items-center rounded border-2 flex-shrink-0"
+                              style={{
+                                borderColor: allSelected ? "#166534" : someSelected ? "#166534" : "#D1D5DB",
+                                background: allSelected ? "#166534" : "transparent",
+                              }}
+                            >
+                              {allSelected && <span style={{ color: "#fff", fontSize: "0.7rem", lineHeight: 1 }}>✓</span>}
+                              {someSelected && !allSelected && <span style={{ color: "#166534", fontSize: "0.9rem", lineHeight: 1 }}>–</span>}
+                            </span>
+                            <span className="text-sm font-semibold text-foreground">{block.year}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {selectedCount > 0 ? `${selectedCount}/${block.months.length} paid` : `${block.months.length} months`}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setOpenYear(isOpen ? null : block.year)}
+                            className="text-xs font-medium"
+                            style={{ color: "#166534" }}
+                          >
+                            {isOpen ? "Hide months" : "Choose months"}
+                          </button>
+                        </div>
+                        {isOpen && (
+                          <div className="grid grid-cols-2 gap-1 p-2">
+                            {block.months.map((m) => {
+                              const checked = paidMonths.has(m.label);
+                              return (
+                                <button
+                                  key={m.label}
+                                  type="button"
+                                  onClick={() => toggleMonth(m.label)}
+                                  className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors"
+                                  style={{ background: checked ? "#F0FDF4" : "transparent", border: `1px solid ${checked ? "#BBF7D0" : "#E5E7EB"}` }}
+                                >
+                                  <span
+                                    className="grid h-4 w-4 place-items-center rounded border-2 flex-shrink-0"
+                                    style={{ borderColor: checked ? "#166534" : "#D1D5DB", background: checked ? "#166534" : "transparent" }}
+                                  >
+                                    {checked && <span style={{ color: "#fff", fontSize: "0.6rem", lineHeight: 1 }}>✓</span>}
+                                  </span>
+                                  <span className="text-xs text-foreground">{MONTHS_FULL[m.monthIndex]}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <p className="text-xs text-muted-foreground">
+                    Tap a year to mark all its months paid, or "Choose months" to pick specific ones. {paidMonths.size} month{paidMonths.size === 1 ? "" : "s"} selected.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
           <div className="sm:col-span-2 mt-2 flex justify-end gap-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
