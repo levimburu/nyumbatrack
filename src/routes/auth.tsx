@@ -267,6 +267,36 @@ function AuthPage() {
     else setNewPin((p) => p.slice(0, -1));
   };
 
+  // Allow typing PIN digits (and Backspace) with the physical keyboard, on
+  // every PIN entry step. Re-subscribes whenever the pin values themselves
+  // change so the listener always sees the latest length (avoids a stale
+  // closure that would otherwise let more than 4 digits through, or block
+  // input after the first keystroke).
+  useEffect(() => {
+    const pinSteps: Step[] = ["pin_setup", "pin_confirm", "signin_pin", "new_pin_setup", "new_pin_confirm"];
+    if (!pinSteps.includes(step)) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= "0" && e.key <= "9") {
+        if (step === "pin_setup") handlePinInput(e.key, false);
+        else if (step === "pin_confirm") handlePinInput(e.key, true);
+        else if (step === "signin_pin") handlePinInput(e.key, false);
+        else if (step === "new_pin_setup") handleNewPinInput(e.key, false);
+        else if (step === "new_pin_confirm") handleNewPinInput(e.key, true);
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        if (step === "pin_setup") handlePinDelete(false);
+        else if (step === "pin_confirm") handlePinDelete(true);
+        else if (step === "signin_pin") handlePinDelete(false);
+        else if (step === "new_pin_setup") handleNewPinDelete(false);
+        else if (step === "new_pin_confirm") handleNewPinDelete(true);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [step, pin, pinConfirm, newPin, newPinConfirm]);
+
   const handleSaveNewPin = async () => {
     if (newPin !== newPinConfirm) {
       toast.error("PINs do not match");
@@ -351,7 +381,7 @@ function AuthPage() {
               <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>What's your name?</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>We'll use this to personalise your experience.</p>
-              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && fullName.trim()) setStep("email"); }} placeholder="Full name" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
               <button onClick={() => fullName.trim() && setStep("email")} disabled={!fullName.trim()} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
             </div>
           )}
@@ -361,7 +391,7 @@ function AuthPage() {
               <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Your email address</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>We'll use this to secure your account.</p>
-              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("password"); }} placeholder="you@example.com" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
               <button onClick={() => email.trim() && setStep("password")} disabled={!email.trim()} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
             </div>
           )}
@@ -372,7 +402,7 @@ function AuthPage() {
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Create a password</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Minimum 6 characters.</p>
               <div className="relative mb-4">
-                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" minLength={6} className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-12" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && password.length >= 6) setStep(role === "agent" ? "invite_code" : "pin_setup"); }} placeholder="••••••••" minLength={6} className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-12" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               </div>
               <button onClick={() => password.length >= 6 && setStep(role === "agent" ? "invite_code" : "pin_setup")} disabled={password.length < 6} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
@@ -384,7 +414,7 @@ function AuthPage() {
               <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Enter invite code</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Ask your landlord for the invite code.</p>
-              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} placeholder="NYM-ABC123" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4 text-center font-mono tracking-widest" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) setStep("pin_setup"); }} placeholder="NYM-ABC123" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4 text-center font-mono tracking-widest" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
               <button onClick={() => inviteCode.trim() && setStep("pin_setup")} disabled={!inviteCode.trim()} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
             </div>
           )}
@@ -404,7 +434,7 @@ function AuthPage() {
               <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Welcome back</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Enter your email to continue.</p>
-              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("signin_password"); }} placeholder="you@example.com" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
               <button onClick={() => email.trim() && setStep("signin_password")} disabled={!email.trim()} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
             </div>
           )}
@@ -415,7 +445,7 @@ function AuthPage() {
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Enter password</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Enter your password to sign in.</p>
               <div className="relative mb-4">
-                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-12" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !loading && password) handleSignIn(); }} placeholder="••••••••" className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-12" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               </div>
               <button onClick={handleSignIn} disabled={loading || !password} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
@@ -462,7 +492,7 @@ function AuthPage() {
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Set new password</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Choose a new password for your account.</p>
               <div className="relative mb-4">
-                <input autoFocus type={showResetPassword ? "text" : "password"} value={newResetPassword} onChange={(e) => setNewResetPassword(e.target.value)} placeholder="New password" minLength={6} className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-12" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+                <input autoFocus type={showResetPassword ? "text" : "password"} value={newResetPassword} onChange={(e) => setNewResetPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !loading && newResetPassword.length >= 6) handleResetPassword(); }} placeholder="New password" minLength={6} className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-12" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
                 <button type="button" onClick={() => setShowResetPassword(!showResetPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               </div>
               <button onClick={handleResetPassword} disabled={loading || newResetPassword.length < 6} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
@@ -573,7 +603,7 @@ function AuthPage() {
             <div className="flex flex-col flex-1">
               <h1 className="font-display text-2xl font-bold text-white mb-2">What's your name?</h1>
               <p className="text-white/60 text-sm mb-8">We'll use this to personalise your experience.</p>
-              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400" />
+              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && fullName.trim()) setStep("email"); }} placeholder="Full name" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400" />
               <button onClick={() => fullName.trim() && setStep("email")} disabled={!fullName.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
           )}
@@ -582,7 +612,7 @@ function AuthPage() {
             <div className="flex flex-col flex-1">
               <h1 className="font-display text-2xl font-bold text-white mb-2">Your email address</h1>
               <p className="text-white/60 text-sm mb-8">We'll use this to secure your account.</p>
-              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400" />
+              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("password"); }} placeholder="you@example.com" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400" />
               <button onClick={() => email.trim() && setStep("password")} disabled={!email.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
           )}
@@ -592,7 +622,7 @@ function AuthPage() {
               <h1 className="font-display text-2xl font-bold text-white mb-2">Create a password</h1>
               <p className="text-white/60 text-sm mb-8">Minimum 6 characters.</p>
               <div className="relative">
-                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" minLength={6} className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14" />
+                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && password.length >= 6) setStep(role === "agent" ? "invite_code" : "pin_setup"); }} placeholder="••••••••" minLength={6} className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
               </div>
               <button onClick={() => password.length >= 6 && setStep(role === "agent" ? "invite_code" : "pin_setup")} disabled={password.length < 6} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
@@ -603,18 +633,25 @@ function AuthPage() {
             <div className="flex flex-col flex-1">
               <h1 className="font-display text-2xl font-bold text-white mb-2">Enter invite code</h1>
               <p className="text-white/60 text-sm mb-8">Ask your landlord for the invite code to link your account.</p>
-              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} placeholder="e.g. NYM-ABC123" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono" />
+              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) setStep("pin_setup"); }} placeholder="e.g. NYM-ABC123" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono" />
               <button onClick={() => inviteCode.trim() && setStep("pin_setup")} disabled={!inviteCode.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
           )}
 
           {(step === "pin_setup" || step === "pin_confirm") && (
-            <div className="flex flex-col flex-1 items-center">
-              <h1 className="font-display text-2xl font-bold text-white mb-2 text-center">{step === "pin_setup" ? "Create your PIN" : "Confirm your PIN"}</h1>
-              <p className="text-white/60 text-sm mb-10 text-center">{step === "pin_setup" ? "Choose a 4-digit PIN for quick access." : "Enter the PIN again to confirm."}</p>
-              <PinDots value={step === "pin_setup" ? pin : pinConfirm} />
-              {loading ? <div className="mt-6 flex items-center gap-2 text-white/60"><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Creating account...</span></div>
-                : <PinPad onPress={(d) => handlePinInput(d, step === "pin_confirm")} onDelete={() => handlePinDelete(step === "pin_confirm")} />}
+            <div className="flex flex-col flex-1 items-center justify-center">
+              <div className="w-full rounded-3xl p-6" style={{ background: "#F5F5F0" }}>
+                <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>{step === "pin_setup" ? "Create your PIN" : "Confirm your PIN"}</h1>
+                <p className="text-sm mb-8 text-center" style={{ color: "#6B7280" }}>{step === "pin_setup" ? "Choose a 4-digit PIN for quick access." : "Enter the PIN again to confirm."}</p>
+                <div className="flex justify-center">
+                  <DesktopPinDots value={step === "pin_setup" ? pin : pinConfirm} />
+                </div>
+                {loading ? (
+                  <div className="mt-4 flex items-center justify-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Creating account...</span></div>
+                ) : (
+                  <div className="flex justify-center"><DesktopPinPad onPress={(d) => handlePinInput(d, step === "pin_confirm")} onDelete={() => handlePinDelete(step === "pin_confirm")} /></div>
+                )}
+              </div>
             </div>
           )}
 
@@ -622,7 +659,7 @@ function AuthPage() {
             <div className="flex flex-col flex-1">
               <h1 className="font-display text-2xl font-bold text-white mb-2">Welcome back</h1>
               <p className="text-white/60 text-sm mb-8">Enter your email to continue.</p>
-              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400" />
+              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("signin_password"); }} placeholder="you@example.com" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400" />
               <button onClick={() => email.trim() && setStep("signin_password")} disabled={!email.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
           )}
@@ -632,7 +669,7 @@ function AuthPage() {
               <h1 className="font-display text-2xl font-bold text-white mb-2">Enter password</h1>
               <p className="text-white/60 text-sm mb-8">Enter your password to sign in.</p>
               <div className="relative">
-                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14" />
+                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !loading && password) handleSignIn(); }} placeholder="••••••••" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
               </div>
               <button onClick={handleSignIn} disabled={loading || !password} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
@@ -643,33 +680,48 @@ function AuthPage() {
           )}
 
           {step === "signin_pin" && (
-            <div className="flex flex-col flex-1 items-center">
-              <h1 className="font-display text-2xl font-bold text-white mb-2 text-center">Enter your PIN</h1>
-              <p className="text-white/60 text-sm mb-2 text-center">Welcome back, <span className="text-white font-medium">{rememberedEmail}</span></p>
-              <p className="text-white/40 text-xs mb-10 text-center">Not you? Tap back to sign in differently.</p>
-              <PinDots value={pin} />
-              {loading ? <div className="mt-6 flex items-center gap-2 text-white/60"><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Signing in...</span></div>
-                : <PinPad onPress={(d) => handlePinInput(d, false)} onDelete={() => handlePinDelete(false)} />}
-              <button
-                onClick={() => { setForgotPinFlow(true); setPin(""); setEmail(rememberedEmail ?? ""); setStep("signin_password"); }}
-                className="mt-6 text-sm text-white/50"
-              >
-                Forgot PIN?
-              </button>
+            <div className="flex flex-col flex-1 items-center justify-center">
+              <div className="w-full rounded-3xl p-6" style={{ background: "#F5F5F0" }}>
+                <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>Enter your PIN</h1>
+                <p className="text-sm mb-1 text-center" style={{ color: "#6B7280" }}>Welcome back, <span className="font-medium" style={{ color: "#111827" }}>{rememberedEmail}</span></p>
+                <p className="text-xs mb-6 text-center" style={{ color: "#9CA3AF" }}>Not you? Tap back to sign in differently.</p>
+                <div className="flex justify-center">
+                  <DesktopPinDots value={pin} />
+                </div>
+                {loading ? (
+                  <div className="mt-4 flex items-center justify-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Signing in...</span></div>
+                ) : (
+                  <div className="flex justify-center"><DesktopPinPad onPress={(d) => handlePinInput(d, false)} onDelete={() => handlePinDelete(false)} /></div>
+                )}
+                <button
+                  onClick={() => { setForgotPinFlow(true); setPin(""); setEmail(rememberedEmail ?? ""); setStep("signin_password"); }}
+                  className="mt-4 w-full text-center text-sm"
+                  style={{ color: "#9CA3AF" }}
+                >
+                  Forgot PIN?
+                </button>
+              </div>
             </div>
           )}
 
           {(step === "new_pin_setup" || step === "new_pin_confirm") && (
-            <div className="flex flex-col flex-1 items-center">
-              <h1 className="font-display text-2xl font-bold text-white mb-2 text-center">
-                {step === "new_pin_setup" ? "Set a new PIN" : "Confirm your new PIN"}
-              </h1>
-              <p className="text-white/60 text-sm mb-10 text-center">
-                {step === "new_pin_setup" ? "Choose a new 4-digit PIN for quick access." : "Enter it again to confirm."}
-              </p>
-              <PinDots value={step === "new_pin_setup" ? newPin : newPinConfirm} />
-              {loading ? <div className="mt-6 flex items-center gap-2 text-white/60"><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Saving...</span></div>
-                : <PinPad onPress={(d) => handleNewPinInput(d, step === "new_pin_confirm")} onDelete={() => handleNewPinDelete(step === "new_pin_confirm")} />}
+            <div className="flex flex-col flex-1 items-center justify-center">
+              <div className="w-full rounded-3xl p-6" style={{ background: "#F5F5F0" }}>
+                <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>
+                  {step === "new_pin_setup" ? "Set a new PIN" : "Confirm your new PIN"}
+                </h1>
+                <p className="text-sm mb-8 text-center" style={{ color: "#6B7280" }}>
+                  {step === "new_pin_setup" ? "Choose a new 4-digit PIN for quick access." : "Enter it again to confirm."}
+                </p>
+                <div className="flex justify-center">
+                  <DesktopPinDots value={step === "new_pin_setup" ? newPin : newPinConfirm} />
+                </div>
+                {loading ? (
+                  <div className="mt-4 flex items-center justify-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Saving...</span></div>
+                ) : (
+                  <div className="flex justify-center"><DesktopPinPad onPress={(d) => handleNewPinInput(d, step === "new_pin_confirm")} onDelete={() => handleNewPinDelete(step === "new_pin_confirm")} /></div>
+                )}
+              </div>
             </div>
           )}
 
@@ -678,7 +730,7 @@ function AuthPage() {
               <h1 className="font-display text-2xl font-bold text-white mb-2">Set new password</h1>
               <p className="text-white/60 text-sm mb-8">Choose a new password for your account.</p>
               <div className="relative">
-                <input autoFocus type={showResetPassword ? "text" : "password"} value={newResetPassword} onChange={(e) => setNewResetPassword(e.target.value)} placeholder="New password" minLength={6} className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14" />
+                <input autoFocus type={showResetPassword ? "text" : "password"} value={newResetPassword} onChange={(e) => setNewResetPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !loading && newResetPassword.length >= 6) handleResetPassword(); }} placeholder="New password" minLength={6} className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14" />
                 <button type="button" onClick={() => setShowResetPassword(!showResetPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">{showResetPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
               </div>
               <button onClick={handleResetPassword} disabled={loading || newResetPassword.length < 6} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
@@ -689,29 +741,6 @@ function AuthPage() {
         </div>
         <div className="h-8" />
       </div>
-    </div>
-  );
-}
-
-function PinDots({ value }: { value: string }) {
-  return (
-    <div className="flex gap-4 mb-10">
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className={`h-5 w-5 rounded-full border-2 transition-all duration-200 ${i < value.length ? "bg-amber-400 border-amber-400 scale-110" : "border-white/30 bg-transparent"}`} />
-      ))}
-    </div>
-  );
-}
-
-function PinPad({ onPress, onDelete }: { onPress: (d: string) => void; onDelete: () => void }) {
-  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
-  return (
-    <div className="grid grid-cols-3 gap-4 w-full max-w-xs mt-4">
-      {keys.map((k, i) =>
-        k === "" ? <div key={i} /> :
-        k === "⌫" ? <button key={i} onClick={onDelete} className="h-16 w-full rounded-2xl bg-white/10 text-white text-xl font-bold flex items-center justify-center active:scale-95 transition">⌫</button> :
-        <button key={i} onClick={() => onPress(k)} className="h-16 w-full rounded-2xl bg-white/10 text-white text-2xl font-bold flex items-center justify-center active:scale-95 transition hover:bg-white/20">{k}</button>
-      )}
     </div>
   );
 }
