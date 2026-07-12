@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Building2, MapPin, Users, TrendingUp, Pencil } from "lucide-react";
+import { Plus, X, Building2, MapPin, Users, TrendingUp, Pencil, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useProperty } from "@/context/PropertyContext";
 import { formatKES, formatKESCompact } from "@/lib/format";
+import type { PaymentMethod } from "@/lib/reminders";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -30,6 +31,21 @@ interface Property {
   description: string | null;
   total_units: number;
   created_at: string;
+  user_id: string;
+  payment_method: PaymentMethod | null;
+  payment_number: string | null;
+  payment_account: string | null;
+}
+
+/** What the property form collects and hands to the add/edit mutations. */
+interface PropertyFormValues {
+  name: string;
+  location: string;
+  description: string;
+  total_units: number;
+  payment_method: PaymentMethod | null;
+  payment_number: string | null;
+  payment_account: string | null;
 }
 
 function PropertiesPage() {
@@ -115,7 +131,7 @@ function PropertiesPage() {
   });
 
   const addProperty = useMutation({
-    mutationFn: async (p: { name: string; location: string; description: string; total_units: number }) => {
+    mutationFn: async (p: PropertyFormValues) => {
       const { data: { user: u } } = await supabase.auth.getUser();
       if (!u) throw new Error("Not authenticated");
       const { error } = await (supabase as any).from("properties").insert({
@@ -124,6 +140,9 @@ function PropertiesPage() {
         description: p.description || null,
         total_units: p.total_units ?? 0,
         user_id: u.id,
+        payment_method: p.payment_method,
+        payment_number: p.payment_number,
+        payment_account: p.payment_account,
       });
       if (error) throw error;
     },
@@ -136,17 +155,24 @@ function PropertiesPage() {
   });
 
   const editProperty = useMutation({
-    mutationFn: async (p: { id: string; name: string; location: string; description: string; total_units: number }) => {
+    mutationFn: async (p: PropertyFormValues & { id: string }) => {
       const { error } = await (supabase as any).from("properties").update({
         name: p.name,
         location: p.location || null,
         description: p.description || null,
         total_units: p.total_units ?? 0,
+        payment_method: p.payment_method,
+        payment_number: p.payment_number,
+        payment_account: p.payment_account,
       }).eq("id", p.id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["properties"] });
+      // The reminder button reads this via its own query key, keyed by
+      // property id — without this, an edit here wouldn't show up on the
+      // Tenants/Payments pages until something else invalidated it.
+      qc.invalidateQueries({ queryKey: ["property-payment-details"] });
       setEditing(null);
       toast.success("Property updated!");
     },
@@ -348,6 +374,11 @@ function PropertiesPage() {
                       </div>
                     </>
                   )}
+                  {!isAgent && !p.payment_method && (
+                    <div className="mt-3 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium" style={{ background: "#FFF7ED", color: "#9A3412" }}>
+                      <Wallet className="h-3 w-3" /> No payment details — rent reminders are off
+                    </div>
+                  )}
                   <div className="flex items-center justify-between mt-3">
                     {!isAgent && (
                       <button
@@ -406,11 +437,14 @@ function PropertiesPage() {
   );
 }
 
+/** Dropdown value for "not set yet" — mapped to null on save. */
+const NO_PAYMENT_METHOD = "";
+
 function PropertyForm({
   initial, onSave, onClose, saving,
 }: {
   initial?: Property;
-  onSave: (p: { name: string; location: string; description: string; total_units: number }) => void;
+  onSave: (p: PropertyFormValues) => void;
   onClose: () => void;
   saving: boolean;
 }) {
@@ -419,18 +453,52 @@ function PropertyForm({
   const [description, setDescription] = useState(initial?.description ?? "");
   const [totalUnits, setTotalUnits] = useState(initial?.total_units ?? 0);
 
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | typeof NO_PAYMENT_METHOD>(
+    initial?.payment_method ?? NO_PAYMENT_METHOD,
+  );
+  const [paymentNumber, setPaymentNumber] = useState(initial?.payment_number ?? "");
+  const [paymentAccount, setPaymentAccount] = useState(initial?.payment_account ?? "");
+
+  const numberLabel: Record<PaymentMethod, string> = {
+    mpesa_paybill: "Paybill number",
+    mpesa_till: "Till number",
+    mpesa_phone: "M-Pesa phone number",
+    bank: "Bank account number",
+    cash: "",
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (paymentMethod && paymentMethod !== "cash" && !paymentNumber.trim()) {
+      toast.error(`Enter a ${numberLabel[paymentMethod].toLowerCase()} before saving`);
+      return;
+    }
+
+    onSave({
+      name,
+      location,
+      description,
+      total_units: totalUnits,
+      payment_method: paymentMethod || null,
+      payment_number: paymentMethod && paymentMethod !== "cash" ? paymentNumber.trim() : null,
+      payment_account:
+        paymentMethod === "mpesa_paybill" && paymentAccount.trim() ? paymentAccount.trim() : null,
+    });
+  };
+
   // Render via a portal directly onto document.body so this modal isn't
   // affected by the page's animated <main> wrapper (a transformed ancestor
   // breaks `position: fixed`, making the modal open offset by the page's
   // scroll position instead of pinned to the true top of the screen).
   return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
-      <div className="card-surface w-full max-w-lg p-6 animate-slide-up">
+      <div className="card-surface w-full max-w-lg p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold">{initial ? "Edit Property" : "Add Property"}</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); onSave({ name, location, description, total_units: totalUnits }); }} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Property name *</label>
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Kindaruma Apartments" className="form-input" />
@@ -447,6 +515,66 @@ function PropertyForm({
             <label className="mb-1.5 block text-xs font-medium text-foreground">Description (optional)</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Any notes about this property..." rows={3} className="form-input resize-none" />
           </div>
+
+          {/* Payment details — only the landlord who owns this property can
+              reach this form (agents never see the Edit button, and the
+              properties query is scoped to the signed-in user's own rows).
+              The database trigger enforces this same rule server-side, so
+              this section is a convenience, not the actual security boundary. */}
+          <div className="rounded-xl border border-border p-4" style={{ background: "#F9FAFB" }}>
+            <div className="flex items-center gap-2 mb-1">
+              <Wallet className="h-4 w-4" style={{ color: "#166534" }} />
+              <span className="text-sm font-semibold text-foreground">Payment details</span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Used to fill in rent reminders sent to tenants at this property. Only you can change this.
+            </p>
+
+            <label className="mb-1.5 block text-xs font-medium text-foreground">How tenants pay</label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod | typeof NO_PAYMENT_METHOD)}
+              className="form-input mb-3"
+            >
+              <option value={NO_PAYMENT_METHOD}>Not set yet</option>
+              <option value="mpesa_paybill">M-Pesa Paybill</option>
+              <option value="mpesa_till">M-Pesa Till (Buy Goods)</option>
+              <option value="mpesa_phone">M-Pesa (Send Money to a phone number)</option>
+              <option value="bank">Bank transfer</option>
+              <option value="cash">Cash</option>
+            </select>
+
+            {paymentMethod && paymentMethod !== "cash" && (
+              <div className="mb-3">
+                <label className="mb-1.5 block text-xs font-medium text-foreground">
+                  {numberLabel[paymentMethod]}
+                </label>
+                <input
+                  value={paymentNumber}
+                  onChange={(e) => setPaymentNumber(e.target.value)}
+                  placeholder={
+                    paymentMethod === "mpesa_phone" ? "e.g. 0712345678" : "e.g. 522522"
+                  }
+                  className="form-input"
+                />
+              </div>
+            )}
+
+            {paymentMethod === "mpesa_paybill" && (
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-foreground">
+                  Account number (optional)
+                </label>
+                <input
+                  value={paymentAccount}
+                  onChange={(e) => setPaymentAccount(e.target.value)}
+                  placeholder="Leave blank to use each tenant's unit number"
+                  className="form-input"
+                />
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
             <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
