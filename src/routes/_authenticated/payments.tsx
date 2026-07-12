@@ -8,6 +8,8 @@ import { Plus, X, Download, Search, Receipt, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { downloadReceipt, getReceiptDataUrl, type ReceiptData } from "@/lib/receipt";
 import { useProperty } from "@/context/PropertyContext";
+import { ReminderButton, usePropertyPaymentDetails } from "@/components/ReminderButton";
+import { outstandingForDueMonth } from "@/lib/reminders";
 
 export const Route = createFileRoute("/_authenticated/payments")({
   component: PaymentsPage,
@@ -85,17 +87,13 @@ export interface TenantMin {
   due_day: number;
   next_due_date: string | null;
   move_in_date: string | null;
+  // Optional so other callers of TenantPaymentView don't have to supply it.
+  // Without it the reminder button simply disables itself.
+  phone?: string | null;
 }
 
 function currentMonthLabelFn(): string {
   return new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
-}
-
-// Current-month status for a tenant, based on how much they've paid FOR this month.
-function tenantMonthStatus(paidThisMonth: number, rent: number): "paid" | "partial" | "unpaid" {
-  if (rent > 0 && paidThisMonth >= rent) return "paid";
-  if (paidThisMonth > 0) return "partial";
-  return "unpaid";
 }
 
 function StatusPill({ status }: { status: "paid" | "partial" | "unpaid" }) {
@@ -122,6 +120,8 @@ function PaymentsPage() {
     if (!selectedProperty) navigate({ to: "/properties" });
   }, [selectedProperty, navigate]);
 
+  const { data: propertyPayment } = usePropertyPaymentDetails(selectedProperty?.id);
+
   // All tenants for this property
   const { data: tenants } = useQuery({
     queryKey: ["tenants-min", selectedProperty?.id],
@@ -129,7 +129,7 @@ function PaymentsPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("tenants")
-        .select("id, full_name, unit, rent_amount, due_day, next_due_date, move_in_date")
+        .select("id, full_name, unit, rent_amount, due_day, next_due_date, move_in_date, phone")
         .eq("property_id", selectedProperty!.id)
         .order("unit");
       if (error) throw error;
@@ -137,7 +137,7 @@ function PaymentsPage() {
     },
   });
 
-  // All payments for this property (used to compute per-tenant current-month totals)
+  // All payments for this property (used to compute per-tenant month totals)
   const { data: payments } = useQuery({
     queryKey: ["payments", selectedProperty?.id],
     enabled: !!selectedProperty,
@@ -154,13 +154,10 @@ function PaymentsPage() {
 
   const currentMonth = currentMonthLabelFn();
 
-  // Map tenant_id -> amount paid for the current month
-  const paidThisMonthByTenant: Record<string, number> = {};
+  // Every payment, grouped by tenant.
+  const paymentsByTenant: Record<string, PaymentRow[]> = {};
   (payments ?? []).forEach((p) => {
-    if (p.payment_month === currentMonth) {
-      paidThisMonthByTenant[p.tenant_id] =
-        (paidThisMonthByTenant[p.tenant_id] ?? 0) + Number(p.amount);
-    }
+    (paymentsByTenant[p.tenant_id] ??= []).push(p);
   });
 
   const filteredTenants = (tenants ?? []).filter((t) =>
@@ -200,14 +197,24 @@ function PaymentsPage() {
       {/* Tenant list */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {filteredTenants.map((t) => {
-          const paid = paidThisMonthByTenant[t.id] ?? 0;
-          const status = tenantMonthStatus(paid, Number(t.rent_amount));
+          const tenantPayments = paymentsByTenant[t.id] ?? [];
+          const { label, due, status } = outstandingForDueMonth(t.rent_amount, t.next_due_date, tenantPayments);
           const initials = t.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
           return (
-            <button
+            // A div, not a button: the reminder link inside is an <a>, and an
+            // anchor nested inside a button is invalid DOM.
+            <div
               key={t.id}
+              role="button"
+              tabIndex={0}
               onClick={() => setOpenTenant(t)}
-              className="card-surface p-4 text-left hover:shadow-md transition-shadow"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setOpenTenant(t);
+                }
+              }}
+              className="card-surface p-4 text-left hover:shadow-md transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] focus-visible:ring-offset-2"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3 min-w-0">
@@ -228,13 +235,22 @@ function PaymentsPage() {
                 <span className="text-muted-foreground">Rent</span>
                 <span className="font-semibold text-foreground">{formatKES(t.rent_amount)}</span>
               </div>
-              {status === "partial" && (
+              {status !== "paid" && (
                 <div className="flex items-center justify-between text-xs mt-1">
-                  <span className="text-muted-foreground">Paid this month</span>
-                  <span className="font-semibold" style={{ color: "#854D0E" }}>{formatKES(paid)}</span>
+                  <span className="text-muted-foreground">Owing · {label}</span>
+                  <span className="font-semibold" style={{ color: status === "partial" ? "#854D0E" : "#DC2626" }}>
+                    {formatKES(due)}
+                  </span>
                 </div>
               )}
-            </button>
+              <div className="mt-3 flex justify-end border-t border-border pt-2">
+                <ReminderButton
+                  tenant={t}
+                  payments={tenantPayments}
+                  property={propertyPayment}
+                />
+              </div>
+            </div>
           );
         })}
         {!filteredTenants.length && (
@@ -264,6 +280,8 @@ export function TenantPaymentView({ tenant, onClose }: {
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
   const [cancelTarget, setCancelTarget] = useState<PaymentRow | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const { data: propertyPayment } = usePropertyPaymentDetails(selectedProperty?.id);
 
   // This tenant's payments
   const { data: tenantPayments } = useQuery({
@@ -441,8 +459,8 @@ export function TenantPaymentView({ tenant, onClose }: {
           </button>
         </div>
 
-        {/* Record payment button */}
-        <div className="px-5 py-4 border-b border-border">
+        {/* Record payment + reminder */}
+        <div className="px-5 py-4 border-b border-border space-y-2">
           <button
             onClick={() => setAdding(true)}
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white glow-primary"
@@ -450,6 +468,12 @@ export function TenantPaymentView({ tenant, onClose }: {
           >
             <Plus className="h-4 w-4" /> Record Payment
           </button>
+          <ReminderButton
+            tenant={tenant}
+            payments={tenantPayments ?? []}
+            property={propertyPayment}
+            variant="button"
+          />
         </div>
 
         {/* Summary */}

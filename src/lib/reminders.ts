@@ -5,6 +5,8 @@ export type PaymentMethod =
   | "bank"
   | "cash";
 
+export type RentStatus = "paid" | "partial" | "unpaid";
+
 /** Matches the labels payments.tsx writes into payments.payment_month. */
 const MONTHS = [
   "January",
@@ -76,6 +78,24 @@ function parseDbDate(raw: string): { y: number; m: number; d: number } | null {
   return { y, m, d };
 }
 
+/** Today in the browser's own timezone, as "YYYY-MM-DD", for string comparison. */
+function todayIso(): string {
+  const now = new Date();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${m}-${d}`;
+}
+
+function currentMonthLabel(): string {
+  const now = new Date();
+  return `${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+export function isOverdue(nextDueDate: string | null): boolean {
+  if (!nextDueDate) return false;
+  return nextDueDate.slice(0, 10) < todayIso();
+}
+
 /**
  * The month a tenant currently owes for.
  *
@@ -90,11 +110,17 @@ export function dueMonthLabel(nextDueDate: string | null): string | null {
   return `${MONTHS[parsed.m - 1]} ${parsed.y}`;
 }
 
+function paidForMonth(payments: PaymentLike[], label: string): number {
+  return payments
+    .filter((p) => p.payment_month === label)
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+}
+
 /**
- * What the tenant still owes for the due month.
+ * What the tenant still owes for the due month. Strict: no due date, no amount.
  *
  * Deliberately ignores tenants.balance — that column is set once on insert and
- * never updated, so it does not reflect anything that has been paid since.
+ * never updated, so it does not reflect anything paid since.
  */
 export function amountDueFor(
   rentAmount: number,
@@ -103,20 +129,28 @@ export function amountDueFor(
 ): number {
   const label = dueMonthLabel(nextDueDate);
   if (!label) return 0;
-
-  const paid = payments
-    .filter((p) => p.payment_month === label)
-    .reduce((sum, p) => sum + Number(p.amount), 0);
-
-  return Math.max(0, Number(rentAmount) - paid);
+  return Math.max(0, Number(rentAmount) - paidForMonth(payments, label));
 }
 
-/** Today in the browser's own timezone, as "YYYY-MM-DD", for string comparison. */
-function todayIso(): string {
-  const now = new Date();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${m}-${d}`;
+/**
+ * Single source of truth for the status pill and the amount owing, shared by
+ * the tenants and payments pages so the two can never disagree.
+ * Falls back to the current calendar month when no due date is set.
+ */
+export function outstandingForDueMonth(
+  rentAmount: number | string | null,
+  nextDueDate: string | null,
+  payments: PaymentLike[],
+): { label: string; due: number; status: RentStatus } {
+  const label = dueMonthLabel(nextDueDate) ?? currentMonthLabel();
+  const rent = Number(rentAmount ?? 0) || 0;
+  const paid = paidForMonth(payments, label);
+  const due = Math.max(0, rent - paid);
+
+  const status: RentStatus =
+    rent <= 0 || due <= 0 ? "paid" : paid > 0 ? "partial" : "unpaid";
+
+  return { label, due, status };
 }
 
 function ordinal(day: number): string {
@@ -196,7 +230,7 @@ export function buildRentReminder(input: ReminderInput): string {
 
   const dueIso = (input.nextDueDate as string).slice(0, 10);
   const dueText = formatDueDate(dueIso) as string;
-  const overdue = dueIso < todayIso();
+  const overdue = isOverdue(dueIso);
 
   const firstName = input.tenantName.trim().split(" ")[0] || "there";
 

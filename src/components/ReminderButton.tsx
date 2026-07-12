@@ -36,11 +36,12 @@ export function usePropertyPaymentDetails(propertyId: string | undefined) {
   });
 }
 
+/** Deliberately loose — the tenants and payments pages hold different row shapes. */
 interface TenantLike {
-  full_name: string;
-  phone: string | null;
-  unit: string;
-  rent_amount: number;
+  full_name: string | null;
+  phone?: string | null;
+  unit: string | null;
+  rent_amount: number | string | null;
   next_due_date: string | null;
 }
 
@@ -69,13 +70,15 @@ export function ReminderButton({
   variant = "icon",
   className = "",
 }: ReminderButtonProps) {
+  const rent = Number(tenant.rent_amount ?? 0) || 0;
+
   const input: ReminderInput = {
     tenantName: tenant.full_name ?? "",
     tenantPhone: tenant.phone ?? "",
     unitNumber: unitLabel(tenant.unit),
-    rentAmount: Number(tenant.rent_amount ?? 0),
+    rentAmount: rent,
     nextDueDate: tenant.next_due_date,
-    amountDue: amountDueFor(Number(tenant.rent_amount ?? 0), tenant.next_due_date, payments),
+    amountDue: amountDueFor(rent, tenant.next_due_date, payments),
     paymentMethod: property?.payment_method ?? null,
     paymentNumber: property?.payment_number ?? null,
     paymentAccount: property?.payment_account ?? null,
