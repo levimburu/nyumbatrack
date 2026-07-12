@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
-import { Plus, Pencil, Trash2, X, Eye, Search, Key, Copy } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search, Key, Copy, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { StatusPill } from "./dashboard";
 import { useProperty } from "@/context/PropertyContext";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { ReminderButton, usePropertyPaymentDetails } from "@/components/ReminderButton";
+import { ReminderButton, usePropertyPaymentDetails, type PropertyPaymentDetails } from "@/components/ReminderButton";
 import { isOverdue, outstandingForDueMonth } from "@/lib/reminders";
 
 export const Route = createFileRoute("/_authenticated/tenants")({
@@ -104,6 +104,12 @@ function TenantsPage() {
         .select("unit")
         .eq("property_id", selectedProperty!.id);
       if (tenantsError) throw tenantsError;
+      // A unit counts as vacant purely by absence from this list — there is
+      // no separate "vacant" flag anywhere. Deleting a tenant frees their
+      // unit automatically the moment this query refetches; the only thing
+      // that can go wrong is forgetting to invalidate it (see the mutations
+      // below), which is why a deleted tenant's unit used to stay hidden
+      // from "vacant" until something unrelated happened to refresh this.
       const occupied = new Set((tenantsData ?? []).map((t: any) => t.unit));
       return (units ?? []).filter((u: any) => !occupied.has(u.unit_name));
     },
@@ -294,6 +300,9 @@ function TenantsPage() {
       qc.invalidateQueries({ queryKey: ["payments-this-month", selectedProperty?.id] });
       qc.invalidateQueries({ queryKey: ["all-payments-current-month"] });
       qc.invalidateQueries({ queryKey: ["all-tenants-for-stats"] });
+      // A new tenant occupies a unit; editing one can change which unit they
+      // hold. Either way the vacant-units list can go stale without this.
+      qc.invalidateQueries({ queryKey: ["vacant-units", selectedProperty?.id] });
       setEditing(null);
       toast.success("Saved");
     },
@@ -308,6 +317,12 @@ function TenantsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tenants", selectedProperty?.id] });
       qc.invalidateQueries({ queryKey: ["payments", selectedProperty?.id] });
+      // The deleted tenant's unit is vacant again the moment this list
+      // refetches — there's no separate "vacant" flag to flip, only this
+      // cache entry to refresh. This was missing before, which is why a
+      // freed unit didn't show up as vacant until something unrelated
+      // happened to refetch it.
+      qc.invalidateQueries({ queryKey: ["vacant-units", selectedProperty?.id] });
       toast.success("Tenant removed");
     },
   });
@@ -344,7 +359,8 @@ function TenantsPage() {
         />
       </div>
 
-      {/* Desktop table */}
+      {/* Desktop table — collapsed to Name, Unit, Phone, Status. Tap a row
+          for rent, owing, next due date, and the reminder/edit/delete actions. */}
       <div className="card-surface overflow-x-auto hidden md:block">
         <table className="w-full text-sm">
           <thead>
@@ -352,21 +368,29 @@ function TenantsPage() {
               <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Name</th>
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Unit</th>
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Phone</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Rent</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Owing</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Next Due</th>
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
-              <th className="py-3 pr-5 text-right text-xs font-medium text-muted-foreground">Actions</th>
+              <th className="py-3 pr-5 w-8" />
             </tr>
           </thead>
           <tbody>
             {filtered?.map((t) => {
               const tenantPayments = paymentsByTenant[t.id] ?? [];
-              const { due, status } = outstandingForDueMonth(t.rent_amount, t.next_due_date, tenantPayments);
-              const overdue = isOverdue(t.next_due_date) && status !== "paid";
+              const { status } = outstandingForDueMonth(t.rent_amount, t.next_due_date, tenantPayments);
               const initials = t.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
               return (
-                <tr key={t.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                <tr
+                  key={t.id}
+                  onClick={() => setViewingHistory(t)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setViewingHistory(t);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer focus-visible:outline-none focus-visible:bg-muted/30"
+                >
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <div
@@ -383,64 +407,16 @@ function TenantsPage() {
                   </td>
                   <td className="py-3 text-muted-foreground">{t.unit}</td>
                   <td className="py-3 text-muted-foreground">{t.phone ?? "—"}</td>
-                  <td className="py-3">{formatKES(t.rent_amount)}</td>
-                  <td className="py-3 font-medium">
-                    {due > 0
-                      ? <span style={{ color: "#DC2626" }}>({formatKES(due)})</span>
-                      : <span style={{ color: "#16A34A" }}>Clear</span>
-                    }
-                  </td>
-                  <td className="py-3">
-                    {t.next_due_date ? (
-                      <span className={`text-xs font-medium ${overdue ? "text-red-600" : "text-muted-foreground"}`}>
-                        {t.next_due_date}
-                      </span>
-                    ) : "—"}
-                  </td>
                   <td className="py-3"><StatusPill status={status as any} /></td>
                   <td className="py-3 pr-5 text-right">
-                    <div className="inline-flex items-center gap-1">
-                      <ReminderButton
-                        tenant={t}
-                        payments={tenantPayments}
-                        property={propertyPayment}
-                      />
-                      <button
-                        onClick={() => setViewingHistory(t)}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-                        title="View profile"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => generateTenantCode(t.id, t.full_name)}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-                        title="Generate invite code"
-                      >
-                        <Key className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setEditing({ ...t })}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      {!isAgent && (
-                        <button
-                          onClick={() => { if (confirm(`Remove ${t.full_name}?`)) del.mutate(t.id); }}
-                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
-                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground inline-block" />
                   </td>
                 </tr>
               );
             })}
             {!filtered?.length && (
               <tr>
-                <td colSpan={8} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted-foreground">
                   {search ? "No tenants match your search." : `No tenants yet for ${selectedProperty.name}.`}
                 </td>
               </tr>
@@ -449,78 +425,43 @@ function TenantsPage() {
         </table>
       </div>
 
-      {/* Mobile cards */}
+      {/* Mobile cards — same collapsed fields, tap opens the same panel. */}
       <div className="space-y-3 md:hidden">
         {filtered?.map((t) => {
           const tenantPayments = paymentsByTenant[t.id] ?? [];
-          const { label, due, status } = outstandingForDueMonth(t.rent_amount, t.next_due_date, tenantPayments);
+          const { status } = outstandingForDueMonth(t.rent_amount, t.next_due_date, tenantPayments);
           const initials = t.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
           return (
-            <div key={t.id} className="card-surface p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="grid h-10 w-10 place-items-center rounded-full text-sm font-bold text-white flex-shrink-0"
-                    style={{ background: "#166534" }}
-                  >
-                    {initials}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-foreground">{t.full_name}</div>
-                    <div className="text-xs text-muted-foreground">Unit {t.unit}</div>
+            <div
+              key={t.id}
+              onClick={() => setViewingHistory(t)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setViewingHistory(t);
+                }
+              }}
+              tabIndex={0}
+              role="button"
+              className="card-surface p-4 flex items-center justify-between gap-3 cursor-pointer hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534]"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className="grid h-10 w-10 place-items-center rounded-full text-sm font-bold text-white flex-shrink-0"
+                  style={{ background: "#166534" }}
+                >
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-semibold text-foreground truncate">{t.full_name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Unit {t.unit}{t.phone ? ` · ${t.phone}` : ""}
                   </div>
                 </div>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <StatusPill status={status as any} />
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">Rent</div>
-                  <div className="font-medium">{formatKES(t.rent_amount)}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Next Due</div>
-                  <div className="font-medium">{t.next_due_date ?? "—"}</div>
-                </div>
-                {due > 0 && (
-                  <div className="col-span-2">
-                    <div className="text-xs text-muted-foreground">Owing · {label}</div>
-                    <div className="font-medium" style={{ color: "#DC2626" }}>{formatKES(due)}</div>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-                <ReminderButton
-                  tenant={t}
-                  payments={tenantPayments}
-                  property={propertyPayment}
-                />
-                <button
-                  onClick={() => setViewingHistory(t)}
-                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => generateTenantCode(t.id, t.full_name)}
-                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-                  title="Generate invite code"
-                >
-                  <Key className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setEditing({ ...t })}
-                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                {!isAgent && (
-                  <button
-                    onClick={() => { if (confirm(`Remove ${t.full_name}?`)) del.mutate(t.id); }}
-                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </div>
             </div>
           );
@@ -545,7 +486,19 @@ function TenantsPage() {
       {viewingHistory && (
         <TenantProfile
           tenant={viewingHistory}
+          propertyPayment={propertyPayment}
           onClose={() => setViewingHistory(null)}
+          onEdit={() => {
+            setViewingHistory(null);
+            setEditing({ ...viewingHistory });
+          }}
+          onGenerateCode={() => generateTenantCode(viewingHistory.id, viewingHistory.full_name)}
+          onDelete={() => {
+            if (!confirm(`Remove ${viewingHistory.full_name}? Their unit will become vacant.`)) return;
+            del.mutate(viewingHistory.id, { onSuccess: () => setViewingHistory(null) });
+          }}
+          canDelete={!isAgent}
+          deleting={del.isPending}
         />
       )}
 
@@ -584,7 +537,18 @@ function TenantsPage() {
   );
 }
 
-function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => void }) {
+function TenantProfile({
+  tenant, propertyPayment, onClose, onEdit, onGenerateCode, onDelete, canDelete, deleting,
+}: {
+  tenant: Tenant;
+  propertyPayment: PropertyPaymentDetails | null | undefined;
+  onClose: () => void;
+  onEdit: () => void;
+  onGenerateCode: () => void;
+  onDelete: () => void;
+  canDelete: boolean;
+  deleting: boolean;
+}) {
   const { data: payments, isLoading } = useQuery({
     queryKey: ["tenant-payments", tenant.id],
     queryFn: async () => {
@@ -634,6 +598,40 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
           <button onClick={onClose} className="text-white/70 hover:text-white ml-2">
             <X className="h-5 w-5" />
           </button>
+        </div>
+
+        {/* Actions */}
+        <div className="p-5 pb-0 space-y-2">
+          <ReminderButton
+            tenant={tenant}
+            payments={payments ?? []}
+            property={propertyPayment}
+            variant="button"
+          />
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={onEdit}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </button>
+            <button
+              onClick={onGenerateCode}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Key className="h-3.5 w-3.5" /> Invite code
+            </button>
+            {canDelete && (
+              <button
+                onClick={onDelete}
+                disabled={deleting}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-medium transition-colors disabled:opacity-50"
+                style={{ borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }}
+              >
+                <Trash2 className="h-3.5 w-3.5" /> {deleting ? "Removing…" : "Delete"}
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="p-5 space-y-5">
