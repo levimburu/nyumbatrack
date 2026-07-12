@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { StatusPill } from "./dashboard";
 import { useProperty } from "@/context/PropertyContext";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { ReminderButton, usePropertyPaymentDetails } from "@/components/ReminderButton";
+import { isOverdue, outstandingForDueMonth } from "@/lib/reminders";
 
 export const Route = createFileRoute("/_authenticated/tenants")({
   component: TenantsPage,
@@ -40,6 +42,15 @@ interface Payment {
   reference: string | null;
 }
 
+/** Shape of the property-wide payments query, mirroring payments.tsx. */
+interface PropertyPaymentRow {
+  id: string;
+  tenant_id: string;
+  amount: number;
+  payment_month: string | null;
+  tenants: { property_id: string } | null;
+}
+
 function TenantsPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -66,6 +77,8 @@ function TenantsPage() {
     if (!selectedProperty) navigate({ to: "/properties" });
   }, [selectedProperty, navigate]);
 
+  const { data: propertyPayment } = usePropertyPaymentDetails(selectedProperty?.id);
+
   const generateTenantCode = async (tenantId: string, tenantName: string) => {
     const code = "TNT-" + Math.random().toString(36).substring(2, 8).toUpperCase();
     const { error } = await (supabase as any).from("tenant_invite_codes").insert({
@@ -75,7 +88,8 @@ function TenantsPage() {
     if (error) { toast.error("Failed to generate code"); return; }
     setTenantCode({ code, name: tenantName });
   };
-const { data: vacantUnits } = useQuery({
+
+  const { data: vacantUnits } = useQuery({
     queryKey: ["vacant-units", selectedProperty?.id],
     enabled: !!selectedProperty,
     queryFn: async () => {
@@ -94,6 +108,7 @@ const { data: vacantUnits } = useQuery({
       return (units ?? []).filter((u: any) => !occupied.has(u.unit_name));
     },
   });
+
   const { data } = useQuery({
     queryKey: ["tenants", selectedProperty?.id],
     enabled: !!selectedProperty,
@@ -106,6 +121,27 @@ const { data: vacantUnits } = useQuery({
       if (error) throw error;
       return data as Tenant[];
     },
+  });
+
+  // Same query key and shape as payments.tsx, so both pages share one cache
+  // entry and the existing invalidations below keep this page fresh.
+  const { data: allPayments } = useQuery({
+    queryKey: ["payments", selectedProperty?.id],
+    enabled: !!selectedProperty,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("payments")
+        .select("*, tenants(full_name, unit, property_id)")
+        .order("paid_on", { ascending: false });
+      if (error) throw error;
+      const all = data as PropertyPaymentRow[];
+      return all.filter((p) => p.tenants?.property_id === selectedProperty!.id);
+    },
+  });
+
+  const paymentsByTenant: Record<string, PropertyPaymentRow[]> = {};
+  (allPayments ?? []).forEach((p) => {
+    (paymentsByTenant[p.tenant_id] ??= []).push(p);
   });
 
   const filtered = data?.filter((t) =>
@@ -271,6 +307,7 @@ const { data: vacantUnits } = useQuery({
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tenants", selectedProperty?.id] });
+      qc.invalidateQueries({ queryKey: ["payments", selectedProperty?.id] });
       toast.success("Tenant removed");
     },
   });
@@ -316,7 +353,7 @@ const { data: vacantUnits } = useQuery({
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Unit</th>
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Phone</th>
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Rent</th>
-              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Balance</th>
+              <th className="py-3 text-left text-xs font-medium text-muted-foreground">Owing</th>
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Next Due</th>
               <th className="py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
               <th className="py-3 pr-5 text-right text-xs font-medium text-muted-foreground">Actions</th>
@@ -324,8 +361,9 @@ const { data: vacantUnits } = useQuery({
           </thead>
           <tbody>
             {filtered?.map((t) => {
-              const status = Number(t.balance) === 0 ? "paid" : Number(t.balance) < Number(t.rent_amount) ? "partial" : "unpaid";
-              const isOverdue = t.next_due_date && new Date(t.next_due_date) < new Date() && status !== "paid";
+              const tenantPayments = paymentsByTenant[t.id] ?? [];
+              const { due, status } = outstandingForDueMonth(t.rent_amount, t.next_due_date, tenantPayments);
+              const overdue = isOverdue(t.next_due_date) && status !== "paid";
               const initials = t.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
               return (
                 <tr key={t.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
@@ -347,21 +385,26 @@ const { data: vacantUnits } = useQuery({
                   <td className="py-3 text-muted-foreground">{t.phone ?? "—"}</td>
                   <td className="py-3">{formatKES(t.rent_amount)}</td>
                   <td className="py-3 font-medium">
-                    {Number(t.balance) > 0
-                      ? <span style={{ color: "#DC2626" }}>({formatKES(t.balance)})</span>
+                    {due > 0
+                      ? <span style={{ color: "#DC2626" }}>({formatKES(due)})</span>
                       : <span style={{ color: "#16A34A" }}>Clear</span>
                     }
                   </td>
                   <td className="py-3">
                     {t.next_due_date ? (
-                      <span className={`text-xs font-medium ${isOverdue ? "text-red-600" : "text-muted-foreground"}`}>
+                      <span className={`text-xs font-medium ${overdue ? "text-red-600" : "text-muted-foreground"}`}>
                         {t.next_due_date}
                       </span>
                     ) : "—"}
                   </td>
                   <td className="py-3"><StatusPill status={status as any} /></td>
                   <td className="py-3 pr-5 text-right">
-                    <div className="inline-flex gap-1">
+                    <div className="inline-flex items-center gap-1">
+                      <ReminderButton
+                        tenant={t}
+                        payments={tenantPayments}
+                        property={propertyPayment}
+                      />
                       <button
                         onClick={() => setViewingHistory(t)}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
@@ -409,7 +452,8 @@ const { data: vacantUnits } = useQuery({
       {/* Mobile cards */}
       <div className="space-y-3 md:hidden">
         {filtered?.map((t) => {
-          const status = Number(t.balance) === 0 ? "paid" : Number(t.balance) < Number(t.rent_amount) ? "partial" : "unpaid";
+          const tenantPayments = paymentsByTenant[t.id] ?? [];
+          const { label, due, status } = outstandingForDueMonth(t.rent_amount, t.next_due_date, tenantPayments);
           const initials = t.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
           return (
             <div key={t.id} className="card-surface p-4">
@@ -437,8 +481,19 @@ const { data: vacantUnits } = useQuery({
                   <div className="text-xs text-muted-foreground">Next Due</div>
                   <div className="font-medium">{t.next_due_date ?? "—"}</div>
                 </div>
+                {due > 0 && (
+                  <div className="col-span-2">
+                    <div className="text-xs text-muted-foreground">Owing · {label}</div>
+                    <div className="font-medium" style={{ color: "#DC2626" }}>{formatKES(due)}</div>
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+                <ReminderButton
+                  tenant={t}
+                  payments={tenantPayments}
+                  property={propertyPayment}
+                />
                 <button
                   onClick={() => setViewingHistory(t)}
                   className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
@@ -458,12 +513,14 @@ const { data: vacantUnits } = useQuery({
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
-                <button
-                  onClick={() => { if (confirm(`Remove ${t.full_name}?`)) del.mutate(t.id); }}
-                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {!isAgent && (
+                  <button
+                    onClick={() => { if (confirm(`Remove ${t.full_name}?`)) del.mutate(t.id); }}
+                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -541,9 +598,12 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
     },
   });
 
-  const status = Number(tenant.balance) === 0 ? "paid" : Number(tenant.balance) < Number(tenant.rent_amount) ? "partial" : "unpaid";
-  const nextDue = tenant.next_due_date ? new Date(tenant.next_due_date) : null;
-  const isOverdue = nextDue && nextDue < new Date();
+  const { label, due, status } = outstandingForDueMonth(
+    tenant.rent_amount,
+    tenant.next_due_date,
+    payments ?? [],
+  );
+  const overdue = isOverdue(tenant.next_due_date) && status !== "paid";
   const initials = tenant.full_name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   const chartData = payments?.map((p) => ({
@@ -600,7 +660,7 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
             {tenant.next_due_date && (
               <div className="rounded-xl p-3" style={{ background: "#F5F5F0" }}>
                 <div className="text-xs text-muted-foreground mb-1">Next Due Date</div>
-                <div className={`text-sm font-semibold ${isOverdue ? "text-red-600" : "text-green-700"}`}>
+                <div className={`text-sm font-semibold ${overdue ? "text-red-600" : "text-green-700"}`}>
                   {tenant.next_due_date}
                 </div>
               </div>
@@ -617,11 +677,11 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
             </div>
           </div>
 
-          {/* Balance */}
+          {/* Outstanding for the due month */}
           <div className="flex items-center justify-between rounded-xl p-3" style={{ background: "#F5F5F0" }}>
-            <span className="text-sm text-muted-foreground">Current Balance</span>
-            <span className={`text-sm font-bold ${Number(tenant.balance) === 0 ? "text-green-700" : "text-red-600"}`}>
-              {Number(tenant.balance) === 0 ? "Cleared" : `(${formatKES(tenant.balance)})`}
+            <span className="text-sm text-muted-foreground">Owing · {label}</span>
+            <span className={`text-sm font-bold ${due === 0 ? "text-green-700" : "text-red-600"}`}>
+              {due === 0 ? "Cleared" : `(${formatKES(due)})`}
             </span>
           </div>
 
@@ -692,8 +752,6 @@ function TenantProfile({ tenant, onClose }: { tenant: Tenant; onClose: () => voi
     document.body
   );
 }
-
-
 
 function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
   initial: Partial<Tenant>;
