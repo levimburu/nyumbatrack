@@ -117,6 +117,26 @@ function paidForMonth(payments: PaymentLike[], label: string): number {
 }
 
 /**
+ * True once the calendar has reached (or passed) the month that next_due_date
+ * falls in. False means the tenant already paid through at least the current
+ * month — that's the only reason next_due_date sits in a future month — so
+ * nothing is owed yet regardless of whether a payment row exists for it.
+ *
+ * A null due date reads as "reached": there's no future month to be ahead
+ * of, so callers fall through to their normal current-month logic.
+ */
+function isDueMonthReached(nextDueDate: string | null): boolean {
+  if (!nextDueDate) return true;
+  const parsed = parseDbDate(nextDueDate);
+  if (!parsed) return true;
+
+  const now = new Date();
+  const todayYM = now.getFullYear() * 12 + (now.getMonth() + 1);
+  const dueYM = parsed.y * 12 + parsed.m;
+  return todayYM >= dueYM;
+}
+
+/**
  * What the tenant still owes for the due month. Strict: no due date, no amount.
  *
  * Deliberately ignores tenants.balance — that column is set once on insert and
@@ -127,6 +147,8 @@ export function amountDueFor(
   nextDueDate: string | null,
   payments: PaymentLike[],
 ): number {
+  if (!isDueMonthReached(nextDueDate)) return 0;
+
   const label = dueMonthLabel(nextDueDate);
   if (!label) return 0;
   return Math.max(0, Number(rentAmount) - paidForMonth(payments, label));
@@ -144,6 +166,14 @@ export function outstandingForDueMonth(
 ): { label: string; due: number; status: RentStatus } {
   const label = dueMonthLabel(nextDueDate) ?? currentMonthLabel();
   const rent = Number(rentAmount ?? 0) || 0;
+
+  // Paid ahead of schedule: the due month hasn't arrived, so there's nothing
+  // to check against payments yet, no matter what has (or hasn't) been
+  // recorded for that future month.
+  if (!isDueMonthReached(nextDueDate)) {
+    return { label, due: 0, status: "paid" };
+  }
+
   const paid = paidForMonth(payments, label);
   const due = Math.max(0, rent - paid);
 
