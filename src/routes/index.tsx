@@ -161,14 +161,92 @@ function IndexPage() {
     );
   }
 
-  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
   const firstName = userName.split(" ")[0] || "there";
   const initial = (firstName.charAt(0) || "?").toUpperCase();
 
+  const cardProps = {
+    firstName,
+    initial,
+    pin,
+    error,
+    checking,
+    onDigit: handlePinInput,
+    onDelete: handlePinDelete,
+    onSignOut: handleSignOut,
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F5F5F0] px-4 py-10">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
+    <div className="min-h-screen w-full">
+      {/* ── DESKTOP: two-sided, matching the auth page ── */}
+      <div className="hidden md:flex min-h-screen">
+        <div className="md:w-1/2 flex flex-col min-h-screen bg-[#F5F5F0]">
+          <div className="flex items-center gap-2 px-8 py-6">
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-400">
+              <Building2 className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-display text-sm font-semibold text-[#0d2818]">
+              NyumbaTrack
+            </span>
+          </div>
+          <div className="flex-1 flex items-center justify-center px-12">
+            <PinCard {...cardProps} />
+          </div>
+          <div className="px-8 py-6 text-xs text-[#9CA3AF]">
+            © 2026 NyumbaTrack Technologies Ltd
+          </div>
+        </div>
+
+        <div
+          className="md:w-1/2 flex flex-col items-center justify-center min-h-screen px-12 relative overflow-hidden"
+          style={{ background: "linear-gradient(160deg, #0d2818 0%, #166534 100%)" }}
+        >
+          <div
+            className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10"
+            style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }}
+          />
+          <div
+            className="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-10"
+            style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }}
+          />
+          <div className="relative text-center max-w-sm">
+            <div className="mx-auto mb-8 grid h-20 w-20 place-items-center rounded-3xl bg-[#F59E0B]">
+              <Building2 className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="font-display text-4xl font-bold text-white mb-4 leading-tight">
+              NyumbaTrack
+            </h1>
+            <p className="text-white/60 text-base leading-relaxed mb-10">
+              The smart way to manage your rental properties. Track tenants, payments, and deposits — built for Kenyan landlords.
+            </p>
+            <div className="space-y-3 text-left">
+              {[
+                "Track rent payments & receipts",
+                "Manage multiple properties",
+                "Agent & landlord collaboration",
+                "Deposits & occupancy tracking",
+              ].map((f) => (
+                <div key={f} className="flex items-center gap-3">
+                  <div className="grid h-6 w-6 place-items-center rounded-full flex-shrink-0 bg-[#F59E0B]">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path
+                        d="M2 6l3 3 5-5"
+                        stroke="white"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-white/80 text-sm">{f}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── MOBILE: single column, unchanged from before ── */}
+      <div className="flex md:hidden min-h-screen flex-col items-center justify-center bg-[#F5F5F0] px-4 py-10">
         <div className="mb-8 flex items-center justify-center gap-2">
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-400 text-amber-900">
             <Building2 className="h-5 w-5" />
@@ -177,88 +255,116 @@ function IndexPage() {
             NyumbaTrack
           </span>
         </div>
+        <PinCard {...cardProps} />
+      </div>
+    </div>
+  );
+}
 
-        {/* Card */}
-        <div className="rounded-3xl border border-[#E5E5DF] bg-white px-6 py-8 shadow-sm">
-          <div className="flex flex-col items-center">
-            {/* Avatar */}
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#166534]">
-              <span className="font-display text-2xl font-bold text-white">
-                {initial}
-              </span>
-            </div>
+/**
+ * Shared PIN-entry card. Rendered once on the desktop left panel and once on
+ * the mobile single-column layout — kept as one component specifically so
+ * the two can't drift out of sync with each other.
+ */
+function PinCard({
+  firstName,
+  initial,
+  pin,
+  error,
+  checking,
+  onDigit,
+  onDelete,
+  onSignOut,
+}: {
+  firstName: string;
+  initial: string;
+  pin: string;
+  error: string;
+  checking: boolean;
+  onDigit: (d: string) => void;
+  onDelete: () => void;
+  onSignOut: () => void;
+}) {
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
 
-            <h1 className="font-display text-xl font-bold text-[#1A1A1A]">
-              Welcome back, {firstName}
-            </h1>
-            <p className="mt-1 text-sm text-[#6B7280]">
-              Enter your PIN to continue
-            </p>
-
-            {/* PIN dots */}
-            <div className="my-7 flex gap-4">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className={`h-4 w-4 rounded-full border-2 transition-all duration-200 ${
-                    i < pin.length
-                      ? "scale-110 border-[#166534] bg-[#166534]"
-                      : "border-[#D6D6CF] bg-transparent"
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Status row — fixed height so the pad doesn't jump */}
-            <div className="mb-4 flex h-6 items-center justify-center">
-              {error ? (
-                <p className="text-sm text-[#B91C1C]">{error}</p>
-              ) : checking ? (
-                <div className="flex items-center gap-2 text-[#6B7280]">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Verifying...</span>
-                </div>
-              ) : null}
-            </div>
-
-            {/* PIN pad */}
-            <div className="grid w-full grid-cols-3 gap-3">
-              {keys.map((k, i) =>
-                k === "" ? (
-                  <div key={i} />
-                ) : (
-                  <button
-                    key={i}
-                    type="button"
-                    disabled={checking}
-                    onClick={() =>
-                      k === "⌫" ? handlePinDelete() : handlePinInput(k)
-                    }
-                    className={`flex h-16 w-full items-center justify-center rounded-2xl border border-[#E5E5DF] bg-[#F5F5F0] font-display font-bold text-[#1A1A1A] transition hover:bg-[#EBEBE4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50 ${
-                      k === "⌫" ? "text-xl" : "text-2xl"
-                    }`}
-                  >
-                    {k}
-                  </button>
-                ),
-              )}
-            </div>
-
-            <p className="mt-5 text-center text-xs text-[#9CA3AF]">
-              You can also type your PIN using the keyboard
-            </p>
+  return (
+    <div className="w-full max-w-sm">
+      <div className="rounded-3xl border border-[#E5E5DF] bg-white px-6 py-8 shadow-sm">
+        <div className="flex flex-col items-center">
+          {/* Avatar */}
+          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#166534]">
+            <span className="font-display text-2xl font-bold text-white">
+              {initial}
+            </span>
           </div>
-        </div>
 
-        {/* Sign out */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={handleSignOut}
-            className="text-sm text-[#6B7280] transition hover:text-[#1A1A1A]"
-          >
-            Sign in with a different account
-          </button>
+          <h1 className="font-display text-xl font-bold text-[#1A1A1A]">
+            Welcome back, {firstName}
+          </h1>
+          <p className="mt-1 text-sm text-[#6B7280]">
+            Enter your PIN to continue
+          </p>
+
+          {/* PIN dots */}
+          <div className="my-7 flex gap-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`h-4 w-4 rounded-full border-2 transition-all duration-200 ${
+                  i < pin.length
+                    ? "scale-110 border-[#166534] bg-[#166534]"
+                    : "border-[#D6D6CF] bg-transparent"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Status row — fixed height so the pad doesn't jump */}
+          <div className="mb-4 flex h-6 items-center justify-center">
+            {error ? (
+              <p className="text-sm text-[#B91C1C]">{error}</p>
+            ) : checking ? (
+              <div className="flex items-center gap-2 text-[#6B7280]">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Verifying...</span>
+              </div>
+            ) : null}
+          </div>
+
+          {/* PIN pad */}
+          <div className="grid w-full grid-cols-3 gap-3">
+            {keys.map((k, i) =>
+              k === "" ? (
+                <div key={i} />
+              ) : (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={checking}
+                  onClick={() => (k === "⌫" ? onDelete() : onDigit(k))}
+                  className={`flex h-16 w-full items-center justify-center rounded-2xl border border-[#E5E5DF] bg-[#F5F5F0] font-display font-bold text-[#1A1A1A] transition hover:bg-[#EBEBE4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50 ${
+                    k === "⌫" ? "text-xl" : "text-2xl"
+                  }`}
+                >
+                  {k}
+                </button>
+              ),
+            )}
+          </div>
+
+          <p className="mt-5 text-center text-xs text-[#9CA3AF]">
+            You can also type your PIN using the keyboard
+          </p>
         </div>
+      </div>
+
+      <div className="mt-6 text-center">
+        <button
+          onClick={onSignOut}
+          className="text-sm text-[#6B7280] transition hover:text-[#1A1A1A]"
+        >
+          Sign in with a different account
+        </button>
       </div>
     </div>
   );
