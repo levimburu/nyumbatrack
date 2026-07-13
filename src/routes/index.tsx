@@ -178,8 +178,8 @@ function IndexPage() {
   return (
     <div className="min-h-screen w-full">
       {/* ── DESKTOP: two-sided, matching the auth page ── */}
-      <div className="hidden md:flex h-screen overflow-hidden">
-        <div className="md:w-1/2 flex flex-col h-screen bg-[#F5F5F0] overflow-y-auto">
+      <div className="hidden md:flex min-h-screen">
+        <div className="md:w-1/2 flex flex-col min-h-screen bg-[#F5F5F0]">
           <div className="flex items-center gap-2 px-8 py-4">
             <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-400">
               <Building2 className="h-4 w-4 text-white" />
@@ -188,7 +188,7 @@ function IndexPage() {
               NyumbaTrack
             </span>
           </div>
-          <div className="flex-1 flex items-center justify-center px-12 min-h-0">
+          <div className="flex-1 flex items-center justify-center px-12 py-6">
             <PinCard {...cardProps} compact />
           </div>
           <div className="px-8 py-4 text-xs text-[#9CA3AF]">
@@ -197,7 +197,7 @@ function IndexPage() {
         </div>
 
         <div
-          className="md:w-1/2 flex flex-col items-center justify-center h-screen px-12 relative overflow-hidden"
+          className="md:w-1/2 flex flex-col items-center justify-center min-h-screen px-12 relative overflow-hidden"
           style={{ background: "linear-gradient(160deg, #0d2818 0%, #166534 100%)" }}
         >
           <div
