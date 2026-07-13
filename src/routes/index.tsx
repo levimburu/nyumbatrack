@@ -178,9 +178,9 @@ function IndexPage() {
   return (
     <div className="min-h-screen w-full">
       {/* ── DESKTOP: two-sided, matching the auth page ── */}
-      <div className="hidden md:flex min-h-screen">
-        <div className="md:w-1/2 flex flex-col min-h-screen bg-[#F5F5F0]">
-          <div className="flex items-center gap-2 px-8 py-6">
+      <div className="hidden md:flex h-screen overflow-hidden">
+        <div className="md:w-1/2 flex flex-col h-screen bg-[#F5F5F0] overflow-y-auto">
+          <div className="flex items-center gap-2 px-8 py-4">
             <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-400">
               <Building2 className="h-4 w-4 text-white" />
             </div>
@@ -188,16 +188,16 @@ function IndexPage() {
               NyumbaTrack
             </span>
           </div>
-          <div className="flex-1 flex items-center justify-center px-12">
-            <PinCard {...cardProps} />
+          <div className="flex-1 flex items-center justify-center px-12 min-h-0">
+            <PinCard {...cardProps} compact />
           </div>
-          <div className="px-8 py-6 text-xs text-[#9CA3AF]">
+          <div className="px-8 py-4 text-xs text-[#9CA3AF]">
             © 2026 NyumbaTrack Technologies Ltd
           </div>
         </div>
 
         <div
-          className="md:w-1/2 flex flex-col items-center justify-center min-h-screen px-12 relative overflow-hidden"
+          className="md:w-1/2 flex flex-col items-center justify-center h-screen px-12 relative overflow-hidden"
           style={{ background: "linear-gradient(160deg, #0d2818 0%, #166534 100%)" }}
         >
           <div
@@ -209,16 +209,16 @@ function IndexPage() {
             style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }}
           />
           <div className="relative text-center max-w-sm">
-            <div className="mx-auto mb-8 grid h-20 w-20 place-items-center rounded-3xl bg-[#F59E0B]">
-              <Building2 className="h-10 w-10 text-white" />
+            <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-3xl bg-[#F59E0B]">
+              <Building2 className="h-8 w-8 text-white" />
             </div>
-            <h1 className="font-display text-4xl font-bold text-white mb-4 leading-tight">
+            <h1 className="font-display text-3xl font-bold text-white mb-3 leading-tight">
               NyumbaTrack
             </h1>
-            <p className="text-white/60 text-base leading-relaxed mb-10">
+            <p className="text-white/60 text-sm leading-relaxed mb-6">
               The smart way to manage your rental properties. Track tenants, payments, and deposits — built for Kenyan landlords.
             </p>
-            <div className="space-y-3 text-left">
+            <div className="space-y-2 text-left">
               {[
                 "Track rent payments & receipts",
                 "Manage multiple properties",
@@ -226,8 +226,8 @@ function IndexPage() {
                 "Deposits & occupancy tracking",
               ].map((f) => (
                 <div key={f} className="flex items-center gap-3">
-                  <div className="grid h-6 w-6 place-items-center rounded-full flex-shrink-0 bg-[#F59E0B]">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <div className="grid h-5 w-5 place-items-center rounded-full flex-shrink-0 bg-[#F59E0B]">
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                       <path
                         d="M2 6l3 3 5-5"
                         stroke="white"
@@ -265,6 +265,10 @@ function IndexPage() {
  * Shared PIN-entry card. Rendered once on the desktop left panel and once on
  * the mobile single-column layout — kept as one component specifically so
  * the two can't drift out of sync with each other.
+ *
+ * `compact` only applies on the desktop split view, where the card sits
+ * beside a fixed-height branding panel and has to fit the viewport without
+ * scrolling. Mobile always renders at full size, unchanged from before.
  */
 function PinCard({
   firstName,
@@ -275,6 +279,7 @@ function PinCard({
   onDigit,
   onDelete,
   onSignOut,
+  compact = false,
 }: {
   firstName: string;
   initial: string;
@@ -284,21 +289,22 @@ function PinCard({
   onDigit: (d: string) => void;
   onDelete: () => void;
   onSignOut: () => void;
+  compact?: boolean;
 }) {
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
 
   return (
     <div className="w-full max-w-sm">
-      <div className="rounded-3xl border border-[#E5E5DF] bg-white px-6 py-8 shadow-sm">
+      <div className={`rounded-3xl border border-[#E5E5DF] bg-white px-6 shadow-sm ${compact ? "py-6" : "py-8"}`}>
         <div className="flex flex-col items-center">
           {/* Avatar */}
-          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-[#166534]">
-            <span className="font-display text-2xl font-bold text-white">
+          <div className={`flex items-center justify-center rounded-full bg-[#166534] ${compact ? "mb-3 h-16 w-16" : "mb-4 h-20 w-20"}`}>
+            <span className={`font-display font-bold text-white ${compact ? "text-xl" : "text-2xl"}`}>
               {initial}
             </span>
           </div>
 
-          <h1 className="font-display text-xl font-bold text-[#1A1A1A]">
+          <h1 className={`font-display font-bold text-[#1A1A1A] ${compact ? "text-lg" : "text-xl"}`}>
             Welcome back, {firstName}
           </h1>
           <p className="mt-1 text-sm text-[#6B7280]">
@@ -306,7 +312,7 @@ function PinCard({
           </p>
 
           {/* PIN dots */}
-          <div className="my-7 flex gap-4">
+          <div className={`flex gap-4 ${compact ? "my-4" : "my-7"}`}>
             {[0, 1, 2, 3].map((i) => (
               <div
                 key={i}
@@ -320,7 +326,7 @@ function PinCard({
           </div>
 
           {/* Status row — fixed height so the pad doesn't jump */}
-          <div className="mb-4 flex h-6 items-center justify-center">
+          <div className={`flex h-6 items-center justify-center ${compact ? "mb-3" : "mb-4"}`}>
             {error ? (
               <p className="text-sm text-[#B91C1C]">{error}</p>
             ) : checking ? (
@@ -332,7 +338,7 @@ function PinCard({
           </div>
 
           {/* PIN pad */}
-          <div className="grid w-full grid-cols-3 gap-3">
+          <div className={`grid w-full grid-cols-3 ${compact ? "gap-2" : "gap-3"}`}>
             {keys.map((k, i) =>
               k === "" ? (
                 <div key={i} />
@@ -342,9 +348,9 @@ function PinCard({
                   type="button"
                   disabled={checking}
                   onClick={() => (k === "⌫" ? onDelete() : onDigit(k))}
-                  className={`flex h-16 w-full items-center justify-center rounded-2xl border border-[#E5E5DF] bg-[#F5F5F0] font-display font-bold text-[#1A1A1A] transition hover:bg-[#EBEBE4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50 ${
-                    k === "⌫" ? "text-xl" : "text-2xl"
-                  }`}
+                  className={`flex w-full items-center justify-center rounded-2xl border border-[#E5E5DF] bg-[#F5F5F0] font-display font-bold text-[#1A1A1A] transition hover:bg-[#EBEBE4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] focus-visible:ring-offset-2 active:scale-95 disabled:opacity-50 ${
+                    compact ? "h-12" : "h-16"
+                  } ${k === "⌫" ? (compact ? "text-lg" : "text-xl") : compact ? "text-xl" : "text-2xl"}`}
                 >
                   {k}
                 </button>
@@ -352,13 +358,13 @@ function PinCard({
             )}
           </div>
 
-          <p className="mt-5 text-center text-xs text-[#9CA3AF]">
+          <p className={`text-center text-xs text-[#9CA3AF] ${compact ? "mt-3" : "mt-5"}`}>
             You can also type your PIN using the keyboard
           </p>
         </div>
       </div>
 
-      <div className="mt-6 text-center">
+      <div className={`text-center ${compact ? "mt-4" : "mt-6"}`}>
         <button
           onClick={onSignOut}
           className="text-sm text-[#6B7280] transition hover:text-[#1A1A1A]"
