@@ -531,22 +531,22 @@ function AuthPage() {
       </div>
 
       {/* ── MOBILE ── */}
-      <div className="flex md:hidden flex-col min-h-screen w-full">
+      <div className="flex md:hidden flex-col min-h-screen w-full" style={{ background: "#F5F5F0" }}>
         <div className="h-safe-top" />
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
           {step !== "welcome" ? (
-            <button onClick={back} className="grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white"><ArrowLeft className="h-5 w-5" /></button>
+            <button onClick={back} className="grid h-10 w-10 place-items-center rounded-full" style={{ background: "#E5E7EB", color: "#111827" }}><ArrowLeft className="h-5 w-5" /></button>
           ) : <div className="h-10 w-10" />}
           <div className="flex items-center gap-2">
             <div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-400 text-amber-900"><Building2 className="h-4 w-4" /></div>
-            <span className="font-display text-sm font-semibold text-white">NyumbaTrack</span>
+            <span className="font-display text-sm font-semibold" style={{ color: "#111827" }}>NyumbaTrack</span>
           </div>
           <div className="h-10 w-10" />
         </div>
 
         {step !== "welcome" && step !== "signin_pin" && (
           <div className="px-6 mb-2">
-            <div className="h-1 rounded-full bg-white/10">
+            <div className="h-1 rounded-full" style={{ background: "#E5E7EB" }}>
               <div className="h-full rounded-full bg-amber-400 transition-all duration-500" style={{ width: `${((progress ?? 0) / totalSteps) * 100}%` }} />
             </div>
           </div>
@@ -571,29 +571,29 @@ function AuthPage() {
                   <text x="110" y="171" textAnchor="middle" fill="#F59E0B" fontSize="7" fontFamily="system-ui" fontWeight="bold">NYUMBATRACK</text>
                 </svg>
               </div>
-              <h1 className="font-display text-3xl font-bold text-white leading-tight mb-3">Manage your properties<br />with ease</h1>
-              <p className="text-white/60 text-sm leading-relaxed mb-10 max-w-xs">Track tenants, rent payments, and receipts — built for Kenyan landlords.</p>
+              <h1 className="font-display text-3xl font-bold leading-tight mb-3" style={{ color: "#111827" }}>Manage your properties<br />with ease</h1>
+              <p className="text-sm leading-relaxed mb-10 max-w-xs" style={{ color: "#6B7280" }}>Track tenants, rent payments, and receipts — built for Kenyan landlords.</p>
               <div className="w-full space-y-3">
                 <button onClick={() => { setIsSignIn(false); setStep("role"); }} className="w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 transition active:scale-95">Get Started</button>
-                <button onClick={startSignIn} className="w-full rounded-2xl border border-white/20 bg-white/10 py-4 text-base font-semibold text-white transition active:scale-95">{rememberedEmail ? `Continue as ${rememberedEmail}` : "Sign In"}</button>
+                <button onClick={startSignIn} className="w-full rounded-2xl border py-4 text-base font-semibold transition active:scale-95" style={{ borderColor: "#166534", color: "#166534", background: "white" }}>{rememberedEmail ? `Continue as ${rememberedEmail}` : "Sign In"}</button>
               </div>
             </div>
           )}
 
           {step === "role" && (
             <div className="flex flex-col flex-1">
-              <h1 className="font-display text-2xl font-bold text-white mb-2">Who are you?</h1>
-              <p className="text-white/60 text-sm mb-8">Select your role to get started.</p>
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Who are you?</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Select your role to get started.</p>
               <div className="space-y-4">
-                <button onClick={() => { setRole("landlord"); setStep("name"); }} className={`w-full rounded-2xl border-2 p-5 text-left transition active:scale-95 ${role === "landlord" ? "border-amber-400 bg-white/10" : "border-white/10 bg-white/5"}`}>
+                <button onClick={() => { setRole("landlord"); setStep("name"); }} className="w-full rounded-2xl border-2 p-5 text-left transition active:scale-95" style={{ borderColor: role === "landlord" ? "#F59E0B" : "#E5E7EB", background: role === "landlord" ? "#FFFBEB" : "white" }}>
                   <div className="text-2xl mb-2">🏠</div>
-                  <div className="font-display text-lg font-bold text-white">Landlord</div>
-                  <div className="text-white/60 text-sm mt-1">I own properties and manage tenants</div>
+                  <div className="font-display text-lg font-bold" style={{ color: "#111827" }}>Landlord</div>
+                  <div className="text-sm mt-1" style={{ color: "#6B7280" }}>I own properties and manage tenants</div>
                 </button>
-                <button onClick={() => { setRole("agent"); setStep("name"); }} className={`w-full rounded-2xl border-2 p-5 text-left transition active:scale-95 ${role === "agent" ? "border-amber-400 bg-white/10" : "border-white/10 bg-white/5"}`}>
+                <button onClick={() => { setRole("agent"); setStep("name"); }} className="w-full rounded-2xl border-2 p-5 text-left transition active:scale-95" style={{ borderColor: role === "agent" ? "#F59E0B" : "#E5E7EB", background: role === "agent" ? "#FFFBEB" : "white" }}>
                   <div className="text-2xl mb-2">👔</div>
-                  <div className="font-display text-lg font-bold text-white">Agent / Secretary</div>
-                  <div className="text-white/60 text-sm mt-1">I manage properties on behalf of a landlord</div>
+                  <div className="font-display text-lg font-bold" style={{ color: "#111827" }}>Agent / Secretary</div>
+                  <div className="text-sm mt-1" style={{ color: "#6B7280" }}>I manage properties on behalf of a landlord</div>
                 </button>
               </div>
             </div>
@@ -601,29 +601,29 @@ function AuthPage() {
 
           {step === "name" && (
             <div className="flex flex-col flex-1">
-              <h1 className="font-display text-2xl font-bold text-white mb-2">What's your name?</h1>
-              <p className="text-white/60 text-sm mb-8">We'll use this to personalise your experience.</p>
-              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && fullName.trim()) setStep("email"); }} placeholder="Full name" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400" />
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>What's your name?</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>We'll use this to personalise your experience.</p>
+              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && fullName.trim()) setStep("email"); }} placeholder="Full name" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
               <button onClick={() => fullName.trim() && setStep("email")} disabled={!fullName.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
           )}
 
           {step === "email" && (
             <div className="flex flex-col flex-1">
-              <h1 className="font-display text-2xl font-bold text-white mb-2">Your email address</h1>
-              <p className="text-white/60 text-sm mb-8">We'll use this to secure your account.</p>
-              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("password"); }} placeholder="you@example.com" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400" />
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Your email address</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>We'll use this to secure your account.</p>
+              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("password"); }} placeholder="you@example.com" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
               <button onClick={() => email.trim() && setStep("password")} disabled={!email.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
           )}
 
           {step === "password" && (
             <div className="flex flex-col flex-1">
-              <h1 className="font-display text-2xl font-bold text-white mb-2">Create a password</h1>
-              <p className="text-white/60 text-sm mb-8">Minimum 6 characters.</p>
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Create a password</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Minimum 6 characters.</p>
               <div className="relative">
-                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && password.length >= 6) setStep(role === "agent" ? "invite_code" : "pin_setup"); }} placeholder="••••••••" minLength={6} className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
+                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && password.length >= 6) setStep(role === "agent" ? "invite_code" : "pin_setup"); }} placeholder="••••••••" minLength={6} className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 pr-14" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
               </div>
               <button onClick={() => password.length >= 6 && setStep(role === "agent" ? "invite_code" : "pin_setup")} disabled={password.length < 6} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
@@ -631,9 +631,9 @@ function AuthPage() {
 
           {step === "invite_code" && (
             <div className="flex flex-col flex-1">
-              <h1 className="font-display text-2xl font-bold text-white mb-2">Enter invite code</h1>
-              <p className="text-white/60 text-sm mb-8">Ask your landlord for the invite code to link your account.</p>
-              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) setStep("pin_setup"); }} placeholder="e.g. NYM-ABC123" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono" />
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Enter invite code</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Ask your landlord for the invite code to link your account.</p>
+              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) setStep("pin_setup"); }} placeholder="e.g. NYM-ABC123" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
               <button onClick={() => inviteCode.trim() && setStep("pin_setup")} disabled={!inviteCode.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
           )}
@@ -657,25 +657,25 @@ function AuthPage() {
 
           {step === "signin_email" && (
             <div className="flex flex-col flex-1">
-              <h1 className="font-display text-2xl font-bold text-white mb-2">Welcome back</h1>
-              <p className="text-white/60 text-sm mb-8">Enter your email to continue.</p>
-              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("signin_password"); }} placeholder="you@example.com" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400" />
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Welcome back</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Enter your email to continue.</p>
+              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("signin_password"); }} placeholder="you@example.com" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
               <button onClick={() => email.trim() && setStep("signin_password")} disabled={!email.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
           )}
 
           {step === "signin_password" && (
             <div className="flex flex-col flex-1">
-              <h1 className="font-display text-2xl font-bold text-white mb-2">Enter password</h1>
-              <p className="text-white/60 text-sm mb-8">Enter your password to sign in.</p>
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Enter password</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Enter your password to sign in.</p>
               <div className="relative">
-                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !loading && password) handleSignIn(); }} placeholder="••••••••" className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
+                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !loading && password) handleSignIn(); }} placeholder="••••••••" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 pr-14" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
               </div>
               <button onClick={handleSignIn} disabled={loading || !password} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null} Sign In
               </button>
-              <button onClick={forgotPassword} className="mt-3 w-full text-center text-sm text-white/50 hover:text-white/80 transition">Forgot password?</button>
+              <button onClick={forgotPassword} className="mt-3 w-full text-center text-sm transition" style={{ color: "#6B7280" }}>Forgot password?</button>
             </div>
           )}
 
@@ -727,11 +727,11 @@ function AuthPage() {
 
           {step === "reset_password" && (
             <div className="flex flex-col flex-1">
-              <h1 className="font-display text-2xl font-bold text-white mb-2">Set new password</h1>
-              <p className="text-white/60 text-sm mb-8">Choose a new password for your account.</p>
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Set new password</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Choose a new password for your account.</p>
               <div className="relative">
-                <input autoFocus type={showResetPassword ? "text" : "password"} value={newResetPassword} onChange={(e) => setNewResetPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !loading && newResetPassword.length >= 6) handleResetPassword(); }} placeholder="New password" minLength={6} className="w-full rounded-2xl border-2 border-white/20 bg-white/10 px-5 py-4 text-white placeholder-white/40 text-base outline-none focus:border-amber-400 pr-14" />
-                <button type="button" onClick={() => setShowResetPassword(!showResetPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40">{showResetPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
+                <input autoFocus type={showResetPassword ? "text" : "password"} value={newResetPassword} onChange={(e) => setNewResetPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !loading && newResetPassword.length >= 6) handleResetPassword(); }} placeholder="New password" minLength={6} className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 pr-14" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+                <button type="button" onClick={() => setShowResetPassword(!showResetPassword)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showResetPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
               </div>
               <button onClick={handleResetPassword} disabled={loading || newResetPassword.length < 6} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null} Update Password
