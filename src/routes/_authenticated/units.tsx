@@ -38,6 +38,7 @@ function UnitsPage() {
   const { selectedProperty } = useProperty();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<UnitRow | null>(null);
+  const [editingTenantType, setEditingTenantType] = useState<Tenant | null>(null);
 
   useEffect(() => {
     if (!selectedProperty) navigate({ to: "/properties" });
@@ -106,6 +107,24 @@ function UnitsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Updates unit_type directly on the tenant row — an occupied unit has no
+  // corresponding `units` table entry, so this is the only place that value
+  // lives once someone has moved in.
+  const updateTenantType = useMutation({
+    mutationFn: async (t: { id: string; unit_type: string | null }) => {
+      const { error } = await (supabase as any).from("tenants").update({
+        unit_type: t.unit_type,
+      }).eq("id", t.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tenants-units", selectedProperty?.id] });
+      setEditingTenantType(null);
+      toast.success("Unit type updated!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (!selectedProperty) return null;
 
   const occupiedUnitNames = new Set((tenants ?? []).map((t) => t.unit));
@@ -157,11 +176,13 @@ function UnitsPage() {
                 </span>
               </div>
               <div className="p-4 space-y-2">
-                {typeLabel && (
-                  <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium mb-1" style={{ background: "#F5F5F0", color: "#374151" }}>
-                    {typeLabel}
-                  </span>
-                )}
+                <button
+                  onClick={() => setEditingTenantType(t)}
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium mb-1 hover:opacity-80 transition-opacity"
+                  style={{ background: "#F5F5F0", color: typeLabel ? "#374151" : "#9CA3AF" }}
+                >
+                  {typeLabel ?? "Add unit type"} <Pencil className="h-2.5 w-2.5" />
+                </button>
                 <div className="flex items-center gap-2">
                   <div className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0" style={{ background: "#166534" }}>
                     {initials}
@@ -247,10 +268,58 @@ function UnitsPage() {
           saving={editUnit.isPending}
         />
       )}
+      {editingTenantType && (
+        <TenantUnitTypeForm
+          tenant={editingTenantType}
+          onSave={(unitType) => updateTenantType.mutate({ id: editingTenantType.id, unit_type: unitType })}
+          onClose={() => setEditingTenantType(null)}
+          saving={updateTenantType.isPending}
+        />
+      )}
     </div>
   );
 }
 
+function TenantUnitTypeForm({
+  tenant, onSave, onClose, saving,
+}: {
+  tenant: Tenant;
+  onSave: (unitType: string | null) => void;
+  onClose: () => void;
+  saving: boolean;
+}) {
+  const [unitType, setUnitType] = useState<UnitType | "">((tenant.unit_type as UnitType) ?? "");
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
+      <div className="card-surface w-full max-w-sm p-6 animate-slide-up">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="font-display text-xl font-semibold">Unit {tenant.unit} — Type</h2>
+          <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); onSave(unitType || null); }} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">Unit Type</label>
+            <select value={unitType} onChange={(e) => setUnitType(e.target.value as UnitType | "")} className="form-input">
+              <option value="">Not specified</option>
+              {UNIT_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
+            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary" style={{ background: "#166534" }}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </form>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+      </div>
+    </div>,
+    document.body
+  );
+}
 function UnitForm({
   initial, onSave, onClose, saving,
 }: {
