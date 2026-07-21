@@ -7,6 +7,7 @@ import { useProperty } from "@/context/PropertyContext";
 import { formatKES } from "@/lib/format";
 import { Plus, X, Mail, Phone, Calendar, Building2, DoorOpen, DoorClosed, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { UNIT_TYPES, unitTypeLabel, type UnitType } from "@/lib/unitTypes";
 
 export const Route = createFileRoute("/_authenticated/units")({
   component: UnitsPage,
@@ -21,12 +22,14 @@ interface Tenant {
   phone: string | null;
   move_in_date: string | null;
   next_due_date: string | null;
+  unit_type: string | null;
 }
 
 interface UnitRow {
   id: string;
   unit_name: string;
   rent_price: number;
+  unit_type: string | null;
 }
 
 function UnitsPage() {
@@ -46,7 +49,7 @@ function UnitsPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("tenants")
-        .select("id, full_name, unit, rent_amount, email, phone, move_in_date, next_due_date")
+        .select("id, full_name, unit, rent_amount, email, phone, move_in_date, next_due_date, unit_type")
         .eq("property_id", selectedProperty!.id)
         .order("unit");
       if (error) throw error;
@@ -60,7 +63,7 @@ function UnitsPage() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("units")
-        .select("id, unit_name, rent_price")
+        .select("id, unit_name, rent_price, unit_type")
         .eq("property_id", selectedProperty!.id)
         .order("unit_name");
       if (error) throw error;
@@ -69,11 +72,12 @@ function UnitsPage() {
   });
 
   const addUnit = useMutation({
-    mutationFn: async (u: { unit_name: string; rent_price: number }) => {
+    mutationFn: async (u: { unit_name: string; rent_price: number; unit_type: string | null }) => {
       const { error } = await (supabase as any).from("units").insert({
         property_id: selectedProperty!.id,
         unit_name: u.unit_name,
         rent_price: u.rent_price,
+        unit_type: u.unit_type,
       });
       if (error) throw error;
     },
@@ -86,10 +90,11 @@ function UnitsPage() {
   });
 
   const editUnit = useMutation({
-    mutationFn: async (u: { id: string; unit_name: string; rent_price: number }) => {
+    mutationFn: async (u: { id: string; unit_name: string; rent_price: number; unit_type: string | null }) => {
       const { error } = await (supabase as any).from("units").update({
         unit_name: u.unit_name,
         rent_price: u.rent_price,
+        unit_type: u.unit_type,
       }).eq("id", u.id);
       if (error) throw error;
     },
@@ -134,6 +139,7 @@ function UnitsPage() {
           const initials = t.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
           const today = new Date().toISOString().slice(0, 10);
           const isPaid = t.next_due_date && t.next_due_date > today;
+          const typeLabel = unitTypeLabel(t.unit_type);
           return (
             <div key={t.id} className="card-surface overflow-hidden">
               <div className="px-4 py-3 flex items-center justify-between" style={{ background: "#F0FDF4" }}>
@@ -151,6 +157,11 @@ function UnitsPage() {
                 </span>
               </div>
               <div className="p-4 space-y-2">
+                {typeLabel && (
+                  <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium mb-1" style={{ background: "#F5F5F0", color: "#374151" }}>
+                    {typeLabel}
+                  </span>
+                )}
                 <div className="flex items-center gap-2">
                   <div className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0" style={{ background: "#166534" }}>
                     {initials}
@@ -179,31 +190,39 @@ function UnitsPage() {
         })}
 
         {/* Vacant units */}
-        {vacantUnits.map((u) => (
-          <div key={u.id} className="card-surface overflow-hidden">
-            <div className="px-4 py-3 flex items-center justify-between" style={{ background: "#FFF7ED" }}>
-              <div className="flex items-center gap-2">
-                <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#FEE2E2" }}>
-                  <DoorClosed className="h-4 w-4" style={{ color: "#DC2626" }} />
+        {vacantUnits.map((u) => {
+          const typeLabel = unitTypeLabel(u.unit_type);
+          return (
+            <div key={u.id} className="card-surface overflow-hidden">
+              <div className="px-4 py-3 flex items-center justify-between" style={{ background: "#FFF7ED" }}>
+                <div className="flex items-center gap-2">
+                  <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#FEE2E2" }}>
+                    <DoorClosed className="h-4 w-4" style={{ color: "#DC2626" }} />
+                  </div>
+                  <div>
+                    <div className="font-display font-bold text-sm text-foreground">Unit {u.unit_name}</div>
+                    <div className="text-xs" style={{ color: "#DC2626" }}>Vacant</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-display font-bold text-sm text-foreground">Unit {u.unit_name}</div>
-                  <div className="text-xs" style={{ color: "#DC2626" }}>Vacant</div>
-                </div>
+                <button
+                  onClick={() => setEditing(u)}
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  <Pencil className="h-3 w-3" /> Edit
+                </button>
               </div>
-              <button
-                onClick={() => setEditing(u)}
-                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
-              >
-                <Pencil className="h-3 w-3" /> Edit
-              </button>
+              <div className="p-4">
+                {typeLabel && (
+                  <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium mb-2" style={{ background: "#F5F5F0", color: "#374151" }}>
+                    {typeLabel}
+                  </span>
+                )}
+                <div className="text-sm font-display font-bold text-foreground">{formatKES(u.rent_price)}<span className="text-xs text-muted-foreground font-normal">/month</span></div>
+                <p className="text-xs text-muted-foreground mt-2">Available for a new tenant.</p>
+              </div>
             </div>
-            <div className="p-4">
-              <div className="text-sm font-display font-bold text-foreground">{formatKES(u.rent_price)}<span className="text-xs text-muted-foreground font-normal">/month</span></div>
-              <p className="text-xs text-muted-foreground mt-2">Available for a new tenant.</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {!tenants?.length && !vacantUnits.length && (
           <div className="card-surface p-10 text-center text-sm text-muted-foreground sm:col-span-2 lg:col-span-3 flex flex-col items-center">
@@ -236,12 +255,13 @@ function UnitForm({
   initial, onSave, onClose, saving,
 }: {
   initial?: UnitRow;
-  onSave: (u: { unit_name: string; rent_price: number }) => void;
+  onSave: (u: { unit_name: string; rent_price: number; unit_type: string | null }) => void;
   onClose: () => void;
   saving: boolean;
 }) {
   const [unitName, setUnitName] = useState(initial?.unit_name ?? "");
   const [rentPrice, setRentPrice] = useState<number>(initial?.rent_price ?? 0);
+  const [unitType, setUnitType] = useState<UnitType | "">((initial?.unit_type as UnitType) ?? "");
 
   // Render via a portal directly onto document.body so this modal isn't
   // affected by the page's animated <main> wrapper (a transformed ancestor
@@ -254,10 +274,19 @@ function UnitForm({
           <h2 className="font-display text-xl font-semibold">{initial ? "Edit Unit" : "Add Vacant Unit"}</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); onSave({ unit_name: unitName, rent_price: rentPrice }); }} className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); onSave({ unit_name: unitName, rent_price: rentPrice, unit_type: unitType || null }); }} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Unit Name *</label>
             <input required value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="e.g. B3" className="form-input" />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">Unit Type</label>
+            <select value={unitType} onChange={(e) => setUnitType(e.target.value as UnitType | "")} className="form-input">
+              <option value="">Not specified</option>
+              {UNIT_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Monthly Rent (KSh) *</label>
