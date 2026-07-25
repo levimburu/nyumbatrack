@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Building2, MapPin, Users, TrendingUp, Pencil, Wallet } from "lucide-react";
+import { Plus, X, Building2, MapPin, Users, TrendingUp, TrendingDown, Pencil, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useProperty } from "@/context/PropertyContext";
 import { formatKES, formatKESCompact } from "@/lib/format";
@@ -236,6 +236,24 @@ function PropertiesPage() {
     return { occupied, totalUnits, vacant, monthlyRent, collectedThisMonth, paid, partial, unpaid, occupancyRate };
   };
 
+  // Portfolio-wide totals across every property — only meaningful (and only
+  // shown) once someone actually has more than one property. Outstanding is
+  // clamped to >=0 per property before summing, so a property that's ahead
+  // on advance payments can't mask a genuine shortfall on another one.
+  const portfolioTotals = (!isAgent && properties && properties.length > 1)
+    ? properties.reduce(
+        (acc, p) => {
+          const stats = getStats(p);
+          const outstanding = Math.max(0, stats.monthlyRent - stats.collectedThisMonth);
+          return {
+            collected: acc.collected + stats.collectedThisMonth,
+            outstanding: acc.outstanding + outstanding,
+          };
+        },
+        { collected: 0, outstanding: 0 },
+      )
+    : null;
+
   const renderContent = () => {
     if (!profileLoaded || isLoading) {
       return (
@@ -303,6 +321,39 @@ function PropertiesPage() {
               </div>
             )}
           </div>
+
+        {/* Portfolio total — every property's numbers combined into one
+            figure, since the per-property cards below only ever show a
+            single property's own collected amount. */}
+        {portfolioTotals && (
+          <div
+            className="rounded-2xl p-5 grid grid-cols-2 gap-4"
+            style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}
+          >
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-medium mb-1" style={{ color: "rgba(255,255,255,0.7)" }}>
+                <TrendingUp className="h-3.5 w-3.5" /> Total Collected This Month
+              </div>
+              <div className="font-display text-2xl font-bold text-white">
+                {formatKES(portfolioTotals.collected)}
+              </div>
+              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
+                Across all {properties.length} properties
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 text-xs font-medium mb-1" style={{ color: "rgba(255,255,255,0.7)" }}>
+                <TrendingDown className="h-3.5 w-3.5" /> Total Outstanding
+              </div>
+              <div className="font-display text-2xl font-bold" style={{ color: portfolioTotals.outstanding > 0 ? "#FCA5A5" : "#FFFFFF" }}>
+                {formatKES(portfolioTotals.outstanding)}
+              </div>
+              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
+                Still owed this month
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((p) => {
