@@ -1,1 +1,11 @@
-{"buildCommand":"node node_modules/vite/bin/vite.js build","outputDirectory":"dist","installCommand":"npm install --legacy-peer-deps","rewrites":[{"source":"/(.*)","destination":"/index.html"}]}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "nyumbatrack.vercel.app" }],
+      "destination": "https://app.nyumbatrack.com/$1",
+      "permanent": true
+    }
+  ]
+}
