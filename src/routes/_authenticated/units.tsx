@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useProperty } from "@/context/PropertyContext";
 import { formatKES } from "@/lib/format";
-import { Plus, X, Mail, Phone, Calendar, Building2, DoorOpen, DoorClosed, Pencil } from "lucide-react";
+import { Plus, X, Mail, Phone, Calendar, Building2, DoorOpen, DoorClosed, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
 import { UNIT_TYPES, unitTypeLabel, type UnitType } from "@/lib/unitTypes";
 
@@ -31,6 +31,10 @@ interface UnitRow {
   rent_price: number;
   unit_type: string | null;
 }
+
+/** Bucket key used for grouping — every real unit type, plus a catch-all
+ * for units/tenants that haven't had a type set yet. */
+type TypeKey = UnitType | "unspecified";
 
 function UnitsPage() {
   const navigate = useNavigate();
@@ -134,6 +138,22 @@ function UnitsPage() {
 
   const totalUnitsCount = (tenants?.length ?? 0) + vacantUnits.length;
 
+  // --- Unit type breakdown, computed from data already loaded above ---
+  // No extra query needed — just grouping what's already on the page.
+  const STAT_ORDER: { key: TypeKey; label: string }[] = [
+    ...UNIT_TYPES.map((t) => ({ key: t.value as TypeKey, label: t.label })),
+    { key: "unspecified", label: "Not specified" },
+  ];
+
+  const typeStats = STAT_ORDER.map(({ key, label }) => {
+    const occupied = (tenants ?? []).filter((t) => (t.unit_type ?? "unspecified") === key);
+    const vacant = vacantUnits.filter((u) => (u.unit_type ?? "unspecified") === key);
+    const monthlyRent = occupied.reduce((sum, t) => sum + Number(t.rent_amount), 0);
+    return { key, label, occupiedCount: occupied.length, vacantCount: vacant.length, monthlyRent };
+  }).filter((s) => s.occupiedCount > 0 || s.vacantCount > 0); // hide types nobody has
+
+  const totalMonthlyRent = typeStats.reduce((sum, s) => sum + s.monthlyRent, 0);
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex items-center justify-between">
@@ -151,6 +171,41 @@ function UnitsPage() {
           <Plus className="h-4 w-4" /> Add Vacant Unit
         </button>
       </div>
+
+      {/* Unit type breakdown — how many tenants per type, how many vacant,
+          and each type's share of total monthly rent. */}
+      {typeStats.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">Unit Type Breakdown</h2>
+          </div>
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+            {typeStats.map((s) => {
+              const share = totalMonthlyRent > 0 ? Math.round((s.monthlyRent / totalMonthlyRent) * 100) : 0;
+              return (
+                <div key={s.key} className="card-surface p-4">
+                  <div className="text-sm font-semibold text-foreground mb-2">{s.label}</div>
+                  <div className="flex items-baseline gap-1 mb-1">
+                    <span className="font-display text-xl font-bold text-foreground">{s.occupiedCount}</span>
+                    <span className="text-xs text-muted-foreground">{s.occupiedCount === 1 ? "tenant" : "tenants"}</span>
+                  </div>
+                  {s.vacantCount > 0 && (
+                    <div className="text-xs mb-2" style={{ color: "#DC2626" }}>{s.vacantCount} vacant</div>
+                  )}
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {formatKES(s.monthlyRent)}<span className="font-normal">/mo</span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#F5F5F0" }}>
+                    <div className="h-full rounded-full" style={{ width: `${share}%`, background: "#166534" }} />
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-1">{share}% of rent</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Occupied units — from tenants */}
@@ -320,6 +375,7 @@ function TenantUnitTypeForm({
     document.body
   );
 }
+
 function UnitForm({
   initial, onSave, onClose, saving,
 }: {
