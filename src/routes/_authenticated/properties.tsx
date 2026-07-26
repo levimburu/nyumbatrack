@@ -326,29 +326,32 @@ function PropertiesPage() {
             figure, since the per-property cards below only ever show a
             single property's own collected amount. */}
         {portfolioTotals && (
-          <div
-            className="rounded-2xl p-5 grid grid-cols-2 gap-4"
-            style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}
-          >
+          <div className="card-surface p-5 grid grid-cols-2 gap-4">
             <div>
-              <div className="flex items-center gap-1.5 text-xs font-medium mb-1" style={{ color: "rgba(255,255,255,0.7)" }}>
-                <TrendingUp className="h-3.5 w-3.5" /> Total Collected This Month
+              <div className="flex items-center gap-1.5 text-xs font-medium mb-1 text-muted-foreground">
+                <div className="grid h-6 w-6 place-items-center rounded-lg" style={{ background: "#DCFCE7" }}>
+                  <TrendingUp className="h-3.5 w-3.5" style={{ color: "#16A34A" }} />
+                </div>
+                Total Collected This Month
               </div>
-              <div className="font-display text-2xl font-bold text-white">
+              <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>
                 {formatKES(portfolioTotals.collected)}
               </div>
-              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
+              <div className="text-xs mt-0.5 text-muted-foreground">
                 Across all {properties.length} properties
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-medium mb-1" style={{ color: "rgba(255,255,255,0.7)" }}>
-                <TrendingDown className="h-3.5 w-3.5" /> Total Outstanding
+            <div className="border-l border-border pl-4">
+              <div className="flex items-center gap-1.5 text-xs font-medium mb-1 text-muted-foreground">
+                <div className="grid h-6 w-6 place-items-center rounded-lg" style={{ background: portfolioTotals.outstanding > 0 ? "#FEE2E2" : "#DCFCE7" }}>
+                  <TrendingDown className="h-3.5 w-3.5" style={{ color: portfolioTotals.outstanding > 0 ? "#DC2626" : "#16A34A" }} />
+                </div>
+                Total Outstanding
               </div>
-              <div className="font-display text-2xl font-bold" style={{ color: portfolioTotals.outstanding > 0 ? "#FCA5A5" : "#FFFFFF" }}>
+              <div className="font-display text-2xl font-bold" style={{ color: portfolioTotals.outstanding > 0 ? "#DC2626" : "#16A34A" }}>
                 {formatKES(portfolioTotals.outstanding)}
               </div>
-              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>
+              <div className="text-xs mt-0.5 text-muted-foreground">
                 Still owed this month
               </div>
             </div>
