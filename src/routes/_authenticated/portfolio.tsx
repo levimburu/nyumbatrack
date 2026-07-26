@@ -8,7 +8,7 @@ import {
   Building2, Users, Wallet, TrendingUp, AlertCircle, DoorOpen, DoorClosed, LayoutGrid,
 } from "lucide-react";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/portfolio")({
@@ -164,6 +164,17 @@ function PortfolioDashboard() {
   const outstanding = Math.max(0, expected - collected);
   const collectionRate = expected > 0 ? Math.min(100, Math.round((collected / expected) * 100)) : 0;
 
+  // Average rent per occupied unit across the whole portfolio.
+  const avgRentPerUnit = occupiedUnits > 0 ? Math.round(expected / occupiedUnits) : 0;
+
+  // Tenants in arrears (historically behind, not just unpaid this month):
+  // next_due_date has already passed. Distinct from "outstanding this month" —
+  // this counts people who are genuinely behind schedule.
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const tenantsInArrears = (tenants ?? []).filter(
+    (t) => t.next_due_date && t.next_due_date <= todayStr,
+  ).length;
+
   // Build the 6-month trend series.
   const trendData = (() => {
     const buckets: { label: string; ym: number; total: number }[] = [];
@@ -184,7 +195,11 @@ function PortfolioDashboard() {
       const bucket = buckets.find((b) => b.ym === ym);
       if (bucket) bucket.total += Number(p.amount);
     });
-    return buckets.map((b) => ({ month: b.label, collected: b.total }));
+    // "expected" is drawn at the CURRENT monthly rent roll across all months.
+    // We don't store historical rent-roll snapshots, so this is a reference
+    // line at today's expected level, not a reconstruction of each past month's
+    // actual roll — it shows how collection tracked against the current target.
+    return buckets.map((b) => ({ month: b.label, collected: b.total, expected }));
   })();
 
   const openProperty = (p: Property) => {
@@ -346,6 +361,44 @@ function PortfolioDashboard() {
         </div>
       </div>
 
+      {/* Second stat row — portfolio health */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <div className="card-surface p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEF3C7" }}>
+              <TrendingUp className="h-4 w-4" style={{ color: "#D97706" }} />
+            </div>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "#FEF3C7", color: "#92400E" }}>
+              {occupancyRate}%
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground mb-0.5">Occupancy Rate</div>
+          <div className="font-display text-lg font-bold text-foreground">{occupancyRate}%</div>
+        </div>
+
+        <div className="card-surface p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
+              <Wallet className="h-4 w-4" style={{ color: "#2563EB" }} />
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground mb-0.5">Avg Rent / Unit</div>
+          <div className="font-display text-lg font-bold text-foreground">{formatKES(avgRentPerUnit)}</div>
+        </div>
+
+        <div className="card-surface p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: tenantsInArrears > 0 ? "#FEE2E2" : "#DCFCE7" }}>
+              <AlertCircle className="h-4 w-4" style={{ color: tenantsInArrears > 0 ? "#DC2626" : "#16A34A" }} />
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground mb-0.5">Tenants in Arrears</div>
+          <div className="font-display text-lg font-bold" style={{ color: tenantsInArrears > 0 ? "#DC2626" : "#16A34A" }}>
+            {tenantsInArrears}
+          </div>
+        </div>
+      </div>
+
       {/* Rent collection trend */}
       <div className="card-surface p-5">
         <div className="flex items-center justify-between mb-4">
@@ -367,8 +420,25 @@ function PortfolioDashboard() {
                 width={40}
               />
               <Tooltip
-                formatter={(v: any) => [formatKES(Number(v)), "Collected"]}
+                formatter={(v: any, name: any) => [formatKES(Number(v)), name === "collected" ? "Collected" : "Expected"]}
                 contentStyle={{ borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 13 }}
+              />
+              <Legend
+                verticalAlign="top"
+                align="right"
+                height={28}
+                iconType="plainline"
+                formatter={(value) => (value === "collected" ? "Collected" : "Expected (current)")}
+                wrapperStyle={{ fontSize: 12 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="expected"
+                stroke="#D97706"
+                strokeWidth={1.5}
+                strokeDasharray="5 5"
+                dot={false}
+                activeDot={false}
               />
               <Line
                 type="monotone"
