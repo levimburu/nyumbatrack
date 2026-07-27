@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, X, Wrench, Building2, Clock, CheckCircle2, Circle } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/maintenance" as any)({
+export const Route = createFileRoute("/_authenticated/maintenance")({
   component: MaintenancePage,
 });
 

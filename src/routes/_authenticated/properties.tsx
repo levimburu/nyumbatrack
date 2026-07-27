@@ -20,7 +20,7 @@ function getTodayDate(): string {
   return new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-export const Route = createFileRoute("/_authenticated/properties" as any)({
+export const Route = createFileRoute("/_authenticated/properties")({
   component: PropertiesPage,
 });
 

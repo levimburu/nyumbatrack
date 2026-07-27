@@ -7,7 +7,7 @@ import { useProperty } from "@/context/PropertyContext";
 import { Wallet, CheckCircle2, Clock, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/deposits" as any)({
+export const Route = createFileRoute("/_authenticated/deposits")({
   component: DepositsPage,
 });
 

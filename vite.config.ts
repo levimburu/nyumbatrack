@@ -3,9 +3,17 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 import { VitePWA } from "vite-plugin-pwa";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
 export default defineConfig({
   plugins: [
+    // Must come before react() — this is what scans src/routes and
+    // (re)generates src/routeTree.gen.ts on every dev run and build, so a
+    // new route file is never invisible to the router again.
+    tanstackRouter({
+      target: "react",
+      autoCodeSplitting: true,
+    }),
     react(),
     tailwindcss(),
     tsConfigPaths({
