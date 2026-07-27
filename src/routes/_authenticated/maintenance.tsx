@@ -17,6 +17,12 @@ interface Property {
   user_id: string;
 }
 
+interface Vendor {
+  id: string;
+  name: string;
+  trade: string | null;
+}
+
 type TicketStatus = "open" | "in_progress" | "done";
 
 interface Ticket {
@@ -27,6 +33,7 @@ interface Ticket {
   description: string | null;
   status: TicketStatus;
   assigned_to: string | null;
+  vendor_id: string | null;
   created_by: string;
   created_at: string;
   completed_at: string | null;
@@ -126,8 +133,24 @@ function MaintenancePage() {
 
   const propertyName = (id: string) => properties?.find((p) => p.id === id)?.name ?? "Unknown property";
 
+  // RLS scopes this to vendors created by me or by someone linked to me,
+  // same as the vendors directory page itself.
+  const { data: vendors } = useQuery({
+    queryKey: ["vendors"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("vendors")
+        .select("id, name, trade")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data as Vendor[];
+    },
+  });
+
+  const vendorName = (id: string | null) => vendors?.find((v) => v.id === id)?.name ?? null;
+
   const createTicket = useMutation({
-    mutationFn: async (t: { property_id: string; unit: string; title: string; description: string; assigned_to: string }) => {
+    mutationFn: async (t: { property_id: string; unit: string; title: string; description: string; vendor_id: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       const { error } = await (supabase as any).from("maintenance_tickets").insert({
@@ -135,7 +158,7 @@ function MaintenancePage() {
         unit: t.unit || null,
         title: t.title,
         description: t.description || null,
-        assigned_to: t.assigned_to || null,
+        vendor_id: t.vendor_id || null,
         created_by: user.id,
         status: "open",
       });
@@ -293,9 +316,9 @@ function MaintenancePage() {
                 {t.description && (
                   <p className="text-sm text-muted-foreground mt-2">{t.description}</p>
                 )}
-                {t.assigned_to && (
+                {(vendorName(t.vendor_id) || t.assigned_to) && (
                   <div className="text-xs text-muted-foreground mt-2">
-                    Assigned to: <span className="font-medium text-foreground">{t.assigned_to}</span>
+                    Assigned to: <span className="font-medium text-foreground">{vendorName(t.vendor_id) ?? t.assigned_to}</span>
                   </div>
                 )}
               </div>
@@ -334,6 +357,7 @@ function MaintenancePage() {
       {adding && (
         <TicketForm
           properties={properties}
+          vendors={vendors ?? []}
           onSave={(t) => createTicket.mutate(t)}
           onClose={() => setAdding(false)}
           saving={createTicket.isPending}
@@ -344,10 +368,11 @@ function MaintenancePage() {
 }
 
 function TicketForm({
-  properties, onSave, onClose, saving,
+  properties, vendors, onSave, onClose, saving,
 }: {
   properties: Property[];
-  onSave: (t: { property_id: string; unit: string; title: string; description: string; assigned_to: string }) => void;
+  vendors: Vendor[];
+  onSave: (t: { property_id: string; unit: string; title: string; description: string; vendor_id: string }) => void;
   onClose: () => void;
   saving: boolean;
 }) {
@@ -355,7 +380,7 @@ function TicketForm({
   const [unit, setUnit] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [assignedTo, setAssignedTo] = useState("");
+  const [vendorId, setVendorId] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -372,7 +397,7 @@ function TicketForm({
       unit: unit.trim(),
       title: title.trim(),
       description: description.trim(),
-      assigned_to: assignedTo.trim(),
+      vendor_id: vendorId,
     });
   };
 
@@ -408,7 +433,17 @@ function TicketForm({
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Assigned to (optional)</label>
-            <input value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} placeholder="e.g. Mike the plumber, 07XX XXX XXX" className="form-input" />
+            <select value={vendorId} onChange={(e) => setVendorId(e.target.value)} className="form-input">
+              <option value="">— Unassigned —</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}{v.trade ? ` (${v.trade})` : ""}</option>
+              ))}
+            </select>
+            {vendors.length === 0 && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                You haven't added any vendors yet — add one from the Vendors page to assign tickets to them.
+              </p>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
