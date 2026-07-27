@@ -419,6 +419,11 @@ export function AppLayout({ children, role, email, displayName }: {
         .sidebar-nav-scroll::-webkit-scrollbar-thumb:hover {
           background: rgba(107, 158, 122, 0.8);
         }
+        .sidebar-nav-scroll::-webkit-scrollbar-button {
+          display: none;
+          width: 0;
+          height: 0;
+        }
       `}</style>
     </aside>
   );
