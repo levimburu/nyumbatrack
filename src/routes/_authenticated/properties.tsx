@@ -325,62 +325,62 @@ function PropertiesPage() {
           </div>
 
         {/* Portfolio total — every property's numbers combined into one
-            row of cards, since the per-property cards below only ever show a
-            single property's own figures. Mirrors the stat-card style used
-            on the /portfolio dashboard for consistency. */}
+            row of cards, laid out icon-left/text-right and paired two per
+            row (counts, then money, then the odd one out) to match the
+            reference dashboard layout. */}
         {portfolioTotals && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            <div className="card-surface p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
-                  <Building2 className="h-4 w-4" style={{ color: "#6D28D9" }} />
-                </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="card-surface p-4 flex items-center gap-3">
+              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
+                <Building2 className="h-5 w-5" style={{ color: "#6D28D9" }} />
               </div>
-              <div className="text-xs text-muted-foreground mb-0.5">Total Properties</div>
-              <div className="font-display text-lg font-bold text-foreground">{properties.length}</div>
-            </div>
-
-            <div className="card-surface p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
-                  <DoorOpen className="h-4 w-4" style={{ color: "#2563EB" }} />
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground mb-0.5">Total Units</div>
-              <div className="font-display text-lg font-bold text-foreground">{portfolioTotals.totalUnits}</div>
-            </div>
-
-            <div className="card-surface p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEF9C3" }}>
-                  <Wallet className="h-4 w-4" style={{ color: "#D97706" }} />
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground mb-0.5">Total Expected</div>
-              <div className="font-display text-lg font-bold text-foreground">{formatKES(portfolioTotals.expected)}</div>
-            </div>
-
-            <div className="card-surface p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
-                  <TrendingUp className="h-4 w-4" style={{ color: "#16A34A" }} />
-                </div>
-              </div>
-              <div className="text-xs text-muted-foreground mb-0.5">Collected This Month</div>
-              <div className="font-display text-lg font-bold" style={{ color: "#16A34A" }}>
-                {formatKES(portfolioTotals.collected)}
+              <div>
+                <div className="text-xs text-muted-foreground mb-0.5">Total Properties</div>
+                <div className="font-display text-lg font-bold text-foreground">{properties.length}</div>
               </div>
             </div>
 
-            <div className="card-surface p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: portfolioTotals.outstanding > 0 ? "#FEE2E2" : "#DCFCE7" }}>
-                  <TrendingDown className="h-4 w-4" style={{ color: portfolioTotals.outstanding > 0 ? "#DC2626" : "#16A34A" }} />
+            <div className="card-surface p-4 flex items-center gap-3">
+              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
+                <DoorOpen className="h-5 w-5" style={{ color: "#2563EB" }} />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-0.5">Total Units</div>
+                <div className="font-display text-lg font-bold text-foreground">{portfolioTotals.totalUnits}</div>
+              </div>
+            </div>
+
+            <div className="card-surface p-4 flex items-center gap-3">
+              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#FEF9C3" }}>
+                <Wallet className="h-5 w-5" style={{ color: "#D97706" }} />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-0.5">Total Expected</div>
+                <div className="font-display text-lg font-bold text-foreground">{formatKES(portfolioTotals.expected)}</div>
+              </div>
+            </div>
+
+            <div className="card-surface p-4 flex items-center gap-3">
+              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
+                <TrendingUp className="h-5 w-5" style={{ color: "#16A34A" }} />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-0.5">Collected This Month</div>
+                <div className="font-display text-lg font-bold" style={{ color: "#16A34A" }}>
+                  {formatKES(portfolioTotals.collected)}
                 </div>
               </div>
-              <div className="text-xs text-muted-foreground mb-0.5">Outstanding</div>
-              <div className="font-display text-lg font-bold" style={{ color: portfolioTotals.outstanding > 0 ? "#DC2626" : "#16A34A" }}>
-                {formatKES(portfolioTotals.outstanding)}
+            </div>
+
+            <div className="card-surface p-4 flex items-center gap-3">
+              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: portfolioTotals.outstanding > 0 ? "#FEE2E2" : "#DCFCE7" }}>
+                <TrendingDown className="h-5 w-5" style={{ color: portfolioTotals.outstanding > 0 ? "#DC2626" : "#16A34A" }} />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground mb-0.5">Outstanding</div>
+                <div className="font-display text-lg font-bold" style={{ color: portfolioTotals.outstanding > 0 ? "#DC2626" : "#16A34A" }}>
+                  {formatKES(portfolioTotals.outstanding)}
+                </div>
               </div>
             </div>
           </div>
