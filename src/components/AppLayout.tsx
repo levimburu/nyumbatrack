@@ -350,7 +350,7 @@ export function AppLayout({ children, role, email, displayName }: {
         </div>
       )}
 
-      <nav className="flex-1 space-y-0.5 px-3">
+      <nav className="flex-1 min-h-0 overflow-y-auto space-y-0.5 px-3">
         {items.map((it) => {
           const active = pathname === it.to;
           const Icon = it.icon;
