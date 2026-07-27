@@ -350,7 +350,7 @@ export function AppLayout({ children, role, email, displayName }: {
         </div>
       )}
 
-      <nav className="flex-1 min-h-0 overflow-y-auto space-y-0.5 px-3">
+      <nav className="flex-1 min-h-0 overflow-y-auto space-y-0.5 px-3 sidebar-nav-scroll">
         {items.map((it) => {
           const active = pathname === it.to;
           const Icon = it.icon;
@@ -400,6 +400,26 @@ export function AppLayout({ children, role, email, displayName }: {
           </div>
         </div>
       </div>
+
+      <style>{`
+        .sidebar-nav-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(107, 158, 122, 0.5) transparent;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar {
+          width: 5px;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb {
+          background: rgba(107, 158, 122, 0.5);
+          border-radius: 999px;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(107, 158, 122, 0.8);
+        }
+      `}</style>
     </aside>
   );
 
