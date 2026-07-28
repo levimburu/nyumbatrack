@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Search, X, Users, Grid3x3, LayoutDashboard, PieChart, Receipt,
-  Wallet, Wrench, ShieldCheck, Hammer, MessageSquare, FileText, BarChart3, Home, Building2,
+  Wallet, Wrench, ShieldCheck, Hammer, MessageSquare, FileText, BarChart3, Home, Building2, AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProperty } from "@/context/PropertyContext";
@@ -35,6 +35,7 @@ const PAGES = [
   { to: "/portfolio", label: "Portfolio", icon: PieChart },
   { to: "/units", label: "Units", icon: Grid3x3 },
   { to: "/tenants", label: "Tenants", icon: Users },
+  { to: "/arrears", label: "Arrears", icon: AlertCircle },
   { to: "/payments", label: "Payments", icon: Receipt },
   { to: "/deposits", label: "Deposits", icon: Wallet },
   { to: "/maintenance", label: "Maintenance", icon: Wrench },
