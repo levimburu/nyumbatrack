@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Search, X, Users, Grid3x3, LayoutDashboard, PieChart, Receipt,
-  Wallet, Wrench, ShieldCheck, Hammer, MessageSquare, FileText, BarChart3, Home,
+  Wallet, Wrench, ShieldCheck, Hammer, MessageSquare, FileText, BarChart3, Home, Building2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProperty } from "@/context/PropertyContext";
@@ -135,7 +135,10 @@ export function GlobalSearch({
 
   const q = query.trim().toLowerCase();
   const pageMatches = q ? PAGES.filter((p) => p.label.toLowerCase().includes(q)) : [];
-  const hasAnyResults = pageMatches.length > 0 || tenantResults.length > 0 || unitResults.length > 0;
+  const propertyMatches = q.length >= 2
+    ? properties.filter((p) => p.name.toLowerCase().includes(q) || (p.location ?? "").toLowerCase().includes(q)).slice(0, 6)
+    : [];
+  const hasAnyResults = pageMatches.length > 0 || propertyMatches.length > 0 || tenantResults.length > 0 || unitResults.length > 0;
   const showDropdown = open && q.length > 0;
 
   const clear = () => {
@@ -169,7 +172,7 @@ export function GlobalSearch({
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
-          placeholder="Search tenants, units, pages…"
+          placeholder="Search properties, tenants, units, pages…"
           className="w-full rounded-xl border border-border bg-white pl-9 pr-8 py-2 text-sm outline-none focus:border-primary transition-colors"
         />
         {query && (
@@ -182,7 +185,7 @@ export function GlobalSearch({
       {showDropdown && (
         <div className="absolute left-0 right-0 mt-2 max-h-96 overflow-y-auto rounded-xl border border-border bg-white shadow-lg z-50">
           {q.length < 2 && pageMatches.length === 0 && (
-            <div className="p-4 text-xs text-muted-foreground text-center">Keep typing to search tenants and units…</div>
+            <div className="p-4 text-xs text-muted-foreground text-center">Keep typing to search properties, tenants, and units…</div>
           )}
 
           {pageMatches.length > 0 && (
@@ -205,6 +208,25 @@ export function GlobalSearch({
 
           {q.length >= 2 && (
             <>
+              {propertyMatches.length > 0 && (
+                <div className="p-2 border-t border-border">
+                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Properties</div>
+                  {propertyMatches.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => goToProperty(p.id, "/dashboard")}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm hover:bg-muted transition-colors"
+                    >
+                      <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="min-w-0">
+                        <span className="block font-medium text-foreground truncate">{p.name}</span>
+                        {p.location && <span className="block text-xs text-muted-foreground truncate">{p.location}</span>}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {tenantResults.length > 0 && (
                 <div className="p-2 border-t border-border">
                   <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Tenants</div>
