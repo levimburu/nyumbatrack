@@ -63,12 +63,12 @@ function IndexPage() {
         .maybeSingle();
 
       if (data?.role === "admin") {
-        window.location.replace("/properties");
+        window.location.replace("/portfolio");
       } else {
         window.location.replace("/portal");
       }
     } catch {
-      window.location.replace("/properties");
+      window.location.replace("/portfolio");
     }
   }, []);
 

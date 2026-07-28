@@ -12,18 +12,24 @@ import { toast } from "sonner";
 interface NavItem { to: string; label: string; icon: typeof Users; }
 
 const adminNav: NavItem[] = [
-  { to: "/properties", label: "Properties", icon: Home },
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/portfolio", label: "Portfolio", icon: PieChart },
-  { to: "/units", label: "Units", icon: Grid3x3 },
-  { to: "/tenants", label: "Tenants", icon: Users },
-  { to: "/payments", label: "Payments", icon: Receipt },
-  { to: "/deposits", label: "Deposits", icon: Wallet },
+  { to: "/properties", label: "Properties", icon: Home },
   { to: "/maintenance", label: "Maintenance", icon: Wrench },
   { to: "/compliance", label: "Compliance", icon: ShieldCheck },
   { to: "/vendors", label: "Vendors", icon: Hammer },
   { to: "/communications", label: "Communications", icon: MessageSquare },
   { to: "/statements", label: "Statements", icon: FileText },
+];
+
+// Pages that only make sense once a specific property is selected — shown
+// nested under "Properties" in the sidebar rather than as their own
+// top-level entries, and hidden again once selectedProperty is cleared.
+const propertySubNav: NavItem[] = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/units", label: "Units", icon: Grid3x3 },
+  { to: "/tenants", label: "Tenants", icon: Users },
+  { to: "/payments", label: "Payments", icon: Receipt },
+  { to: "/deposits", label: "Deposits", icon: Wallet },
   { to: "/reports", label: "Reports", icon: BarChart3 },
 ];
 
@@ -361,21 +367,55 @@ export function AppLayout({ children, role, email, displayName }: {
         {items.map((it) => {
           const active = pathname === it.to;
           const Icon = it.icon;
+          const isPropertiesLink = it.to === "/properties";
+          const showSubNav = isPropertiesLink && !!selectedProperty && role === "admin";
           return (
-            <Link
-              key={it.to}
-              to={it.to}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                active ? "text-white font-semibold" : "hover:text-white"
+            <div key={it.to}>
+              <Link
+                to={it.to}
+                onClick={() => {
+                  setMobileOpen(false);
+                  // Going back to the properties list should also clear the
+                  // current selection, so the sub-pages below hide again
+                  // until another property is chosen.
+                  if (isPropertiesLink) setSelectedProperty(null);
+                }}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                  active ? "text-white font-semibold" : "hover:text-white"
+                )}
+                style={active ? { background: "#166534", color: "#FFFFFF" } : { color: "#9CA3AF" }}
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                {it.label}
+                {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />}
+              </Link>
+
+              {showSubNav && (
+                <div className="ml-4 mt-0.5 space-y-0.5 border-l pl-3" style={{ borderColor: "#1a3a28" }}>
+                  {propertySubNav.map((sub) => {
+                    const subActive = pathname === sub.to;
+                    const SubIcon = sub.icon;
+                    return (
+                      <Link
+                        key={sub.to}
+                        to={sub.to}
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
+                          subActive ? "text-white font-semibold" : "hover:text-white"
+                        )}
+                        style={subActive ? { background: "#166534", color: "#FFFFFF" } : { color: "#8CA396" }}
+                      >
+                        <SubIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                        {sub.label}
+                        {subActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />}
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
-              style={active ? { background: "#166534", color: "#FFFFFF" } : { color: "#9CA3AF" }}
-            >
-              <Icon className="h-4 w-4 flex-shrink-0" />
-              {it.label}
-              {active && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />}
-            </Link>
+            </div>
           );
         })}
       </nav>
