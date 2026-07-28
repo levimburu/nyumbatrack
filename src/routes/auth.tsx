@@ -16,24 +16,9 @@ type Step =
   | "email"
   | "password"
   | "invite_code"
-  | "pin_setup"
-  | "pin_confirm"
   | "signin_email"
   | "signin_password"
-  | "signin_pin"
-  | "reset_password"
-  | "new_pin_setup"
-  | "new_pin_confirm";
-
-function hashPin(pin: string): string {
-  let hash = 0;
-  for (let i = 0; i < pin.length; i++) {
-    const char = pin.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return hash.toString(36) + pin.length.toString();
-}
+  | "reset_password";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -44,82 +29,62 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
-  const [pin, setPin] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignIn, setIsSignIn] = useState(false);
-  const [rememberedEmail, setRememberedEmail] = useState<string | null>(null);
-  const [rememberedUserId, setRememberedUserId] = useState<string | null>(null);
   const [newResetPassword, setNewResetPassword] = useState("");
   const [showResetPassword, setShowResetPassword] = useState(false);
-  const [forgotPinFlow, setForgotPinFlow] = useState(false);
-  const [newPin, setNewPin] = useState("");
-  const [newPinConfirm, setNewPinConfirm] = useState("");
 
   useEffect(() => {
-    const savedEmail = localStorage.getItem("nyumbatrack_email");
-    const savedUserId = localStorage.getItem("nyumbatrack_user_id");
-    if (savedEmail && savedUserId) {
-      setRememberedEmail(savedEmail);
-      setRememberedUserId(savedUserId);
-    }
     const hash = window.location.hash;
     if (hash && hash.includes("type=recovery")) {
       setStep("reset_password");
       return;
     }
-    if (savedEmail && savedUserId && !(hash && hash.includes("type=recovery"))) {
-      // Remembered device — always require PIN, even if session is still valid
-      setStep("signin_pin");
-      return;
-    }
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && !hash.includes("type=recovery")) navigate({ to: "/", replace: true });
     });
   }, [navigate]);
 
-  const handlePinInput = (digit: string, isConfirm = false) => {
-    if (isConfirm) {
-      if (pinConfirm.length < 4) setPinConfirm((p) => p + digit);
-    } else {
-      if (pin.length < 4) setPin((p) => p + digit);
-    }
-  };
-
-  const handlePinDelete = (isConfirm = false) => {
-    if (isConfirm) setPinConfirm((p) => p.slice(0, -1));
-    else setPin((p) => p.slice(0, -1));
-  };
-
-  const handlePinSignIn = async (enteredPin: string) => {
-    if (!rememberedUserId) return;
-    const storedHash = localStorage.getItem(`nyumbatrack_pin_${rememberedUserId}`);
-    if (!storedHash) {
-      toast.error("PIN not found on this device. Please sign in with email.");
-      setStep("signin_email");
-      return;
-    }
-    if (hashPin(enteredPin) !== storedHash) {
-      toast.error("Incorrect PIN");
-      setPin("");
-      return;
-    }
+  const handleSignIn = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        localStorage.removeItem("nyumbatrack_selected_property");
-        navigate({ to: "/", replace: true });
-        return;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      localStorage.removeItem("nyumbatrack_selected_property");
+      toast.success("Welcome back!");
+      navigate({ to: "/", replace: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sign in failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    setLoading(true);
+    try {
+      if (role === "agent") {
+        const { data: codeData, error: codeError } = await (supabase as any).from("invite_codes").select("*").eq("code", inviteCode).eq("used", false).maybeSingle();
+        if (codeError || !codeData) { toast.error("Invalid or already used invite code"); setLoading(false); return; }
       }
-      const { data: refreshData } = await supabase.auth.refreshSession();
-      if (refreshData?.session) { navigate({ to: "/", replace: true }); return; }
-      toast.error("Session expired. Please sign in with your password.");
-      setEmail(rememberedEmail ?? "");
-      setStep("signin_password");
-    } catch {
-      toast.error("Sign in failed. Please try again.");
+      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("No user returned");
+      const userId = authData.user.id;
+      await (supabase as any).from("profiles").upsert({ id: userId, full_name: fullName, role } as any);
+      await (supabase as any).from("user_roles").upsert({ user_id: userId, role: "admin" } as any);
+      if (role === "agent") {
+        const { data: codeData } = await (supabase as any).from("invite_codes").select("*").eq("code", inviteCode).eq("used", false).maybeSingle();
+        if (codeData) {
+          await (supabase as any).from("invite_codes").update({ used: true, used_by: userId } as any).eq("id", codeData.id);
+          await (supabase as any).from("agent_landlord").insert({ agent_id: userId, landlord_id: codeData.landlord_id, property_id: codeData.property_id } as any);
+        }
+      }
+      localStorage.removeItem("nyumbatrack_selected_property");
+      toast.success("Account created! Welcome to NyumbaTrack.");
+      navigate({ to: "/", replace: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Sign up failed");
     } finally {
       setLoading(false);
     }
@@ -141,185 +106,22 @@ function AuthPage() {
     }
   };
 
-  const handleSignIn = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      const userId = data.user.id;
-      const { data: profile } = await (supabase as any).from("profiles").select("pin_hash").eq("id", userId).maybeSingle();
-      localStorage.setItem("nyumbatrack_email", email);
-      localStorage.setItem("nyumbatrack_user_id", userId);
-      if (profile?.pin_hash) localStorage.setItem(`nyumbatrack_pin_${userId}`, profile.pin_hash);
-      localStorage.removeItem("nyumbatrack_selected_property");
-      if (forgotPinFlow) {
-        setForgotPinFlow(false);
-        setNewPin("");
-        setNewPinConfirm("");
-        setStep("new_pin_setup");
-        return;
-      }
-      toast.success("Welcome back!");
-      navigate({ to: "/", replace: true });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign in failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignUp = async () => {
-    if (pin !== pinConfirm) {
-      toast.error("PINs do not match");
-      setPin(""); setPinConfirm(""); setStep("pin_setup");
-      return;
-    }
-    setLoading(true);
-    try {
-      if (role === "agent") {
-        const { data: codeData, error: codeError } = await (supabase as any).from("invite_codes").select("*").eq("code", inviteCode).eq("used", false).maybeSingle();
-        if (codeError || !codeData) { toast.error("Invalid or already used invite code"); setLoading(false); return; }
-      }
-      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("No user returned");
-      const userId = authData.user.id;
-      const pinHash = hashPin(pin);
-      await (supabase as any).from("profiles").upsert({ id: userId, full_name: fullName, role, pin_hash: pinHash } as any);
-      await (supabase as any).from("user_roles").upsert({ user_id: userId, role: "admin" } as any);
-      if (role === "agent") {
-        const { data: codeData } = await (supabase as any).from("invite_codes").select("*").eq("code", inviteCode).eq("used", false).maybeSingle();
-        if (codeData) {
-          await (supabase as any).from("invite_codes").update({ used: true, used_by: userId } as any).eq("id", codeData.id);
-          await (supabase as any).from("agent_landlord").insert({ agent_id: userId, landlord_id: codeData.landlord_id, property_id: codeData.property_id } as any);
-        }
-      }
-      localStorage.setItem("nyumbatrack_email", email);
-      localStorage.setItem("nyumbatrack_user_id", userId);
-      localStorage.setItem(`nyumbatrack_pin_${userId}`, pinHash);
-      localStorage.removeItem("nyumbatrack_selected_property");
-      toast.success("Account created! Welcome to NyumbaTrack.");
-      navigate({ to: "/", replace: true });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign up failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (step === "pin_setup" && pin.length === 4) setTimeout(() => setStep("pin_confirm"), 300);
-  }, [pin, step]);
-
-  useEffect(() => {
-    if (step === "pin_confirm" && pinConfirm.length === 4) setTimeout(() => handleSignUp(), 300);
-  }, [pinConfirm, step]);
-
-  useEffect(() => {
-    if (step === "signin_pin" && pin.length === 4) setTimeout(() => handlePinSignIn(pin), 300);
-  }, [pin, step]);
-
-  useEffect(() => {
-    if (step === "new_pin_setup" && newPin.length === 4) setTimeout(() => setStep("new_pin_confirm"), 300);
-  }, [newPin, step]);
-
-  useEffect(() => {
-    if (step === "new_pin_confirm" && newPinConfirm.length === 4) setTimeout(() => handleSaveNewPin(), 300);
-  }, [newPinConfirm, step]);
-
   const back = () => {
     if (step === "role") setStep("welcome");
     else if (step === "name") setStep("role");
     else if (step === "email") setStep("name");
     else if (step === "password") setStep("email");
     else if (step === "invite_code") setStep("password");
-    else if (step === "pin_setup") setStep(role === "agent" ? "invite_code" : "password");
-    else if (step === "pin_confirm") { setPin(""); setStep("pin_setup"); }
     else if (step === "signin_email") setStep("welcome");
     else if (step === "signin_password") setStep("signin_email");
-    else if (step === "signin_pin") {
-      localStorage.removeItem("nyumbatrack_email");
-      localStorage.removeItem("nyumbatrack_user_id");
-      setRememberedEmail(null); setRememberedUserId(null); setPin("");
-      setStep("signin_email");
-    }
   };
 
-  const progress = { welcome: 0, role: 1, name: 2, email: 3, password: 4, invite_code: 4, pin_setup: 5, pin_confirm: 6, signin_email: 1, signin_password: 2, signin_pin: 1, reset_password: 1, new_pin_setup: 1, new_pin_confirm: 2 }[step];
-  const totalSteps = isSignIn ? 2 : 6;
+  const progress = { welcome: 0, role: 1, name: 2, email: 3, password: 4, invite_code: 4, signin_email: 1, signin_password: 2, reset_password: 1 }[step];
+  const totalSteps = isSignIn ? 2 : 4;
 
   const startSignIn = () => {
     setIsSignIn(true);
-    if (rememberedEmail && rememberedUserId) { setPin(""); setStep("signin_pin"); }
-    else setStep("signin_email");
-  };
-
-  const handleNewPinInput = (digit: string, isConfirm = false) => {
-    if (isConfirm) {
-      if (newPinConfirm.length < 4) setNewPinConfirm((p) => p + digit);
-    } else {
-      if (newPin.length < 4) setNewPin((p) => p + digit);
-    }
-  };
-
-  const handleNewPinDelete = (isConfirm = false) => {
-    if (isConfirm) setNewPinConfirm((p) => p.slice(0, -1));
-    else setNewPin((p) => p.slice(0, -1));
-  };
-
-  // Allow typing PIN digits (and Backspace) with the physical keyboard, on
-  // every PIN entry step. Re-subscribes whenever the pin values themselves
-  // change so the listener always sees the latest length (avoids a stale
-  // closure that would otherwise let more than 4 digits through, or block
-  // input after the first keystroke).
-  useEffect(() => {
-    const pinSteps: Step[] = ["pin_setup", "pin_confirm", "signin_pin", "new_pin_setup", "new_pin_confirm"];
-    if (!pinSteps.includes(step)) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key >= "0" && e.key <= "9") {
-        if (step === "pin_setup") handlePinInput(e.key, false);
-        else if (step === "pin_confirm") handlePinInput(e.key, true);
-        else if (step === "signin_pin") handlePinInput(e.key, false);
-        else if (step === "new_pin_setup") handleNewPinInput(e.key, false);
-        else if (step === "new_pin_confirm") handleNewPinInput(e.key, true);
-      } else if (e.key === "Backspace") {
-        e.preventDefault();
-        if (step === "pin_setup") handlePinDelete(false);
-        else if (step === "pin_confirm") handlePinDelete(true);
-        else if (step === "signin_pin") handlePinDelete(false);
-        else if (step === "new_pin_setup") handleNewPinDelete(false);
-        else if (step === "new_pin_confirm") handleNewPinDelete(true);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [step, pin, pinConfirm, newPin, newPinConfirm]);
-
-  const handleSaveNewPin = async () => {
-    if (newPin !== newPinConfirm) {
-      toast.error("PINs do not match");
-      setNewPin(""); setNewPinConfirm(""); setStep("new_pin_setup");
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not signed in");
-      const pinHash = hashPin(newPin);
-      const { error } = await (supabase as any).from("profiles").update({ pin_hash: pinHash }).eq("id", user.id);
-      if (error) throw error;
-      localStorage.setItem("nyumbatrack_email", email);
-      localStorage.setItem("nyumbatrack_user_id", user.id);
-      localStorage.setItem(`nyumbatrack_pin_${user.id}`, pinHash);
-      toast.success("PIN updated! Welcome back.");
-      navigate({ to: "/", replace: true });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update PIN");
-    } finally {
-      setLoading(false);
-    }
+    setStep("signin_email");
   };
 
   const forgotPassword = async () => {
@@ -327,6 +129,14 @@ function AuthPage() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/auth#type=recovery` });
     if (error) toast.error(error.message);
     else toast.success("Password reset link sent to " + email);
+  };
+
+  // The password step is the last one for a landlord (submits directly);
+  // for an agent it advances to the invite-code step instead.
+  const continueFromPassword = () => {
+    if (password.length < 6) return;
+    if (role === "agent") setStep("invite_code");
+    else handleSignUp();
   };
 
   return (
@@ -349,9 +159,7 @@ function AuthPage() {
               <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Sign in to manage your properties.</p>
               <div className="space-y-3">
                 <button onClick={() => { setIsSignIn(false); setStep("role"); }} className="w-full rounded-xl py-3.5 text-base font-bold text-white" style={{ background: "#166534" }}>Get Started</button>
-                <button onClick={startSignIn} className="w-full rounded-xl py-3.5 text-base font-semibold border" style={{ border: "1.5px solid #166534", color: "#166534", background: "white" }}>
-                  {rememberedEmail ? `Continue as ${rememberedEmail}` : "Sign In"}
-                </button>
+                <button onClick={startSignIn} className="w-full rounded-xl py-3.5 text-base font-semibold border" style={{ border: "1.5px solid #166534", color: "#166534", background: "white" }}>Sign In</button>
               </div>
             </div>
           )}
@@ -402,10 +210,14 @@ function AuthPage() {
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Create a password</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Minimum 6 characters.</p>
               <div className="relative mb-4">
-                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && password.length >= 6) setStep(role === "agent" ? "invite_code" : "pin_setup"); }} placeholder="••••••••" minLength={6} className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-12" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") continueFromPassword(); }} placeholder="••••••••" minLength={6} className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-12" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
               </div>
-              <button onClick={() => password.length >= 6 && setStep(role === "agent" ? "invite_code" : "pin_setup")} disabled={password.length < 6} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
+              <button onClick={continueFromPassword} disabled={password.length < 6 || loading} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {role === "agent" ? "Continue" : "Create Account"}
+                {role === "agent" && <ChevronRight className="h-4 w-4" />}
+              </button>
             </div>
           )}
 
@@ -414,18 +226,10 @@ function AuthPage() {
               <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Enter invite code</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Ask your landlord for the invite code.</p>
-              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) setStep("pin_setup"); }} placeholder="NYM-ABC123" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4 text-center font-mono tracking-widest" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
-              <button onClick={() => inviteCode.trim() && setStep("pin_setup")} disabled={!inviteCode.trim()} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
-            </div>
-          )}
-
-          {(step === "pin_setup" || step === "pin_confirm") && (
-            <div className="flex flex-col items-center">
-              <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>{step === "pin_setup" ? "Create your PIN" : "Confirm your PIN"}</h1>
-              <p className="text-sm mb-8 text-center" style={{ color: "#6B7280" }}>{step === "pin_setup" ? "Choose a 4-digit PIN for quick access." : "Enter the PIN again to confirm."}</p>
-              <DesktopPinDots value={step === "pin_setup" ? pin : pinConfirm} />
-              {loading ? <div className="mt-4 flex items-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Creating account...</span></div>
-                : <DesktopPinPad onPress={(d) => handlePinInput(d, step === "pin_confirm")} onDelete={() => handlePinDelete(step === "pin_confirm")} />}
+              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) handleSignUp(); }} placeholder="NYM-ABC123" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4 text-center font-mono tracking-widest" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+              <button onClick={() => inviteCode.trim() && handleSignUp()} disabled={!inviteCode.trim() || loading} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Create Account
+              </button>
             </div>
           )}
 
@@ -452,38 +256,6 @@ function AuthPage() {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Sign In
               </button>
               <button onClick={forgotPassword} className="mt-3 w-full text-center text-sm" style={{ color: "#9CA3AF" }}>Forgot password?</button>
-            </div>
-          )}
-
-          {step === "signin_pin" && (
-            <div className="flex flex-col items-center">
-              <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>Enter your PIN</h1>
-              <p className="text-sm mb-1 text-center" style={{ color: "#6B7280" }}>Welcome back, <span className="font-medium" style={{ color: "#111827" }}>{rememberedEmail}</span></p>
-              <p className="text-xs mb-8 text-center" style={{ color: "#9CA3AF" }}>Not you? <button onClick={back} style={{ color: "#166534" }}>Sign in differently</button></p>
-              <DesktopPinDots value={pin} />
-              {loading ? <div className="mt-4 flex items-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Signing in...</span></div>
-                : <DesktopPinPad onPress={(d) => handlePinInput(d, false)} onDelete={() => handlePinDelete(false)} />}
-              <button
-                onClick={() => { setForgotPinFlow(true); setPin(""); setEmail(rememberedEmail ?? ""); setStep("signin_password"); }}
-                className="mt-6 text-sm"
-                style={{ color: "#9CA3AF" }}
-              >
-                Forgot PIN?
-              </button>
-            </div>
-          )}
-
-          {(step === "new_pin_setup" || step === "new_pin_confirm") && (
-            <div className="flex flex-col items-center">
-              <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>
-                {step === "new_pin_setup" ? "Set a new PIN" : "Confirm your new PIN"}
-              </h1>
-              <p className="text-sm mb-8 text-center" style={{ color: "#6B7280" }}>
-                {step === "new_pin_setup" ? "Choose a new 4-digit PIN for quick access." : "Enter it again to confirm."}
-              </p>
-              <DesktopPinDots value={step === "new_pin_setup" ? newPin : newPinConfirm} />
-              {loading ? <div className="mt-4 flex items-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Saving...</span></div>
-                : <DesktopPinPad onPress={(d) => handleNewPinInput(d, step === "new_pin_confirm")} onDelete={() => handleNewPinDelete(step === "new_pin_confirm")} />}
             </div>
           )}
 
@@ -544,7 +316,7 @@ function AuthPage() {
           <div className="h-10 w-10" />
         </div>
 
-        {step !== "welcome" && step !== "signin_pin" && (
+        {step !== "welcome" && (
           <div className="px-6 mb-2">
             <div className="h-1 rounded-full" style={{ background: "#E5E7EB" }}>
               <div className="h-full rounded-full bg-amber-400 transition-all duration-500" style={{ width: `${((progress ?? 0) / totalSteps) * 100}%` }} />
@@ -575,7 +347,7 @@ function AuthPage() {
               <p className="text-sm leading-relaxed mb-10 max-w-xs" style={{ color: "#6B7280" }}>Track tenants, rent payments, and receipts — built for Kenyan landlords.</p>
               <div className="w-full space-y-3">
                 <button onClick={() => { setIsSignIn(false); setStep("role"); }} className="w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 transition active:scale-95">Get Started</button>
-                <button onClick={startSignIn} className="w-full rounded-2xl border py-4 text-base font-semibold transition active:scale-95" style={{ borderColor: "#166534", color: "#166534", background: "white" }}>{rememberedEmail ? `Continue as ${rememberedEmail}` : "Sign In"}</button>
+                <button onClick={startSignIn} className="w-full rounded-2xl border py-4 text-base font-semibold transition active:scale-95" style={{ borderColor: "#166534", color: "#166534", background: "white" }}>Sign In</button>
               </div>
             </div>
           )}
@@ -622,10 +394,14 @@ function AuthPage() {
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Create a password</h1>
               <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Minimum 6 characters.</p>
               <div className="relative">
-                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && password.length >= 6) setStep(role === "agent" ? "invite_code" : "pin_setup"); }} placeholder="••••••••" minLength={6} className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 pr-14" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+                <input autoFocus type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") continueFromPassword(); }} placeholder="••••••••" minLength={6} className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 pr-14" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
               </div>
-              <button onClick={() => password.length >= 6 && setStep(role === "agent" ? "invite_code" : "pin_setup")} disabled={password.length < 6} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
+              <button onClick={continueFromPassword} disabled={password.length < 6 || loading} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+                {role === "agent" ? "Continue" : "Create Account"}
+                {role === "agent" && <ChevronRight className="h-5 w-5" />}
+              </button>
             </div>
           )}
 
@@ -633,25 +409,10 @@ function AuthPage() {
             <div className="flex flex-col flex-1">
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Enter invite code</h1>
               <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Ask your landlord for the invite code to link your account.</p>
-              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) setStep("pin_setup"); }} placeholder="e.g. NYM-ABC123" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
-              <button onClick={() => inviteCode.trim() && setStep("pin_setup")} disabled={!inviteCode.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
-            </div>
-          )}
-
-          {(step === "pin_setup" || step === "pin_confirm") && (
-            <div className="flex flex-col flex-1 items-center justify-center">
-              <div className="w-full rounded-3xl p-6" style={{ background: "#F5F5F0" }}>
-                <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>{step === "pin_setup" ? "Create your PIN" : "Confirm your PIN"}</h1>
-                <p className="text-sm mb-8 text-center" style={{ color: "#6B7280" }}>{step === "pin_setup" ? "Choose a 4-digit PIN for quick access." : "Enter the PIN again to confirm."}</p>
-                <div className="flex justify-center">
-                  <DesktopPinDots value={step === "pin_setup" ? pin : pinConfirm} />
-                </div>
-                {loading ? (
-                  <div className="mt-4 flex items-center justify-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Creating account...</span></div>
-                ) : (
-                  <div className="flex justify-center"><DesktopPinPad onPress={(d) => handlePinInput(d, step === "pin_confirm")} onDelete={() => handlePinDelete(step === "pin_confirm")} /></div>
-                )}
-              </div>
+              <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) handleSignUp(); }} placeholder="e.g. NYM-ABC123" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+              <button onClick={() => inviteCode.trim() && handleSignUp()} disabled={!inviteCode.trim() || loading} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null} Create Account
+              </button>
             </div>
           )}
 
@@ -679,52 +440,6 @@ function AuthPage() {
             </div>
           )}
 
-          {step === "signin_pin" && (
-            <div className="flex flex-col flex-1 items-center justify-center">
-              <div className="w-full rounded-3xl p-6" style={{ background: "#F5F5F0" }}>
-                <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>Enter your PIN</h1>
-                <p className="text-sm mb-1 text-center" style={{ color: "#6B7280" }}>Welcome back, <span className="font-medium" style={{ color: "#111827" }}>{rememberedEmail}</span></p>
-                <p className="text-xs mb-6 text-center" style={{ color: "#9CA3AF" }}>Not you? Tap back to sign in differently.</p>
-                <div className="flex justify-center">
-                  <DesktopPinDots value={pin} />
-                </div>
-                {loading ? (
-                  <div className="mt-4 flex items-center justify-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Signing in...</span></div>
-                ) : (
-                  <div className="flex justify-center"><DesktopPinPad onPress={(d) => handlePinInput(d, false)} onDelete={() => handlePinDelete(false)} /></div>
-                )}
-                <button
-                  onClick={() => { setForgotPinFlow(true); setPin(""); setEmail(rememberedEmail ?? ""); setStep("signin_password"); }}
-                  className="mt-4 w-full text-center text-sm"
-                  style={{ color: "#9CA3AF" }}
-                >
-                  Forgot PIN?
-                </button>
-              </div>
-            </div>
-          )}
-
-          {(step === "new_pin_setup" || step === "new_pin_confirm") && (
-            <div className="flex flex-col flex-1 items-center justify-center">
-              <div className="w-full rounded-3xl p-6" style={{ background: "#F5F5F0" }}>
-                <h1 className="font-display text-2xl font-bold mb-2 text-center" style={{ color: "#111827" }}>
-                  {step === "new_pin_setup" ? "Set a new PIN" : "Confirm your new PIN"}
-                </h1>
-                <p className="text-sm mb-8 text-center" style={{ color: "#6B7280" }}>
-                  {step === "new_pin_setup" ? "Choose a new 4-digit PIN for quick access." : "Enter it again to confirm."}
-                </p>
-                <div className="flex justify-center">
-                  <DesktopPinDots value={step === "new_pin_setup" ? newPin : newPinConfirm} />
-                </div>
-                {loading ? (
-                  <div className="mt-4 flex items-center justify-center gap-2" style={{ color: "#6B7280" }}><Loader2 className="h-5 w-5 animate-spin" /><span className="text-sm">Saving...</span></div>
-                ) : (
-                  <div className="flex justify-center"><DesktopPinPad onPress={(d) => handleNewPinInput(d, step === "new_pin_confirm")} onDelete={() => handleNewPinDelete(step === "new_pin_confirm")} /></div>
-                )}
-              </div>
-            </div>
-          )}
-
           {step === "reset_password" && (
             <div className="flex flex-col flex-1">
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Set new password</h1>
@@ -741,29 +456,6 @@ function AuthPage() {
         </div>
         <div className="h-8" />
       </div>
-    </div>
-  );
-}
-
-function DesktopPinDots({ value }: { value: string }) {
-  return (
-    <div className="flex gap-4 mb-8">
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-4 w-4 rounded-full border-2 transition-all duration-200" style={{ background: i < value.length ? "#166534" : "transparent", borderColor: i < value.length ? "#166534" : "#D1D5DB", transform: i < value.length ? "scale(1.1)" : "scale(1)" }} />
-      ))}
-    </div>
-  );
-}
-
-function DesktopPinPad({ onPress, onDelete }: { onPress: (d: string) => void; onDelete: () => void }) {
-  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
-  return (
-    <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
-      {keys.map((k, i) =>
-        k === "" ? <div key={i} /> :
-        k === "⌫" ? <button key={i} onClick={onDelete} className="h-14 w-full rounded-xl border text-base font-bold flex items-center justify-center transition hover:bg-gray-50 active:scale-95" style={{ borderColor: "#E5E7EB", color: "#374151" }}>⌫</button> :
-        <button key={i} onClick={() => onPress(k)} className="h-14 w-full rounded-xl border text-lg font-bold flex items-center justify-center transition hover:bg-gray-50 active:scale-95" style={{ borderColor: "#E5E7EB", color: "#111827" }}>{k}</button>
-      )}
     </div>
   );
 }

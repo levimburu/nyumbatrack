@@ -60,16 +60,6 @@ function MethodBadge({ method }: { method: string }) {
   );
 }
 
-function hashPin(pin: string): string {
-  let hash = 0;
-  for (let i = 0; i < pin.length; i++) {
-    const char = pin.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return hash.toString(36) + pin.length.toString();
-}
-
 function isWithin96Hours(createdAt: string): boolean {
   const created = new Date(createdAt);
   const now = new Date();
@@ -618,43 +608,6 @@ function CancelPaymentModal({ payment, onConfirm, onClose, cancelling }: {
   onClose: () => void;
   cancelling: boolean;
 }) {
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
-  const [verifying, setVerifying] = useState(false);
-
-  const handlePinInput = async (digit: string) => {
-    if (pin.length >= 4) return;
-    const newPin = pin + digit;
-    setPin(newPin);
-
-    if (newPin.length === 4) {
-      setVerifying(true);
-      setError("");
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Not authenticated");
-        const enteredHash = hashPin(newPin);
-        const localPin = localStorage.getItem(`nyumbatrack_pin_${user.id}`);
-        if (localPin && localPin === enteredHash) { onConfirm(); return; }
-        const { data: profile } = await (supabase as any)
-          .from("profiles").select("pin_hash").eq("id", user.id).maybeSingle();
-        if (profile?.pin_hash === enteredHash) {
-          onConfirm();
-        } else {
-          setError("Incorrect PIN. Please try again.");
-          setPin("");
-        }
-      } catch {
-        setError("Verification failed. Please try again.");
-        setPin("");
-      } finally {
-        setVerifying(false);
-      }
-    }
-  };
-
-  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
-
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
@@ -662,31 +615,20 @@ function CancelPaymentModal({ payment, onConfirm, onClose, cancelling }: {
           <Trash2 className="h-7 w-7" style={{ color: "#DC2626" }} />
         </div>
         <h2 className="font-display text-xl font-semibold mb-1">Cancel Payment</h2>
-        <p className="text-sm text-muted-foreground mb-2">
-          Cancelling <span className="font-bold text-foreground">{formatKES(payment.amount)}</span> for <span className="font-bold text-foreground">{payment.tenants?.full_name}</span>.
+        <p className="text-sm text-muted-foreground mb-6">
+          Cancelling <span className="font-bold text-foreground">{formatKES(payment.amount)}</span> for <span className="font-bold text-foreground">{payment.tenants?.full_name}</span>. This can't be undone.
         </p>
-        <p className="text-xs text-muted-foreground mb-6">Enter your PIN to confirm.</p>
-        <div className="flex justify-center gap-4 mb-4">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-4 w-4 rounded-full border-2 transition-all duration-200"
-              style={{ background: i < pin.length ? "#DC2626" : "transparent", borderColor: i < pin.length ? "#DC2626" : "#D1D5DB" }} />
-          ))}
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={onConfirm}
+            disabled={cancelling}
+            className="w-full rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-colors"
+            style={{ background: "#DC2626" }}
+          >
+            {cancelling ? "Cancelling…" : "Yes, cancel this payment"}
+          </button>
+          <button onClick={onClose} className="w-full rounded-xl border border-border py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">Go back</button>
         </div>
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-        {verifying && <p className="text-muted-foreground text-sm mb-3">Verifying...</p>}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {keys.map((k, i) => (
-            k === "" ? <div key={i} /> :
-            k === "⌫" ? (
-              <button key={i} onClick={() => setPin((p) => p.slice(0, -1))}
-                className="h-12 rounded-xl border border-border text-foreground text-lg font-bold flex items-center justify-center hover:bg-muted transition-colors">⌫</button>
-            ) : (
-              <button key={i} onClick={() => handlePinInput(k)} disabled={verifying || cancelling}
-                className="h-12 rounded-xl border border-border text-foreground text-lg font-bold flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-50">{k}</button>
-            )
-          ))}
-        </div>
-        <button onClick={onClose} className="w-full rounded-xl border border-border py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors">Go back</button>
       </div>
     </div>
   );

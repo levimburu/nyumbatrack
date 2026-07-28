@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Receipt, BarChart3, Building2, Menu, X, Home, Wallet, Bell, Info, LogOut, Trash2, UserX, Key, Lock, ChevronRight, Grid3x3, Wrench, PieChart, ShieldCheck, Hammer, MessageSquare, FileText, Search } from "lucide-react";
+import { LayoutDashboard, Users, Receipt, BarChart3, Building2, Menu, X, Home, Wallet, Bell, Info, LogOut, Trash2, UserX, Lock, ChevronRight, Grid3x3, Wrench, PieChart, ShieldCheck, Hammer, MessageSquare, FileText, Search } from "lucide-react";
 import { GlobalSearch } from "./GlobalSearch";
 import { useState, useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -62,16 +62,6 @@ function getTodayDate(): string {
   return new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-function hashPin(pin: string): string {
-  let hash = 0;
-  for (let i = 0; i < pin.length; i++) {
-    const char = pin.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash;
-  }
-  return hash.toString(36) + pin.length.toString();
-}
-
 export function AppLayout({ children, role, email, displayName }: {
   children: ReactNode;
   role: AppRole;
@@ -93,9 +83,7 @@ export function AppLayout({ children, role, email, displayName }: {
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [changingPin, setChangingPin] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
-  const [newPin, setNewPin] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -242,8 +230,6 @@ export function AppLayout({ children, role, email, displayName }: {
   };
 
   const handleSignOut = async () => {
-    localStorage.removeItem("nyumbatrack_email");
-    localStorage.removeItem("nyumbatrack_user_id");
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
@@ -272,20 +258,6 @@ export function AppLayout({ children, role, email, displayName }: {
     toast.success("Agent disconnected");
   };
 
-  const handleChangePin = async () => {
-    if (newPin.length !== 4) { toast.error("PIN must be 4 digits"); return; }
-    const pinHash = hashPin(newPin);
-    const { error } = await (supabase as any)
-      .from("profiles")
-      .update({ pin_hash: pinHash })
-      .eq("id", userId);
-    if (error) { toast.error("Failed to update PIN"); return; }
-    if (userId) localStorage.setItem(`nyumbatrack_pin_${userId}`, pinHash);
-    toast.success("PIN updated!");
-    setChangingPin(false);
-    setNewPin("");
-  };
-
   const handleChangePassword = async () => {
     if (newPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     if (newPassword !== confirmPassword) { toast.error("Passwords do not match"); return; }
@@ -300,8 +272,6 @@ export function AppLayout({ children, role, email, displayName }: {
   const handleSignOutAllDevices = async () => {
     if (!confirm("Sign out from all devices?")) return;
     await supabase.auth.signOut({ scope: "global" });
-    localStorage.removeItem("nyumbatrack_email");
-    localStorage.removeItem("nyumbatrack_user_id");
     navigate({ to: "/auth", replace: true });
   };
 
@@ -704,46 +674,6 @@ export function AppLayout({ children, role, email, displayName }: {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Change PIN */}
-            <div className="px-5 py-4 border-b border-border">
-              <button
-                onClick={() => setChangingPin(!changingPin)}
-                className="w-full flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
-                    <Key className="h-4 w-4" style={{ color: "#2563EB" }} />
-                  </div>
-                  <span className="text-sm font-medium text-foreground">Change PIN</span>
-                </div>
-                <ChevronRight
-                  className="h-4 w-4 text-muted-foreground transition-transform"
-                  style={{ transform: changingPin ? "rotate(90deg)" : "rotate(0deg)" }}
-                />
-              </button>
-              {changingPin && (
-                <div className="mt-3 space-y-2">
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={4}
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Enter new 4-digit PIN"
-                    className="w-full rounded-xl border border-border px-4 py-2.5 text-sm outline-none"
-                    style={{ borderColor: "#E5E7EB" }}
-                  />
-                  <button
-                    onClick={handleChangePin}
-                    className="w-full rounded-xl py-2.5 text-sm font-semibold text-white"
-                    style={{ background: "#166534" }}
-                  >
-                    Save PIN
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Change Password */}
