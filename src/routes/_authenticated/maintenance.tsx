@@ -34,6 +34,7 @@ interface Ticket {
   status: TicketStatus;
   assigned_to: string | null;
   vendor_id: string | null;
+  cost: number | null;
   created_by: string;
   created_at: string;
   completed_at: string | null;
@@ -150,7 +151,7 @@ function MaintenancePage() {
   const vendorName = (id: string | null) => vendors?.find((v) => v.id === id)?.name ?? null;
 
   const createTicket = useMutation({
-    mutationFn: async (t: { property_id: string; unit: string; title: string; description: string; vendor_id: string }) => {
+    mutationFn: async (t: { property_id: string; unit: string; title: string; description: string; vendor_id: string; cost: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       const { error } = await (supabase as any).from("maintenance_tickets").insert({
@@ -159,6 +160,7 @@ function MaintenancePage() {
         title: t.title,
         description: t.description || null,
         vendor_id: t.vendor_id || null,
+        cost: t.cost ? Number(t.cost) : null,
         created_by: user.id,
         status: "open",
       });
@@ -321,6 +323,11 @@ function MaintenancePage() {
                     Assigned to: <span className="font-medium text-foreground">{vendorName(t.vendor_id) ?? t.assigned_to}</span>
                   </div>
                 )}
+                {t.cost != null && (
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Cost: <span className="font-medium text-foreground">KES {Number(t.cost).toLocaleString()}</span>
+                  </div>
+                )}
               </div>
               <button
                 onClick={() => deleteTicket.mutate(t.id)}
@@ -372,7 +379,7 @@ function TicketForm({
 }: {
   properties: Property[];
   vendors: Vendor[];
-  onSave: (t: { property_id: string; unit: string; title: string; description: string; vendor_id: string }) => void;
+  onSave: (t: { property_id: string; unit: string; title: string; description: string; vendor_id: string; cost: string }) => void;
   onClose: () => void;
   saving: boolean;
 }) {
@@ -381,6 +388,7 @@ function TicketForm({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [vendorId, setVendorId] = useState("");
+  const [cost, setCost] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,6 +406,7 @@ function TicketForm({
       title: title.trim(),
       description: description.trim(),
       vendor_id: vendorId,
+      cost,
     });
   };
 
@@ -444,6 +453,17 @@ function TicketForm({
                 You haven't added any vendors yet — add one from the Vendors page to assign tickets to them.
               </p>
             )}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">Cost (KES) — optional</label>
+            <input
+              type="number"
+              min={0}
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+              placeholder="e.g. 2500 — leave blank if unknown yet"
+              className="form-input"
+            />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>

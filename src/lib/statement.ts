@@ -1,0 +1,171 @@
+import { jsPDF } from "jspdf";
+import { formatKES, formatDate } from "./format";
+
+export interface StatementRow {
+  propertyName: string;
+  collected: number;
+  maintenanceCost: number;
+  net: number;
+  outstanding: number;
+}
+
+export interface StatementTotals {
+  collected: number;
+  maintenanceCost: number;
+  net: number;
+  outstanding: number;
+}
+
+export interface StatementData {
+  landlordName: string;
+  periodLabel: string;
+  generatedOn: string;
+  rows: StatementRow[];
+  totals: StatementTotals;
+}
+
+export function generateStatementDoc(d: StatementData): jsPDF {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
+
+  // Header bar — same green brand treatment as the receipt.
+  doc.setFillColor(22, 101, 52);
+  doc.rect(0, 0, w, 90, "F");
+
+  doc.setFillColor(245, 158, 11);
+  doc.roundedRect(40, 22, 40, 40, 5, 5, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text("N", 55, 50);
+
+  doc.setFontSize(18);
+  doc.text("NYUMBATRACK", 96, 42);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text("NyumbaTrack Technologies Ltd", 96, 58);
+  doc.setFontSize(10);
+  doc.text("Owner Statement", 96, 74);
+
+  doc.setFontSize(8.5);
+  doc.text(`Period: ${d.periodLabel}`, w - 40, 42, { align: "right" });
+  doc.text(`Generated: ${formatDate(d.generatedOn)}`, w - 40, 56, { align: "right" });
+
+  // Landlord name
+  let y = 128;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(110, 110, 110);
+  doc.text("STATEMENT FOR", 40, y);
+  y += 18;
+  doc.setFontSize(15);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(34, 40, 49);
+  doc.text(d.landlordName, 40, y);
+
+  y += 30;
+  doc.setDrawColor(22, 101, 52);
+  doc.setLineWidth(0.75);
+  doc.line(40, y, w - 40, y);
+
+  // Table header
+  y += 26;
+  const colX = { property: 40, collected: 300, maintenance: 390, net: 470, outstanding: w - 40 };
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(110, 110, 110);
+  doc.text("PROPERTY", colX.property, y);
+  doc.text("COLLECTED", colX.collected, y, { align: "right" });
+  doc.text("MAINTENANCE", colX.maintenance, y, { align: "right" });
+  doc.text("NET", colX.net, y, { align: "right" });
+  doc.text("OUTSTANDING", colX.outstanding, y, { align: "right" });
+
+  y += 10;
+  doc.setDrawColor(230, 230, 225);
+  doc.setLineWidth(0.5);
+  doc.line(40, y, w - 40, y);
+
+  // Rows — one per property.
+  d.rows.forEach((r) => {
+    y += 24;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(34, 40, 49);
+    doc.text(r.propertyName, colX.property, y);
+
+    doc.setTextColor(22, 101, 52);
+    doc.text(formatKES(r.collected), colX.collected, y, { align: "right" });
+
+    doc.setTextColor(220, 38, 38);
+    doc.text(formatKES(r.maintenanceCost), colX.maintenance, y, { align: "right" });
+
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(34, 40, 49);
+    doc.text(formatKES(r.net), colX.net, y, { align: "right" });
+
+    doc.setFont("helvetica", "normal");
+    if (r.outstanding > 0) doc.setTextColor(220, 38, 38);
+    else doc.setTextColor(22, 101, 52);
+    doc.text(formatKES(r.outstanding), colX.outstanding, y, { align: "right" });
+  });
+
+  y += 16;
+  doc.setDrawColor(22, 101, 52);
+  doc.setLineWidth(0.75);
+  doc.line(40, y, w - 40, y);
+
+  // Totals banner — 2x2 grid of headline figures, same rounded-box
+  // treatment as the receipt's "TOTAL PAID" banner.
+  y += 24;
+  const bannerH = 96;
+  doc.setFillColor(220, 252, 231);
+  doc.roundedRect(40, y, w - 80, bannerH, 8, 8, "F");
+  doc.setDrawColor(22, 101, 52);
+  doc.setLineWidth(1);
+  doc.roundedRect(40, y, w - 80, bannerH, 8, 8, "S");
+
+  const leftX = 60;
+  const rightX = w / 2 + 20;
+  const row1LabelY = y + 26;
+  const row1ValueY = y + 44;
+  const row2LabelY = y + 68;
+  const row2ValueY = y + 86;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.setTextColor(22, 101, 52);
+  doc.text("TOTAL COLLECTED", leftX, row1LabelY);
+  doc.text("TOTAL MAINTENANCE", rightX, row1LabelY);
+  doc.text("NET", leftX, row2LabelY);
+  doc.text("OUTSTANDING", rightX, row2LabelY);
+
+  doc.setFontSize(15);
+  doc.setTextColor(22, 101, 52);
+  doc.text(formatKES(d.totals.collected), leftX, row1ValueY);
+
+  doc.setTextColor(220, 38, 38);
+  doc.text(formatKES(d.totals.maintenanceCost), rightX, row1ValueY);
+
+  doc.setTextColor(34, 40, 49);
+  doc.text(formatKES(d.totals.net), leftX, row2ValueY);
+
+  if (d.totals.outstanding > 0) doc.setTextColor(220, 38, 38);
+  else doc.setTextColor(22, 101, 52);
+  doc.text(formatKES(d.totals.outstanding), rightX, row2ValueY);
+
+  // Footer
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(140, 140, 140);
+  doc.text("This statement is system-generated by NyumbaTrack Technologies Ltd.", 40, h - 32);
+  doc.text("© 2026 NyumbaTrack Technologies Ltd. All rights reserved. Built for Kenyan landlords.", 40, h - 20);
+
+  return doc;
+}
+
+export function downloadStatement(d: StatementData) {
+  const doc = generateStatementDoc(d);
+  const safeLandlord = d.landlordName.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  doc.save(`statement-${safeLandlord}-${d.generatedOn}.pdf`);
+}

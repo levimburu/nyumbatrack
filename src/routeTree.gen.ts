@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedVendorsRouteImport } from './routes/_authenticated/vendors'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedTenantsRouteImport } from './routes/_authenticated/tenants'
+import { Route as AuthenticatedStatementsRouteImport } from './routes/_authenticated/statements'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedPropertiesRouteImport } from './routes/_authenticated/properties'
 import { Route as AuthenticatedPortfolioRouteImport } from './routes/_authenticated/portfolio'
@@ -53,6 +54,11 @@ const AuthenticatedUnitsRoute = AuthenticatedUnitsRouteImport.update({
 const AuthenticatedTenantsRoute = AuthenticatedTenantsRouteImport.update({
   id: '/tenants',
   path: '/tenants',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedStatementsRoute = AuthenticatedStatementsRouteImport.update({
+  id: '/statements',
+  path: '/statements',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/portfolio': typeof AuthenticatedPortfolioRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/statements': typeof AuthenticatedStatementsRoute
   '/tenants': typeof AuthenticatedTenantsRoute
   '/units': typeof AuthenticatedUnitsRoute
   '/vendors': typeof AuthenticatedVendorsRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/portfolio': typeof AuthenticatedPortfolioRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/statements': typeof AuthenticatedStatementsRoute
   '/tenants': typeof AuthenticatedTenantsRoute
   '/units': typeof AuthenticatedUnitsRoute
   '/vendors': typeof AuthenticatedVendorsRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/_authenticated/portfolio': typeof AuthenticatedPortfolioRoute
   '/_authenticated/properties': typeof AuthenticatedPropertiesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/statements': typeof AuthenticatedStatementsRoute
   '/_authenticated/tenants': typeof AuthenticatedTenantsRoute
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
   '/_authenticated/vendors': typeof AuthenticatedVendorsRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/properties'
     | '/reports'
+    | '/statements'
     | '/tenants'
     | '/units'
     | '/vendors'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/properties'
     | '/reports'
+    | '/statements'
     | '/tenants'
     | '/units'
     | '/vendors'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portfolio'
     | '/_authenticated/properties'
     | '/_authenticated/reports'
+    | '/_authenticated/statements'
     | '/_authenticated/tenants'
     | '/_authenticated/units'
     | '/_authenticated/vendors'
@@ -264,6 +276,13 @@ declare module '@tanstack/react-router' {
       path: '/tenants'
       fullPath: '/tenants'
       preLoaderRoute: typeof AuthenticatedTenantsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/statements': {
+      id: '/_authenticated/statements'
+      path: '/statements'
+      fullPath: '/statements'
+      preLoaderRoute: typeof AuthenticatedStatementsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reports': {
@@ -350,6 +369,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPortfolioRoute: typeof AuthenticatedPortfolioRoute
   AuthenticatedPropertiesRoute: typeof AuthenticatedPropertiesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedStatementsRoute: typeof AuthenticatedStatementsRoute
   AuthenticatedTenantsRoute: typeof AuthenticatedTenantsRoute
   AuthenticatedUnitsRoute: typeof AuthenticatedUnitsRoute
   AuthenticatedVendorsRoute: typeof AuthenticatedVendorsRoute
@@ -366,6 +386,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPortfolioRoute: AuthenticatedPortfolioRoute,
   AuthenticatedPropertiesRoute: AuthenticatedPropertiesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedStatementsRoute: AuthenticatedStatementsRoute,
   AuthenticatedTenantsRoute: AuthenticatedTenantsRoute,
   AuthenticatedUnitsRoute: AuthenticatedUnitsRoute,
   AuthenticatedVendorsRoute: AuthenticatedVendorsRoute,
