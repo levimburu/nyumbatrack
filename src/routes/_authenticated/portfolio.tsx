@@ -478,13 +478,13 @@ function PortfolioDashboard() {
             <h3 className="font-display font-bold text-foreground">Rent Collection</h3>
             <span className="text-xs text-muted-foreground">This Month</span>
           </div>
-          <div className="flex items-end gap-4 mb-1">
+          <div className="space-y-2 mb-1">
             <div>
-              <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{formatKES(collected)}</div>
+              <div className="font-display text-2xl font-bold leading-tight break-words" style={{ color: "#16A34A" }}>{formatKES(collected)}</div>
               <div className="text-[11px] text-muted-foreground">Collected</div>
             </div>
             <div>
-              <div className="font-display text-2xl font-bold" style={{ color: outstanding > 0 ? "#DC2626" : "#16A34A" }}>{formatKES(outstanding)}</div>
+              <div className="font-display text-2xl font-bold leading-tight break-words" style={{ color: outstanding > 0 ? "#DC2626" : "#16A34A" }}>{formatKES(outstanding)}</div>
               <div className="text-[11px] text-muted-foreground">Outstanding Balance</div>
             </div>
           </div>
