@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Building2, MapPin, Users, TrendingUp, TrendingDown, Pencil, Wallet, DoorOpen } from "lucide-react";
+import { Plus, X, Building2, MapPin, Users, TrendingUp, Pencil, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useProperty } from "@/context/PropertyContext";
 import { formatKES, formatKESCompact } from "@/lib/format";
@@ -256,26 +256,6 @@ function PropertiesPage() {
     return { occupied, totalUnits, vacant, monthlyRent, collectedThisMonth, paid, partial, unpaid, occupancyRate };
   };
 
-  // Portfolio-wide totals across every property — only meaningful (and only
-  // shown) once someone actually has more than one property. Outstanding is
-  // clamped to >=0 per property before summing, so a property that's ahead
-  // on advance payments can't mask a genuine shortfall on another one.
-  const portfolioTotals = (!isAgent && properties && properties.length > 1)
-    ? properties.reduce(
-        (acc, p) => {
-          const stats = getStats(p);
-          const outstanding = Math.max(0, stats.monthlyRent - stats.collectedThisMonth);
-          return {
-            totalUnits: acc.totalUnits + stats.totalUnits,
-            expected: acc.expected + stats.monthlyRent,
-            collected: acc.collected + stats.collectedThisMonth,
-            outstanding: acc.outstanding + outstanding,
-          };
-        },
-        { totalUnits: 0, expected: 0, collected: 0, outstanding: 0 },
-      )
-    : null;
-
   const renderContent = () => {
     if (!profileLoaded || isLoading) {
       return (
@@ -343,68 +323,6 @@ function PropertiesPage() {
               </div>
             )}
           </div>
-
-        {/* Portfolio total — every property's numbers combined into one
-            row of cards, laid out icon-left/text-right, two per row:
-            Collected + Outstanding first, then Total Expected, then the
-            remaining counts. */}
-        {portfolioTotals && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="card-surface p-4 flex items-center gap-3">
-              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
-                <TrendingUp className="h-5 w-5" style={{ color: "#16A34A" }} />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-0.5">Collected This Month</div>
-                <div className="font-display text-lg font-bold" style={{ color: "#16A34A" }}>
-                  {formatKES(portfolioTotals.collected)}
-                </div>
-              </div>
-            </div>
-
-            <div className="card-surface p-4 flex items-center gap-3">
-              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: portfolioTotals.outstanding > 0 ? "#FEE2E2" : "#DCFCE7" }}>
-                <TrendingDown className="h-5 w-5" style={{ color: portfolioTotals.outstanding > 0 ? "#DC2626" : "#16A34A" }} />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-0.5">Outstanding</div>
-                <div className="font-display text-lg font-bold" style={{ color: portfolioTotals.outstanding > 0 ? "#DC2626" : "#16A34A" }}>
-                  {formatKES(portfolioTotals.outstanding)}
-                </div>
-              </div>
-            </div>
-
-            <div className="card-surface p-4 flex items-center gap-3">
-              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#FEF9C3" }}>
-                <Wallet className="h-5 w-5" style={{ color: "#D97706" }} />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-0.5">Total Expected</div>
-                <div className="font-display text-lg font-bold text-foreground">{formatKES(portfolioTotals.expected)}</div>
-              </div>
-            </div>
-
-            <div className="card-surface p-4 flex items-center gap-3">
-              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
-                <Building2 className="h-5 w-5" style={{ color: "#6D28D9" }} />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-0.5">Total Properties</div>
-                <div className="font-display text-lg font-bold text-foreground">{properties.length}</div>
-              </div>
-            </div>
-
-            <div className="card-surface p-4 flex items-center gap-3">
-              <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
-                <DoorOpen className="h-5 w-5" style={{ color: "#2563EB" }} />
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-0.5">Total Units</div>
-                <div className="font-display text-lg font-bold text-foreground">{portfolioTotals.totalUnits}</div>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((p) => {
