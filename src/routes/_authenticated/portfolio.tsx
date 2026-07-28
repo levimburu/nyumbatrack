@@ -39,6 +39,7 @@ interface Payment {
   tenant_id: string;
   payment_month: string;
   paid_on: string;
+  method: string | null;
   property_id: string; // resolved from the joined tenant below
 }
 
@@ -103,7 +104,7 @@ function PortfolioDashboard() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("payments")
-        .select("amount, tenant_id, payment_month, paid_on, tenants(property_id)")
+        .select("amount, tenant_id, payment_month, paid_on, method, tenants(property_id)")
         .eq("payment_month", currentMonthLabel);
       if (error) throw error;
       return (data as any[])
@@ -122,7 +123,7 @@ function PortfolioDashboard() {
       sixMonthsAgo.setDate(1);
       const { data, error } = await (supabase as any)
         .from("payments")
-        .select("amount, paid_on, tenants(property_id)")
+        .select("amount, paid_on, method, tenants(property_id)")
         .gte("paid_on", sixMonthsAgo.toISOString().slice(0, 10));
       if (error) throw error;
       return (data as any[]).filter((p) => propertyIds.includes(p.tenants?.property_id)) as any[];
@@ -318,6 +319,35 @@ function PortfolioDashboard() {
     // line at today's expected level, not a reconstruction of each past month's
     // actual roll — it shows how collection tracked against the current target.
     return buckets.map((b) => ({ month: b.label, collected: b.total, expected }));
+  })();
+
+  // M-Pesa-specific figures — real data filtered to method === "mpesa" from
+  // the same payments already fetched above, not a live M-Pesa integration
+  // (you don't have one set up yet).
+  const mpesaPaymentsThisMonth = (monthPayments ?? []).filter((p) => p.method === "mpesa");
+  const mpesaCollectedThisMonth = mpesaPaymentsThisMonth.reduce((s, p) => s + Number(p.amount), 0);
+  const mpesaTransactionCount = mpesaPaymentsThisMonth.length;
+
+  const mpesaTrendData = (() => {
+    const buckets: { label: string; ym: number; total: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      buckets.push({
+        label: d.toLocaleDateString("en-US", { month: "short" }),
+        ym: d.getFullYear() * 12 + d.getMonth(),
+        total: 0,
+      });
+    }
+    (trendPayments ?? []).forEach((p: any) => {
+      if (!p.paid_on || p.method !== "mpesa") return;
+      const d = new Date(p.paid_on);
+      if (isNaN(d.getTime())) return;
+      const ym = d.getFullYear() * 12 + d.getMonth();
+      const bucket = buckets.find((b) => b.ym === ym);
+      if (bucket) bucket.total += Number(p.amount);
+    });
+    return buckets.map((b) => ({ month: b.label, collected: b.total }));
   })();
 
   const openProperty = (p: Property) => {
@@ -662,35 +692,87 @@ function PortfolioDashboard() {
         </div>
       </div>
 
-      {/* Recent Activity — payments and maintenance tickets merged, newest
-          first. Pulls from data you've actually logged, not a live feed. */}
-      <div className="card-surface p-5">
-        <h2 className="font-display font-bold text-foreground mb-4">Recent Activity</h2>
-        {activityFeed.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">Nothing logged yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {activityFeed.map((a) => (
-              <div key={a.key} className="flex items-start gap-3">
-                <div
-                  className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full"
-                  style={{
-                    background: a.icon === "done" ? "#DCFCE7" : a.icon === "ticket" ? "#FEF3C7" : "#DCFCE7",
-                  }}
-                >
-                  {a.icon === "payment" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
-                  {a.icon === "ticket" && <Wrench className="h-4 w-4" style={{ color: "#D97706" }} />}
-                  {a.icon === "done" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
+      {/* Recent Activity + M-Pesa Collections, side by side. (No "Secure &
+          Trusted" panel — that would claim 2FA/encryption you don't
+          actually have set up.) */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="card-surface p-5">
+          <h2 className="font-display font-bold text-foreground mb-4">Recent Activity</h2>
+          {activityFeed.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Nothing logged yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {activityFeed.map((a) => (
+                <div key={a.key} className="flex items-start gap-3">
+                  <div
+                    className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full"
+                    style={{
+                      background: a.icon === "done" ? "#DCFCE7" : a.icon === "ticket" ? "#FEF3C7" : "#DCFCE7",
+                    }}
+                  >
+                    {a.icon === "payment" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
+                    {a.icon === "ticket" && <Wrench className="h-4 w-4" style={{ color: "#D97706" }} />}
+                    {a.icon === "done" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-foreground truncate">{a.title}</div>
+                    <div className="text-xs text-muted-foreground truncate">{a.detail}</div>
+                  </div>
+                  <div className="text-xs text-muted-foreground flex-shrink-0">{a.when}</div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-foreground truncate">{a.title}</div>
-                  <div className="text-xs text-muted-foreground truncate">{a.detail}</div>
-                </div>
-                <div className="text-xs text-muted-foreground flex-shrink-0">{a.when}</div>
-              </div>
             ))}
           </div>
         )}
+        </div>
+
+        {/* M-Pesa Collections — real payments recorded with method = M-Pesa,
+            not a live M-Pesa integration (that's still on the pending list). */}
+        <div className="card-surface p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-display font-bold text-foreground">M-Pesa Collections</h2>
+            <span className="text-xs text-muted-foreground">This Month</span>
+          </div>
+          <div className="flex items-baseline gap-4 mb-3">
+            <div>
+              <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{formatKES(mpesaCollectedThisMonth)}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Collected via M-Pesa</div>
+            </div>
+            <div>
+              <div className="font-display text-lg font-bold text-foreground">{mpesaTransactionCount}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Transactions</div>
+            </div>
+          </div>
+          {mpesaTransactionCount === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No M-Pesa payments recorded yet.</p>
+          ) : (
+            <div style={{ width: "100%", height: 140 }}>
+              <ResponsiveContainer>
+                <ComposedChart data={mpesaTrendData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="mpesaFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#16A34A" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#16A34A" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} />
+                  <YAxis hide />
+                  <Tooltip
+                    formatter={(v: any) => [formatKES(Number(v)), "Collected via M-Pesa"]}
+                    contentStyle={{ borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 13 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="collected"
+                    stroke="#16A34A"
+                    strokeWidth={2.5}
+                    fill="url(#mpesaFill)"
+                    dot={{ r: 3, fill: "#16A34A" }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Per-property quick list */}
