@@ -451,32 +451,34 @@ export function AppLayout({ children, role, email, displayName }: {
 
       <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
         {/* Desktop top bar */}
-        <header className="hidden md:flex items-center gap-4 border-b border-border bg-white px-6 py-3">
+        <header className="hidden md:flex items-center justify-between border-b border-border bg-white px-6 py-3">
           <div className="flex-shrink-0">
             <p className="text-sm font-semibold text-foreground">{getGreeting()}, {(displayName || "there").split(" ")[0]}</p>
             <p className="text-xs text-muted-foreground">{getTodayDate()}</p>
           </div>
-          {role === "admin" && (
-            <div className="flex-1 max-w-md">
-              <GlobalSearch isAgent={profileRole === "agent"} />
-            </div>
-          )}
-          <button
-            onClick={() => setNotifOpen(true)}
-            className="relative grid h-9 w-9 flex-shrink-0 place-items-center rounded-full hover:opacity-80 transition-opacity ml-auto"
-            style={{ background: "#F59E0B" }}
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4 text-white" />
-            {unreadCount > 0 && (
-              <span
-                className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white"
-                style={{ background: "#DC2626" }}
-              >
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
+          <div className="flex items-center gap-4">
+            {role === "admin" && (
+              <div className="w-72">
+                <GlobalSearch isAgent={profileRole === "agent"} />
+              </div>
             )}
-          </button>
+            <button
+              onClick={() => setNotifOpen(true)}
+              className="relative grid h-9 w-9 flex-shrink-0 place-items-center rounded-full hover:opacity-80 transition-opacity"
+              style={{ background: "#F59E0B" }}
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4 text-white" />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white"
+                  style={{ background: "#DC2626" }}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
         </header>
 
         <header className="flex items-center justify-between border-b border-border bg-white px-4 py-3 md:hidden">
