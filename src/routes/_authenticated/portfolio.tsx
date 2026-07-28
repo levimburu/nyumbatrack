@@ -6,9 +6,11 @@ import { formatKES } from "@/lib/format";
 import { useProperty } from "@/context/PropertyContext";
 import {
   Building2, Users, Wallet, TrendingUp, AlertCircle, DoorOpen, DoorClosed, LayoutGrid,
+  Wrench, CheckCircle2, Clock, Circle,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  PieChart, Pie, Cell, ComposedChart, Area,
 } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/portfolio")({
@@ -129,6 +131,51 @@ function PortfolioDashboard() {
     },
   });
 
+  // Maintenance tickets across the whole portfolio, for the tickets donut.
+  const { data: tickets } = useQuery({
+    queryKey: ["portfolio-tickets", propertyIds.join(",")],
+    enabled: propertyIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("maintenance_tickets")
+        .select("id, title, status, created_at, property_id")
+        .in("property_id", propertyIds)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as { id: string; title: string; status: string; created_at: string; property_id: string }[];
+    },
+  });
+
+  // Compliance records across the whole portfolio, for the compliance donut.
+  const { data: complianceRecords } = useQuery({
+    queryKey: ["portfolio-compliance", propertyIds.join(",")],
+    enabled: propertyIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("compliance_records")
+        .select("id, expiry_date")
+        .in("property_id", propertyIds);
+      if (error) throw error;
+      return data as { id: string; expiry_date: string }[];
+    },
+  });
+
+  // Recent payments with tenant detail, for the activity feed — separate
+  // from monthPayments above since that one only needs totals.
+  const { data: recentPayments } = useQuery({
+    queryKey: ["portfolio-recent-payments", propertyIds.join(",")],
+    enabled: propertyIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("payments")
+        .select("id, amount, paid_on, tenants(full_name, unit, property_id)")
+        .order("paid_on", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return (data as any[]).filter((p) => propertyIds.includes(p.tenants?.property_id));
+    },
+  });
+
   // --- Aggregate stats across all properties ---
   const now = new Date();
   const currentYM = now.getFullYear() * 12 + now.getMonth();
@@ -174,6 +221,79 @@ function PortfolioDashboard() {
   const tenantsInArrears = (tenants ?? []).filter(
     (t) => t.next_due_date && t.next_due_date <= todayStr,
   ).length;
+
+  // Split the outstanding total into "overdue" (past the due date — the
+  // urgent portion) vs "pending" (owed but not yet late), so the Rent
+  // Collection card can show all three the way a real statement would.
+  const overdueAmount = (tenants ?? []).reduce((s, t) => {
+    const alreadyPaid = (paidByTenant[t.id] ?? 0) > 0 || isCoveredByAdvance(t);
+    if (!alreadyPaid && t.next_due_date && t.next_due_date <= todayStr) return s + Number(t.rent_amount);
+    return s;
+  }, 0);
+  const pendingAmount = Math.max(0, outstanding - overdueAmount);
+
+  // Maintenance ticket status breakdown, for the donut.
+  const openTickets = (tickets ?? []).filter((t) => t.status === "open").length;
+  const inProgressTickets = (tickets ?? []).filter((t) => t.status === "in_progress").length;
+  const doneTickets = (tickets ?? []).filter((t) => t.status === "done").length;
+  const totalTickets = (tickets ?? []).length;
+
+  // Compliance status breakdown — same Valid/Expiring Soon/Expired logic as
+  // the Compliance page itself, just aggregated into one glance-able ring
+  // here rather than a per-record list.
+  const complianceStatus = (expiryDate: string): "valid" | "expiring_soon" | "expired" => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiry = new Date(expiryDate);
+    const diffDays = Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return "expired";
+    if (diffDays <= 30) return "expiring_soon";
+    return "valid";
+  };
+  const validCompliance = (complianceRecords ?? []).filter((c) => complianceStatus(c.expiry_date) === "valid").length;
+  const expiringCompliance = (complianceRecords ?? []).filter((c) => complianceStatus(c.expiry_date) === "expiring_soon").length;
+  const expiredCompliance = (complianceRecords ?? []).filter((c) => complianceStatus(c.expiry_date) === "expired").length;
+  const totalCompliance = (complianceRecords ?? []).length;
+  const compliancePercent = totalCompliance > 0 ? Math.round((validCompliance / totalCompliance) * 100) : 0;
+
+  // Recent activity — payments and maintenance tickets merged into one feed,
+  // newest first. Payments only carry date-level precision (paid_on), while
+  // tickets have real timestamps, so each renders its own honest format
+  // rather than faking "x minutes ago" for a payment recorded by date alone.
+  function timeAgo(iso: string): string {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? "" : "s"} ago`;
+  }
+  function formatShortDate(d: string): string {
+    return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+  }
+  type ActivityIcon = "payment" | "ticket" | "done";
+  const activityFeed = [
+    ...(recentPayments ?? []).map((p: any) => ({
+      key: `pay-${p.id}`,
+      icon: "payment" as ActivityIcon,
+      title: `Rent received from ${p.tenants?.full_name ?? "a tenant"}`,
+      detail: `${formatKES(p.amount)} · Unit ${p.tenants?.unit ?? "—"}`,
+      when: formatShortDate(p.paid_on),
+      sortTime: new Date(p.paid_on).getTime(),
+    })),
+    ...(tickets ?? []).slice(0, 10).map((t) => ({
+      key: `ticket-${t.id}`,
+      icon: (t.status === "done" ? "done" : "ticket") as ActivityIcon,
+      title: t.status === "done" ? `Maintenance ticket completed` : `Maintenance ticket logged`,
+      detail: t.title,
+      when: timeAgo(t.created_at),
+      sortTime: new Date(t.created_at).getTime(),
+    })),
+  ]
+    .sort((a, b) => b.sortTime - a.sortTime)
+    .slice(0, 6);
 
   // Build the 6-month trend series.
   const trendData = (() => {
@@ -325,39 +445,147 @@ function PortfolioDashboard() {
         </div>
       </div>
 
-      {/* Money row */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Rent Collection · Maintenance · Compliance — the three things a
+          property manager actually checks daily, side by side. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Rent Collection */}
         <div className="card-surface p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEF9C3" }}>
-              <Wallet className="h-4 w-4" style={{ color: "#D97706" }} />
-            </div>
-            <span className="text-xs text-muted-foreground">Total Expected</span>
-          </div>
-          <div className="font-display text-2xl font-bold text-foreground">{formatKES(expected)}</div>
-          <div className="text-xs text-muted-foreground mt-1">Monthly rent roll, all properties</div>
-        </div>
-
-        <div className="card-surface p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
-              <TrendingUp className="h-4 w-4" style={{ color: "#16A34A" }} />
-            </div>
-            <span className="text-xs text-muted-foreground">Collected This Month</span>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-display font-bold text-foreground">Rent Collection</h3>
+            <span className="text-xs text-muted-foreground">This Month</span>
           </div>
           <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{formatKES(collected)}</div>
-          <div className="text-xs text-muted-foreground mt-1">{collectionRate}% of expected</div>
+          <div className="mt-3 h-2 rounded-full overflow-hidden" style={{ background: "#F5F5F0" }}>
+            <div className="h-full rounded-full" style={{ width: `${collectionRate}%`, background: "#16A34A" }} />
+          </div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground mt-1.5">
+            <span>Collected {formatKES(collected)} ({collectionRate}%)</span>
+            <span>Target {formatKES(expected)}</span>
+          </div>
+          <div className="mt-4 space-y-2 pt-3" style={{ borderTop: "1px solid #F0F0EB" }}>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Paid</span>
+              <span className="font-semibold" style={{ color: "#16A34A" }}>{formatKES(collected)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Pending</span>
+              <span className="font-semibold" style={{ color: "#D97706" }}>{formatKES(pendingAmount)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Overdue</span>
+              <span className="font-semibold" style={{ color: "#DC2626" }}>{formatKES(overdueAmount)}</span>
+            </div>
+          </div>
         </div>
 
+        {/* Maintenance Tickets donut */}
         <div className="card-surface p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEE2E2" }}>
-              <AlertCircle className="h-4 w-4" style={{ color: "#DC2626" }} />
-            </div>
-            <span className="text-xs text-muted-foreground">Total Outstanding</span>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-display font-bold text-foreground">Maintenance Tickets</h3>
+            <span className="text-xs text-muted-foreground">All Time</span>
           </div>
-          <div className="font-display text-2xl font-bold" style={{ color: outstanding > 0 ? "#DC2626" : "#16A34A" }}>{formatKES(outstanding)}</div>
-          <div className="text-xs text-muted-foreground mt-1">Still owed this month</div>
+          {totalTickets === 0 ? (
+            <p className="text-sm text-muted-foreground mt-6 mb-6 text-center">No tickets logged yet.</p>
+          ) : (
+            <div className="relative" style={{ height: 140 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Open", value: openTickets },
+                      { name: "In Progress", value: inProgressTickets },
+                      { name: "Completed", value: doneTickets },
+                    ]}
+                    dataKey="value"
+                    innerRadius={42}
+                    outerRadius={62}
+                    startAngle={90}
+                    endAngle={-270}
+                    stroke="none"
+                  >
+                    <Cell fill="#DC2626" />
+                    <Cell fill="#D97706" />
+                    <Cell fill="#16A34A" />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div className="font-display text-xl font-bold text-foreground">{totalTickets}</div>
+                <div className="text-[10px] text-muted-foreground">Total Tickets</div>
+              </div>
+            </div>
+          )}
+          <div className="mt-2 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-muted-foreground"><Circle className="h-2.5 w-2.5" fill="#DC2626" stroke="none" /> Open</span>
+              <span className="font-medium text-foreground">{openTickets}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-2.5 w-2.5" style={{ color: "#D97706" }} /> In Progress</span>
+              <span className="font-medium text-foreground">{inProgressTickets}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-muted-foreground"><CheckCircle2 className="h-2.5 w-2.5" style={{ color: "#16A34A" }} /> Completed</span>
+              <span className="font-medium text-foreground">{doneTickets}</span>
+            </div>
+          </div>
+          <a href="/maintenance" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+            View All Tickets
+          </a>
+        </div>
+
+        {/* Compliance Status donut */}
+        <div className="card-surface p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-display font-bold text-foreground">Compliance Status</h3>
+            <span className="text-xs text-muted-foreground">All Properties</span>
+          </div>
+          {totalCompliance === 0 ? (
+            <p className="text-sm text-muted-foreground mt-6 mb-6 text-center">No compliance records yet.</p>
+          ) : (
+            <div className="relative" style={{ height: 140 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Valid", value: validCompliance },
+                      { name: "Needs Attention", value: expiringCompliance + expiredCompliance },
+                    ]}
+                    dataKey="value"
+                    innerRadius={42}
+                    outerRadius={62}
+                    startAngle={90}
+                    endAngle={-270}
+                    stroke="none"
+                  >
+                    <Cell fill="#16A34A" />
+                    <Cell fill="#E5E7EB" />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <div className="font-display text-xl font-bold" style={{ color: "#16A34A" }}>{compliancePercent}%</div>
+                <div className="text-[10px] text-muted-foreground">Compliant</div>
+              </div>
+            </div>
+          )}
+          <div className="mt-2 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-muted-foreground"><CheckCircle2 className="h-2.5 w-2.5" style={{ color: "#16A34A" }} /> Valid</span>
+              <span className="font-medium text-foreground">{validCompliance}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-2.5 w-2.5" style={{ color: "#D97706" }} /> Expiring Soon</span>
+              <span className="font-medium text-foreground">{expiringCompliance}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-muted-foreground"><AlertCircle className="h-2.5 w-2.5" style={{ color: "#DC2626" }} /> Expired</span>
+              <span className="font-medium text-foreground">{expiredCompliance}</span>
+            </div>
+          </div>
+          <a href="/compliance" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+            View Compliance
+          </a>
         </div>
       </div>
 
@@ -409,7 +637,13 @@ function PortfolioDashboard() {
         </div>
         <div style={{ width: "100%", height: 260 }}>
           <ResponsiveContainer>
-            <LineChart data={trendData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+            <ComposedChart data={trendData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="collectedFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#166534" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="#166534" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EB" vertical={false} />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#6B7280" }} axisLine={false} tickLine={false} />
               <YAxis
@@ -440,17 +674,49 @@ function PortfolioDashboard() {
                 dot={false}
                 activeDot={false}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="collected"
                 stroke="#166534"
                 strokeWidth={2.5}
+                fill="url(#collectedFill)"
                 dot={{ r: 4, fill: "#166534" }}
                 activeDot={{ r: 6 }}
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Recent Activity — payments and maintenance tickets merged, newest
+          first. Pulls from data you've actually logged, not a live feed. */}
+      <div className="card-surface p-5">
+        <h2 className="font-display font-bold text-foreground mb-4">Recent Activity</h2>
+        {activityFeed.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">Nothing logged yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {activityFeed.map((a) => (
+              <div key={a.key} className="flex items-start gap-3">
+                <div
+                  className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full"
+                  style={{
+                    background: a.icon === "done" ? "#DCFCE7" : a.icon === "ticket" ? "#FEF3C7" : "#DCFCE7",
+                  }}
+                >
+                  {a.icon === "payment" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
+                  {a.icon === "ticket" && <Wrench className="h-4 w-4" style={{ color: "#D97706" }} />}
+                  {a.icon === "done" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-foreground truncate">{a.title}</div>
+                  <div className="text-xs text-muted-foreground truncate">{a.detail}</div>
+                </div>
+                <div className="text-xs text-muted-foreground flex-shrink-0">{a.when}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Per-property quick list */}
