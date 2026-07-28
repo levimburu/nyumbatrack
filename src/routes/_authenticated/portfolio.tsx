@@ -23,6 +23,7 @@ interface Property {
   location: string | null;
   total_units: number;
   user_id: string;
+  created_at: string;
 }
 
 interface Tenant {
@@ -71,7 +72,7 @@ function PortfolioDashboard() {
       if (!user) throw new Error("Not authenticated");
       const { data, error } = await (supabase as any)
         .from("properties")
-        .select("id, name, location, total_units, user_id")
+        .select("id, name, location, total_units, user_id, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -198,6 +199,13 @@ function PortfolioDashboard() {
   const occupiedUnits = totalTenants;
   const vacantUnits = Math.max(0, totalUnits - occupiedUnits);
   const occupancyRate = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
+
+  // Real count of properties actually added this calendar month — not a
+  // placeholder trend, since we have created_at to check it against.
+  const thisMonthStart = new Date();
+  thisMonthStart.setDate(1);
+  thisMonthStart.setHours(0, 0, 0, 0);
+  const propertiesAddedThisMonth = (properties ?? []).filter((p) => new Date(p.created_at) >= thisMonthStart).length;
 
   const expected = (tenants ?? []).reduce((s, t) => s + Number(t.rent_amount), 0);
 
@@ -400,8 +408,9 @@ function PortfolioDashboard() {
         </p>
       </div>
 
-      {/* Top stat cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* Top stat cards — negative margin here pulls this row a little
+          closer to the header, since a full space-y-6 gap felt disconnected. */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 -mt-2">
         <button
           onClick={() => navigate({ to: "/properties" })}
           className="card-surface card-hover p-4 flex items-center justify-between gap-3 text-left"
@@ -409,6 +418,9 @@ function PortfolioDashboard() {
           <div className="min-w-0">
             <div className="text-xs text-muted-foreground mb-0.5">Total Properties</div>
             <div className="font-display text-lg font-bold text-foreground">{properties.length}</div>
+            {propertiesAddedThisMonth > 0 && (
+              <div className="text-[11px] mt-0.5" style={{ color: "#16A34A" }}>+{propertiesAddedThisMonth} this month</div>
+            )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
             <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
@@ -458,7 +470,16 @@ function PortfolioDashboard() {
             <h3 className="font-display font-bold text-foreground">Rent Collection</h3>
             <span className="text-xs text-muted-foreground">This Month</span>
           </div>
-          <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{formatKES(collected)}</div>
+          <div className="flex items-end gap-4 mb-1">
+            <div>
+              <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{formatKES(collected)}</div>
+              <div className="text-[11px] text-muted-foreground">Collected</div>
+            </div>
+            <div>
+              <div className="font-display text-2xl font-bold" style={{ color: outstanding > 0 ? "#DC2626" : "#16A34A" }}>{formatKES(outstanding)}</div>
+              <div className="text-[11px] text-muted-foreground">Outstanding Balance</div>
+            </div>
+          </div>
           <div className="mt-3 h-2 rounded-full overflow-hidden" style={{ background: "#F5F5F0" }}>
             <div className="h-full rounded-full" style={{ width: `${collectionRate}%`, background: "#16A34A" }} />
           </div>

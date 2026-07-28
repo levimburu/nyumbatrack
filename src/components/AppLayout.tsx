@@ -82,6 +82,85 @@ export function AppLayout({ children, role, email, displayName }: {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // Quick-glance digest shown at the top of the notification panel — real
+  // counts across every property the account can see, fetched only when the
+  // panel is actually opened rather than on every page load.
+  const [quickSummary, setQuickSummary] = useState<{ paymentsToday: number; openTickets: number; complianceExpiring: number } | null>(null);
+  const [quickSummaryLoading, setQuickSummaryLoading] = useState(false);
+
+  useEffect(() => {
+    if (!notifOpen || !userId) return;
+    setQuickSummaryLoading(true);
+    (async () => {
+      let propertyIds: string[] = [];
+      if (profileRole === "agent") {
+        const { data: links } = await (supabase as any)
+          .from("agent_landlord")
+          .select("landlord_id")
+          .eq("agent_id", userId);
+        const landlordIds = (links ?? []).map((l: any) => l.landlord_id);
+        if (landlordIds.length) {
+          const { data: props } = await (supabase as any)
+            .from("properties")
+            .select("id")
+            .in("user_id", landlordIds);
+          propertyIds = (props ?? []).map((p: any) => p.id);
+        }
+      } else {
+        const { data: props } = await (supabase as any)
+          .from("properties")
+          .select("id")
+          .eq("user_id", userId);
+        propertyIds = (props ?? []).map((p: any) => p.id);
+      }
+
+      if (!propertyIds.length) {
+        setQuickSummary({ paymentsToday: 0, openTickets: 0, complianceExpiring: 0 });
+        setQuickSummaryLoading(false);
+        return;
+      }
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const in30Days = new Date();
+      in30Days.setDate(in30Days.getDate() + 30);
+      const in30DaysStr = in30Days.toISOString().slice(0, 10);
+
+      const { data: tenantRows } = await (supabase as any)
+        .from("tenants")
+        .select("id")
+        .in("property_id", propertyIds);
+      const tenantIds = (tenantRows ?? []).map((t: any) => t.id);
+
+      const [{ count: paymentsToday }, { count: openTickets }, { count: complianceExpiring }] = await Promise.all([
+        tenantIds.length
+          ? (supabase as any)
+              .from("payments")
+              .select("id", { count: "exact", head: true })
+              .eq("paid_on", todayStr)
+              .in("tenant_id", tenantIds)
+          : Promise.resolve({ count: 0 }),
+        (supabase as any)
+          .from("maintenance_tickets")
+          .select("id", { count: "exact", head: true })
+          .in("property_id", propertyIds)
+          .neq("status", "done"),
+        (supabase as any)
+          .from("compliance_records")
+          .select("id", { count: "exact", head: true })
+          .in("property_id", propertyIds)
+          .gte("expiry_date", todayStr)
+          .lte("expiry_date", in30DaysStr),
+      ]);
+
+      setQuickSummary({
+        paymentsToday: paymentsToday ?? 0,
+        openTickets: openTickets ?? 0,
+        complianceExpiring: complianceExpiring ?? 0,
+      });
+      setQuickSummaryLoading(false);
+    })();
+  }, [notifOpen, userId, profileRole]);
+
   const [profileOpen, setProfileOpen] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [changingPassword, setChangingPassword] = useState(false);
@@ -592,6 +671,27 @@ export function AppLayout({ children, role, email, displayName }: {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto">
+              {/* Quick summary — real counts, fetched fresh each time the
+                  panel opens, not a live-updating dashboard. */}
+              {quickSummaryLoading ? (
+                <div className="px-5 py-4 border-b border-border text-xs text-muted-foreground">Loading summary…</div>
+              ) : quickSummary && (quickSummary.paymentsToday > 0 || quickSummary.openTickets > 0 || quickSummary.complianceExpiring > 0) ? (
+                <div className="px-5 py-4 border-b border-border" style={{ background: "#F5F5F0" }}>
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Quick Summary</div>
+                  <ul className="space-y-1 text-sm text-foreground">
+                    {quickSummary.paymentsToday > 0 && (
+                      <li>{quickSummary.paymentsToday} rent payment{quickSummary.paymentsToday === 1 ? "" : "s"} received today</li>
+                    )}
+                    {quickSummary.openTickets > 0 && (
+                      <li>{quickSummary.openTickets} maintenance ticket{quickSummary.openTickets === 1 ? "" : "s"} still open</li>
+                    )}
+                    {quickSummary.complianceExpiring > 0 && (
+                      <li>{quickSummary.complianceExpiring} compliance record{quickSummary.complianceExpiring === 1 ? "" : "s"} expiring within 30 days</li>
+                    )}
+                  </ul>
+                </div>
+              ) : null}
+
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center px-6">
                   <div
