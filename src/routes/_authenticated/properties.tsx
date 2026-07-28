@@ -105,6 +105,26 @@ function PropertiesPage() {
     },
   });
 
+  // Only needed for an agent/PM viewing multiple landlords' properties —
+  // resolves each property's user_id into an actual name to show on its card.
+  const ownerIds = Array.from(new Set((properties ?? []).map((p) => p.user_id)));
+  const { data: owners } = useQuery({
+    queryKey: ["property-owners", ownerIds.join(",")],
+    enabled: !!isAgent && ownerIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", ownerIds);
+      if (error) throw error;
+      return data as { id: string; full_name: string | null; email: string | null }[];
+    },
+  });
+  const ownerName = (userId: string) => {
+    const o = owners?.find((x) => x.id === userId);
+    return o?.full_name || o?.email || "Unknown owner";
+  };
+
   const { data: allTenants } = useQuery({
     queryKey: ["all-tenants-for-stats"],
     queryFn: async () => {
@@ -415,6 +435,12 @@ function PropertiesPage() {
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
                       <MapPin className="h-3 w-3" />
                       {p.location}
+                    </div>
+                  )}
+                  {isAgent && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                      <Users className="h-3 w-3" />
+                      Owner: <span className="font-medium text-foreground">{ownerName(p.user_id)}</span>
                     </div>
                   )}
                   {stats.totalUnits > 0 && (
