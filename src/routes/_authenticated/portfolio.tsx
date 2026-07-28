@@ -358,6 +358,14 @@ function PortfolioDashboard() {
     return buckets.map((b) => ({ month: b.label, collected: b.total }));
   })();
 
+  // Real month-over-month comparison for M-Pesa collections — null when
+  // there's nothing to sensibly compare against (no collections last month),
+  // rather than showing a misleading "+Infinity%" or fake number.
+  const mpesaLastMonth = mpesaTrendData[mpesaTrendData.length - 2]?.collected ?? 0;
+  const mpesaMonthOverMonth = mpesaLastMonth > 0
+    ? Math.round(((mpesaCollectedThisMonth - mpesaLastMonth) / mpesaLastMonth) * 100)
+    : null;
+
   const openProperty = (p: Property) => {
     setSelectedProperty({ id: p.id, name: p.name, location: p.location });
     navigate({ to: "/dashboard" });
@@ -501,6 +509,9 @@ function PortfolioDashboard() {
               <span className="font-semibold" style={{ color: "#DC2626" }}>{formatKES(overdueAmount)}</span>
             </div>
           </div>
+          <a href="/reports" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+            View Rent Collection
+          </a>
         </div>
 
         {/* Maintenance Tickets donut */}
@@ -645,6 +656,9 @@ function PortfolioDashboard() {
             ))}
           </div>
         )}
+        <a href="/activity" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+          View All Activity
+        </a>
         </div>
 
         {/* M-Pesa Collections — real payments recorded with method = M-Pesa,
@@ -657,7 +671,14 @@ function PortfolioDashboard() {
           <div className="flex items-baseline gap-4 mb-3">
             <div>
               <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{formatKES(mpesaCollectedThisMonth)}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Collected via M-Pesa</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Collected via M-Pesa
+                {mpesaMonthOverMonth !== null && (
+                  <span className="ml-1.5 font-medium" style={{ color: mpesaMonthOverMonth >= 0 ? "#16A34A" : "#DC2626" }}>
+                    {mpesaMonthOverMonth >= 0 ? "+" : ""}{mpesaMonthOverMonth}% from last month
+                  </span>
+                )}
+              </div>
             </div>
             <div>
               <div className="font-display text-lg font-bold text-foreground">{mpesaTransactionCount}</div>
@@ -694,6 +715,9 @@ function PortfolioDashboard() {
               </ResponsiveContainer>
             </div>
           )}
+          <a href="/reports" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+            View Collections Report
+          </a>
         </div>
       </div>
 
