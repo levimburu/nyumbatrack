@@ -1,6 +1,8 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Receipt, BarChart3, Building2, Menu, X, Home, Wallet, Bell, Info, LogOut, Trash2, UserX, Key, Lock, ChevronRight, Grid3x3, Wrench, PieChart, ShieldCheck, Hammer, MessageSquare, FileText } from "lucide-react";
+import { LayoutDashboard, Users, Receipt, BarChart3, Building2, Menu, X, Home, Wallet, Bell, Info, LogOut, Trash2, UserX, Key, Lock, ChevronRight, Grid3x3, Wrench, PieChart, ShieldCheck, Hammer, MessageSquare, FileText, Search } from "lucide-react";
+import { GlobalSearch } from "./GlobalSearch";
 import { useState, useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/hooks/use-auth";
@@ -73,6 +75,7 @@ export function AppLayout({ children, role, email, displayName }: {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [profileRole, setProfileRole] = useState<string>("landlord");
   const [userId, setUserId] = useState<string | null>(null);
   const { selectedProperty, setSelectedProperty } = useProperty();
@@ -448,14 +451,19 @@ export function AppLayout({ children, role, email, displayName }: {
 
       <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
         {/* Desktop top bar */}
-        <header className="hidden md:flex items-center justify-between border-b border-border bg-white px-6 py-3">
-          <div>
+        <header className="hidden md:flex items-center gap-4 border-b border-border bg-white px-6 py-3">
+          <div className="flex-shrink-0">
             <p className="text-sm font-semibold text-foreground">{getGreeting()}, {(displayName || "there").split(" ")[0]}</p>
             <p className="text-xs text-muted-foreground">{getTodayDate()}</p>
           </div>
+          {role === "admin" && (
+            <div className="flex-1 max-w-md">
+              <GlobalSearch isAgent={profileRole === "agent"} />
+            </div>
+          )}
           <button
             onClick={() => setNotifOpen(true)}
-            className="relative grid h-9 w-9 place-items-center rounded-full hover:opacity-80 transition-opacity"
+            className="relative grid h-9 w-9 flex-shrink-0 place-items-center rounded-full hover:opacity-80 transition-opacity ml-auto"
             style={{ background: "#F59E0B" }}
             aria-label="Notifications"
           >
@@ -483,22 +491,33 @@ export function AppLayout({ children, role, email, displayName }: {
               {selectedProperty ? selectedProperty.name : "NyumbaTrack"}
             </span>
           </div>
-          <button
-            onClick={() => setNotifOpen(true)}
-            className="relative grid h-8 w-8 place-items-center rounded-full"
-            style={{ background: "#F59E0B" }}
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4 text-white" />
-            {unreadCount > 0 && (
-              <span
-                className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white"
-                style={{ background: "#DC2626" }}
+          <div className="flex items-center gap-1.5">
+            {role === "admin" && (
+              <button
+                onClick={() => setMobileSearchOpen(true)}
+                className="grid h-8 w-8 place-items-center rounded-full hover:bg-muted transition-colors"
+                aria-label="Search"
               >
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
+                <Search className="h-4 w-4 text-foreground" />
+              </button>
             )}
-          </button>
+            <button
+              onClick={() => setNotifOpen(true)}
+              className="relative grid h-8 w-8 place-items-center rounded-full"
+              style={{ background: "#F59E0B" }}
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4 text-white" />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white"
+                  style={{ background: "#DC2626" }}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
           {mobileOpen && (
             <button
               onClick={() => setMobileOpen(false)}
@@ -512,6 +531,22 @@ export function AppLayout({ children, role, email, displayName }: {
 
         <main className="flex-1 overflow-y-auto p-4 md:px-8 md:py-5 animate-fade-in">{children}</main>
       </div>
+
+      {/* MOBILE SEARCH OVERLAY — full-screen since the mobile header has no
+          room for an inline search bar the way the desktop one does. */}
+      {mobileSearchOpen && createPortal(
+        <div className="fixed inset-0 z-50 bg-white flex flex-col md:hidden">
+          <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+            <div className="flex-1">
+              <GlobalSearch isAgent={profileRole === "agent"} autoFocus onNavigate={() => setMobileSearchOpen(false)} />
+            </div>
+            <button onClick={() => setMobileSearchOpen(false)} aria-label="Close search">
+              <X className="h-5 w-5 text-foreground" />
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* NOTIFICATIONS PANEL */}
       {notifOpen && (
