@@ -47,18 +47,16 @@ function PortfolioDashboard() {
   const { setSelectedProperty } = useProperty();
   const [isAgent, setIsAgent] = useState<boolean | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
-  const [fullName, setFullName] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       const { data } = await (supabase as any)
         .from("profiles")
-        .select("role, full_name")
+        .select("role")
         .eq("id", user.id)
         .maybeSingle();
       setIsAgent(data?.role === "agent");
-      setFullName(data?.full_name ?? "");
       setProfileLoaded(true);
     });
   }, []);
@@ -327,13 +325,6 @@ function PortfolioDashboard() {
     navigate({ to: "/dashboard" });
   };
 
-  function getGreeting(): string {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  }
-
   // Agents don't have a portfolio — send them to the property view.
   useEffect(() => {
     if (profileLoaded && isAgent) navigate({ to: "/properties" });
@@ -370,36 +361,13 @@ function PortfolioDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      {/* Hero header — mirrors the per-property dashboard's hero, but scoped
-          to the whole portfolio rather than one property. */}
-      <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2818 0%, #166534 100%)" }}>
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-64 h-64 rounded-full" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
-          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full" style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }} />
-        </div>
-        <div className="relative">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-white/60 text-sm font-medium mb-1">{getGreeting()}, {(fullName || "there").split(" ")[0]}</p>
-              <h1 className="font-display text-2xl font-bold text-white">Portfolio Overview</h1>
-              <p className="text-white/60 text-sm mt-0.5">All {properties.length} properties · {currentMonthLabel}</p>
-            </div>
-            <div className="grid h-12 w-12 place-items-center rounded-2xl" style={{ background: "rgba(255,255,255,0.15)" }}>
-              <LayoutGrid className="h-6 w-6 text-white" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-3 flex-wrap">
-            <div className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "#F59E0B", color: "#fff" }}>
-              {occupancyRate}% Occupied
-            </div>
-            <div className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}>
-              {totalTenants} Tenants
-            </div>
-            <div className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}>
-              {collectionRate}% Collected
-            </div>
-          </div>
-        </div>
+      {/* Page header — plain text, no colored banner, matching the reference.
+          No greeting here since the app's top bar already shows one. */}
+      <div>
+        <h1 className="font-display text-2xl font-bold text-foreground">Portfolio Overview</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Here's what's happening across all {properties.length} {properties.length === 1 ? "property" : "properties"} this month.
+        </p>
       </div>
 
       {/* Top stat cards */}
