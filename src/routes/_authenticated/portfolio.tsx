@@ -6,7 +6,7 @@ import { formatKES } from "@/lib/format";
 import { useProperty } from "@/context/PropertyContext";
 import {
   Building2, Users, Wallet, TrendingUp, AlertCircle, DoorOpen, DoorClosed, LayoutGrid,
-  Wrench, CheckCircle2, Clock, Circle,
+  Wrench, CheckCircle2, Clock, Circle, ChevronRight,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
@@ -372,44 +372,50 @@ function PortfolioDashboard() {
 
       {/* Top stat cards */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="card-surface p-4">
-          <div className="flex items-center justify-between mb-3">
+        <button
+          onClick={() => navigate({ to: "/properties" })}
+          className="card-surface card-hover p-4 flex items-center justify-between gap-3 text-left"
+        >
+          <div className="min-w-0">
+            <div className="text-xs text-muted-foreground mb-0.5">Total Properties</div>
+            <div className="font-display text-lg font-bold text-foreground">{properties.length}</div>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
             <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
               <Building2 className="h-4 w-4" style={{ color: "#6D28D9" }} />
             </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>
-          <div className="text-xs text-muted-foreground mb-0.5">Total Properties</div>
-          <div className="font-display text-lg font-bold text-foreground">{properties.length}</div>
+        </button>
+
+        <div className="card-surface p-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-xs text-muted-foreground mb-0.5">Total Tenants</div>
+            <div className="font-display text-lg font-bold text-foreground">{totalTenants}</div>
+          </div>
+          <div className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0" style={{ background: "#EFF6FF" }}>
+            <Users className="h-4 w-4" style={{ color: "#2563EB" }} />
+          </div>
         </div>
 
-        <div className="card-surface p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
-              <Users className="h-4 w-4" style={{ color: "#2563EB" }} />
-            </div>
+        <div className="card-surface p-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-xs text-muted-foreground mb-0.5">Occupied Units</div>
+            <div className="font-display text-lg font-bold text-foreground">{occupiedUnits} <span className="text-sm text-muted-foreground font-normal">/ {totalUnits}</span></div>
           </div>
-          <div className="text-xs text-muted-foreground mb-0.5">Total Tenants</div>
-          <div className="font-display text-lg font-bold text-foreground">{totalTenants}</div>
+          <div className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0" style={{ background: "#DCFCE7" }}>
+            <DoorOpen className="h-4 w-4" style={{ color: "#16A34A" }} />
+          </div>
         </div>
 
-        <div className="card-surface p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
-              <DoorOpen className="h-4 w-4" style={{ color: "#16A34A" }} />
-            </div>
+        <div className="card-surface p-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-xs text-muted-foreground mb-0.5">Vacant Units</div>
+            <div className="font-display text-lg font-bold" style={{ color: vacantUnits > 0 ? "#DC2626" : "#16A34A" }}>{vacantUnits}</div>
           </div>
-          <div className="text-xs text-muted-foreground mb-0.5">Occupied Units</div>
-          <div className="font-display text-lg font-bold text-foreground">{occupiedUnits} <span className="text-sm text-muted-foreground font-normal">/ {totalUnits}</span></div>
-        </div>
-
-        <div className="card-surface p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEE2E2" }}>
-              <DoorClosed className="h-4 w-4" style={{ color: "#DC2626" }} />
-            </div>
+          <div className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0" style={{ background: "#FEE2E2" }}>
+            <DoorClosed className="h-4 w-4" style={{ color: "#DC2626" }} />
           </div>
-          <div className="text-xs text-muted-foreground mb-0.5">Vacant Units</div>
-          <div className="font-display text-lg font-bold" style={{ color: vacantUnits > 0 ? "#DC2626" : "#16A34A" }}>{vacantUnits}</div>
         </div>
       </div>
 
