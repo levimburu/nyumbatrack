@@ -118,10 +118,15 @@ function AuthPage() {
     }
     setLoading(true);
     try {
+      const code = inviteCode.trim().toUpperCase();
+
+      // Check the code up front so we don't create an orphaned auth
+      // account if it's bad — the real, atomic linking happens after
+      // sign-up via redeem_tenant_invite, which re-checks this itself.
       const { data: codeData, error: codeError } = await (supabase as any)
         .from("tenant_invite_codes")
-        .select("*")
-        .eq("code", inviteCode.trim().toUpperCase())
+        .select("id")
+        .eq("code", code)
         .eq("used", false)
         .maybeSingle();
       if (codeError || !codeData) {
@@ -135,14 +140,17 @@ function AuthPage() {
       });
       if (authError) throw authError;
       if (!authData.user) throw new Error("No user returned");
-      const userId = authData.user.id;
 
-      await (supabase as any).from("profiles").upsert({ id: userId, full_name: fullName, role: "tenant" } as any);
-      await (supabase as any).from("tenants").update({ user_id: userId }).eq("id", codeData.tenant_id);
-      await (supabase as any)
-        .from("tenant_invite_codes")
-        .update({ used: true, used_by: userId, used_at: new Date().toISOString() } as any)
-        .eq("id", codeData.id);
+      // One atomic database operation: links tenants.user_id, upserts the
+      // profile, and marks the code used — all as a single unit, running
+      // with the elevated permission it specifically needs to do the
+      // linking step (a brand-new tenant account otherwise has no
+      // permission to update the tenants table, even its own row).
+      const { error: redeemError } = await (supabase as any).rpc("redeem_tenant_invite", {
+        p_code: code,
+        p_full_name: fullName,
+      });
+      if (redeemError) throw redeemError;
 
       localStorage.removeItem("nyumbatrack_selected_property");
       toast.success("Welcome! Your account is ready.");
