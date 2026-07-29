@@ -16,6 +16,7 @@ type Step =
   | "email"
   | "password"
   | "invite_code"
+  | "tenant_code"
   | "signin_email"
   | "signin_password"
   | "reset_password";
@@ -106,17 +107,65 @@ function AuthPage() {
     }
   };
 
+  // Tenant self-signup — redeeming a one-time code the landlord/agent
+  // generated for this specific tenant record, which links the new auth
+  // account to that existing tenant row (their balance/history/receipts
+  // are already there; this just gives them a login for it).
+  const handleRedeemInvite = async () => {
+    if (!inviteCode.trim() || !fullName.trim() || !email.trim() || password.length < 6) {
+      toast.error("Please fill in every field (password min 6 characters)");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data: codeData, error: codeError } = await (supabase as any)
+        .from("tenant_invite_codes")
+        .select("*")
+        .eq("code", inviteCode.trim().toUpperCase())
+        .eq("used", false)
+        .maybeSingle();
+      if (codeError || !codeData) {
+        toast.error("Invalid or already-used invite code");
+        setLoading(false);
+        return;
+      }
+
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email, password, options: { data: { full_name: fullName } },
+      });
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("No user returned");
+      const userId = authData.user.id;
+
+      await (supabase as any).from("profiles").upsert({ id: userId, full_name: fullName, role: "tenant" } as any);
+      await (supabase as any).from("tenants").update({ user_id: userId }).eq("id", codeData.tenant_id);
+      await (supabase as any)
+        .from("tenant_invite_codes")
+        .update({ used: true, used_by: userId, used_at: new Date().toISOString() } as any)
+        .eq("id", codeData.id);
+
+      localStorage.removeItem("nyumbatrack_selected_property");
+      toast.success("Welcome! Your account is ready.");
+      navigate({ to: "/", replace: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const back = () => {
     if (step === "role") setStep("welcome");
     else if (step === "name") setStep("role");
     else if (step === "email") setStep("name");
     else if (step === "password") setStep("email");
     else if (step === "invite_code") setStep("password");
+    else if (step === "tenant_code") setStep("welcome");
     else if (step === "signin_email") setStep("welcome");
     else if (step === "signin_password") setStep("signin_email");
   };
 
-  const progress = { welcome: 0, role: 1, name: 2, email: 3, password: 4, invite_code: 4, signin_email: 1, signin_password: 2, reset_password: 1 }[step];
+  const progress = { welcome: 0, role: 1, name: 2, email: 3, password: 4, invite_code: 4, tenant_code: 1, signin_email: 1, signin_password: 2, reset_password: 1 }[step];
   const totalSteps = isSignIn ? 2 : 4;
 
   const startSignIn = () => {
@@ -161,6 +210,9 @@ function AuthPage() {
                 <button onClick={() => { setIsSignIn(false); setStep("role"); }} className="w-full rounded-xl py-3.5 text-base font-bold text-white" style={{ background: "#166534" }}>Get Started</button>
                 <button onClick={startSignIn} className="w-full rounded-xl py-3.5 text-base font-semibold border" style={{ border: "1.5px solid #166534", color: "#166534", background: "white" }}>Sign In</button>
               </div>
+              <button onClick={() => setStep("tenant_code")} className="mt-6 w-full text-center text-sm" style={{ color: "#6B7280" }}>
+                Are you a tenant? <span style={{ color: "#166534", fontWeight: 600 }}>Redeem your invite code</span>
+              </button>
             </div>
           )}
 
@@ -229,6 +281,24 @@ function AuthPage() {
               <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) handleSignUp(); }} placeholder="NYM-ABC123" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4 text-center font-mono tracking-widest" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
               <button onClick={() => inviteCode.trim() && handleSignUp()} disabled={!inviteCode.trim() || loading} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Create Account
+              </button>
+            </div>
+          )}
+
+          {step === "tenant_code" && (
+            <div>
+              <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Redeem your invite code</h1>
+              <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Enter the code your landlord or agent gave you, then set up your login.</p>
+              <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} placeholder="TNT-ABC123" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-3 text-center font-mono tracking-widest" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+              <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-3" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-3" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+              <div className="relative mb-4">
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleRedeemInvite(); }} placeholder="Create a password" minLength={6} className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-12" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button>
+              </div>
+              <button onClick={handleRedeemInvite} disabled={loading} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Activate My Account
               </button>
             </div>
           )}
@@ -349,6 +419,9 @@ function AuthPage() {
                 <button onClick={() => { setIsSignIn(false); setStep("role"); }} className="w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 transition active:scale-95">Get Started</button>
                 <button onClick={startSignIn} className="w-full rounded-2xl border py-4 text-base font-semibold transition active:scale-95" style={{ borderColor: "#166534", color: "#166534", background: "white" }}>Sign In</button>
               </div>
+              <button onClick={() => setStep("tenant_code")} className="mt-6 w-full text-center text-sm" style={{ color: "#6B7280" }}>
+                Are you a tenant? <span style={{ color: "#166534", fontWeight: 600 }}>Redeem your invite code</span>
+              </button>
             </div>
           )}
 
@@ -412,6 +485,23 @@ function AuthPage() {
               <input autoFocus type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} onKeyDown={(e) => { if (e.key === "Enter" && inviteCode.trim()) handleSignUp(); }} placeholder="e.g. NYM-ABC123" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
               <button onClick={() => inviteCode.trim() && handleSignUp()} disabled={!inviteCode.trim() || loading} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null} Create Account
+              </button>
+            </div>
+          )}
+
+          {step === "tenant_code" && (
+            <div className="flex flex-col flex-1">
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Redeem your invite code</h1>
+              <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Enter the code your landlord or agent gave you, then set up your login.</p>
+              <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} placeholder="e.g. TNT-ABC123" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono mb-3" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+              <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 mb-3" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 mb-3" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+              <div className="relative">
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleRedeemInvite(); }} placeholder="Create a password" minLength={6} className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 pr-14" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "#9CA3AF" }}>{showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}</button>
+              </div>
+              <button onClick={handleRedeemInvite} disabled={loading} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null} Activate My Account
               </button>
             </div>
           )}
