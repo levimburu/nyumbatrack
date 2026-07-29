@@ -315,6 +315,10 @@ function MaintenancePage() {
                   <Building2 className="h-3 w-3" />
                   {propertyName(t.property_id)}{t.unit ? ` · Unit ${t.unit}` : " · Property-wide"}
                 </div>
+                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Logged {new Date(t.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} at {new Date(t.created_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                </div>
                 {t.description && (
                   <p className="text-sm text-muted-foreground mt-2">{t.description}</p>
                 )}
