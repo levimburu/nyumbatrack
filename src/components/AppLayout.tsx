@@ -361,6 +361,18 @@ export function AppLayout({ children, role, email, displayName }: {
     navigate({ to: "/properties" });
   };
 
+  // Dispatches a "Settings" search result to the real handler/panel section
+  // it represents — found through search, but still going through each
+  // action's existing behavior (including confirm() dialogs) rather than
+  // bypassing any of it.
+  const handleSearchAction = (action: string) => {
+    if (action === "signout") { handleSignOut(); return; }
+    if (action === "signout_all") { handleSignOutAllDevices(); return; }
+    if (action === "delete_account") { handleDeleteAccount(); return; }
+    if (action === "change_password") { setProfileOpen(true); setChangingPassword(true); return; }
+    if (action === "connected_agents") { setProfileOpen(true); return; }
+  };
+
   const displayLabel = displayName || email || "User";
   const initials = displayLabel.charAt(0).toUpperCase();
   const roleLabel = profileRole === "agent" ? "Agent" : "Landlord";
@@ -550,7 +562,7 @@ export function AppLayout({ children, role, email, displayName }: {
           <div className="flex items-center gap-4">
             {role === "admin" && (
               <div className="w-72">
-                <GlobalSearch isAgent={profileRole === "agent"} />
+                <GlobalSearch isAgent={profileRole === "agent"} onAction={handleSearchAction} />
               </div>
             )}
             <button
@@ -631,7 +643,7 @@ export function AppLayout({ children, role, email, displayName }: {
         <div className="fixed inset-0 z-50 bg-white flex flex-col md:hidden">
           <div className="flex items-center gap-3 border-b border-border px-4 py-3">
             <div className="flex-1">
-              <GlobalSearch isAgent={profileRole === "agent"} autoFocus onNavigate={() => setMobileSearchOpen(false)} />
+              <GlobalSearch isAgent={profileRole === "agent"} autoFocus onNavigate={() => setMobileSearchOpen(false)} onAction={handleSearchAction} />
             </div>
             <button onClick={() => setMobileSearchOpen(false)} aria-label="Close search">
               <X className="h-5 w-5 text-foreground" />
