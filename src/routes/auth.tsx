@@ -221,7 +221,7 @@ function AuthPage() {
                 <button onClick={startSignIn} className="w-full rounded-xl py-3.5 text-base font-semibold border" style={{ border: "1.5px solid #166534", color: "#166534", background: "white" }}>Sign In</button>
               </div>
               <button onClick={() => setStep("tenant_welcome")} className="mt-6 w-full text-center text-sm" style={{ color: "#6B7280" }}>
-                Are you a tenant? <span style={{ color: "#166534", fontWeight: 600 }}>Redeem your invite code</span>
+                Are you a tenant?
               </button>
             </div>
           )}
@@ -442,7 +442,7 @@ function AuthPage() {
                 <button onClick={startSignIn} className="w-full rounded-2xl border py-4 text-base font-semibold transition active:scale-95" style={{ borderColor: "#166534", color: "#166534", background: "white" }}>Sign In</button>
               </div>
               <button onClick={() => setStep("tenant_welcome")} className="mt-6 w-full text-center text-sm" style={{ color: "#6B7280" }}>
-                Are you a tenant? <span style={{ color: "#166534", fontWeight: 600 }}>Redeem your invite code</span>
+                Are you a tenant?
               </button>
             </div>
           )}
