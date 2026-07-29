@@ -16,6 +16,7 @@ type Step =
   | "email"
   | "password"
   | "invite_code"
+  | "tenant_welcome"
   | "tenant_code"
   | "signin_email"
   | "signin_password"
@@ -168,12 +169,13 @@ function AuthPage() {
     else if (step === "email") setStep("name");
     else if (step === "password") setStep("email");
     else if (step === "invite_code") setStep("password");
-    else if (step === "tenant_code") setStep("welcome");
+    else if (step === "tenant_welcome") setStep("welcome");
+    else if (step === "tenant_code") setStep("tenant_welcome");
     else if (step === "signin_email") setStep("welcome");
     else if (step === "signin_password") setStep("signin_email");
   };
 
-  const progress = { welcome: 0, role: 1, name: 2, email: 3, password: 4, invite_code: 4, tenant_code: 1, signin_email: 1, signin_password: 2, reset_password: 1 }[step];
+  const progress = { welcome: 0, role: 1, name: 2, email: 3, password: 4, invite_code: 4, tenant_welcome: 1, tenant_code: 2, signin_email: 1, signin_password: 2, reset_password: 1 }[step];
   const totalSteps = isSignIn ? 2 : 4;
 
   const startSignIn = () => {
@@ -218,7 +220,7 @@ function AuthPage() {
                 <button onClick={() => { setIsSignIn(false); setStep("role"); }} className="w-full rounded-xl py-3.5 text-base font-bold text-white" style={{ background: "#166534" }}>Get Started</button>
                 <button onClick={startSignIn} className="w-full rounded-xl py-3.5 text-base font-semibold border" style={{ border: "1.5px solid #166534", color: "#166534", background: "white" }}>Sign In</button>
               </div>
-              <button onClick={() => setStep("tenant_code")} className="mt-6 w-full text-center text-sm" style={{ color: "#6B7280" }}>
+              <button onClick={() => setStep("tenant_welcome")} className="mt-6 w-full text-center text-sm" style={{ color: "#6B7280" }}>
                 Are you a tenant? <span style={{ color: "#166534", fontWeight: 600 }}>Redeem your invite code</span>
               </button>
             </div>
@@ -290,6 +292,18 @@ function AuthPage() {
               <button onClick={() => inviteCode.trim() && handleSignUp()} disabled={!inviteCode.trim() || loading} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Create Account
               </button>
+            </div>
+          )}
+
+          {step === "tenant_welcome" && (
+            <div>
+              <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Tenant Portal</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>New here, or already have an account?</p>
+              <div className="space-y-3">
+                <button onClick={() => setStep("tenant_code")} className="w-full rounded-xl py-3.5 text-base font-bold text-white" style={{ background: "#166534" }}>Activate My Account</button>
+                <button onClick={() => { setIsSignIn(true); setStep("signin_email"); }} className="w-full rounded-xl py-3.5 text-base font-semibold border" style={{ border: "1.5px solid #166534", color: "#166534", background: "white" }}>Sign In</button>
+              </div>
             </div>
           )}
 
@@ -427,7 +441,7 @@ function AuthPage() {
                 <button onClick={() => { setIsSignIn(false); setStep("role"); }} className="w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 transition active:scale-95">Get Started</button>
                 <button onClick={startSignIn} className="w-full rounded-2xl border py-4 text-base font-semibold transition active:scale-95" style={{ borderColor: "#166534", color: "#166534", background: "white" }}>Sign In</button>
               </div>
-              <button onClick={() => setStep("tenant_code")} className="mt-6 w-full text-center text-sm" style={{ color: "#6B7280" }}>
+              <button onClick={() => setStep("tenant_welcome")} className="mt-6 w-full text-center text-sm" style={{ color: "#6B7280" }}>
                 Are you a tenant? <span style={{ color: "#166534", fontWeight: 600 }}>Redeem your invite code</span>
               </button>
             </div>
@@ -494,6 +508,17 @@ function AuthPage() {
               <button onClick={() => inviteCode.trim() && handleSignUp()} disabled={!inviteCode.trim() || loading} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null} Create Account
               </button>
+            </div>
+          )}
+
+          {step === "tenant_welcome" && (
+            <div className="flex flex-col items-center justify-center flex-1 text-center">
+              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Tenant Portal</h1>
+              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>New here, or already have an account?</p>
+              <div className="w-full space-y-3">
+                <button onClick={() => setStep("tenant_code")} className="w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 transition active:scale-95">Activate My Account</button>
+                <button onClick={() => { setIsSignIn(true); setStep("signin_email"); }} className="w-full rounded-2xl border py-4 text-base font-semibold transition active:scale-95" style={{ borderColor: "#166534", color: "#166534", background: "white" }}>Sign In</button>
+              </div>
             </div>
           )}
 
