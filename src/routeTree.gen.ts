@@ -19,6 +19,8 @@ import { Route as AuthenticatedStatementsRouteImport } from './routes/_authentic
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedPropertiesRouteImport } from './routes/_authenticated/properties'
 import { Route as AuthenticatedPortfolioRouteImport } from './routes/_authenticated/portfolio'
+import { Route as AuthenticatedPortalPaymentsRouteImport } from './routes/_authenticated/portal-payments'
+import { Route as AuthenticatedPortalCommunicationsRouteImport } from './routes/_authenticated/portal-communications'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
@@ -78,6 +80,18 @@ const AuthenticatedPortfolioRoute = AuthenticatedPortfolioRouteImport.update({
   path: '/portfolio',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPortalPaymentsRoute =
+  AuthenticatedPortalPaymentsRouteImport.update({
+    id: '/portal-payments',
+    path: '/portal-payments',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPortalCommunicationsRoute =
+  AuthenticatedPortalCommunicationsRouteImport.update({
+    id: '/portal-communications',
+    path: '/portal-communications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPortalRoute = AuthenticatedPortalRouteImport.update({
   id: '/portal',
   path: '/portal',
@@ -138,6 +152,8 @@ export interface FileRoutesByFullPath {
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/portal': typeof AuthenticatedPortalRoute
+  '/portal-communications': typeof AuthenticatedPortalCommunicationsRoute
+  '/portal-payments': typeof AuthenticatedPortalPaymentsRoute
   '/portfolio': typeof AuthenticatedPortfolioRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -158,6 +174,8 @@ export interface FileRoutesByTo {
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/portal': typeof AuthenticatedPortalRoute
+  '/portal-communications': typeof AuthenticatedPortalCommunicationsRoute
+  '/portal-payments': typeof AuthenticatedPortalPaymentsRoute
   '/portfolio': typeof AuthenticatedPortfolioRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -180,6 +198,8 @@ export interface FileRoutesById {
   '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/portal': typeof AuthenticatedPortalRoute
+  '/_authenticated/portal-communications': typeof AuthenticatedPortalCommunicationsRoute
+  '/_authenticated/portal-payments': typeof AuthenticatedPortalPaymentsRoute
   '/_authenticated/portfolio': typeof AuthenticatedPortfolioRoute
   '/_authenticated/properties': typeof AuthenticatedPropertiesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
@@ -202,6 +222,8 @@ export interface FileRouteTypes {
     | '/maintenance'
     | '/payments'
     | '/portal'
+    | '/portal-communications'
+    | '/portal-payments'
     | '/portfolio'
     | '/properties'
     | '/reports'
@@ -222,6 +244,8 @@ export interface FileRouteTypes {
     | '/maintenance'
     | '/payments'
     | '/portal'
+    | '/portal-communications'
+    | '/portal-payments'
     | '/portfolio'
     | '/properties'
     | '/reports'
@@ -243,6 +267,8 @@ export interface FileRouteTypes {
     | '/_authenticated/maintenance'
     | '/_authenticated/payments'
     | '/_authenticated/portal'
+    | '/_authenticated/portal-communications'
+    | '/_authenticated/portal-payments'
     | '/_authenticated/portfolio'
     | '/_authenticated/properties'
     | '/_authenticated/reports'
@@ -330,6 +356,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPortfolioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/portal-payments': {
+      id: '/_authenticated/portal-payments'
+      path: '/portal-payments'
+      fullPath: '/portal-payments'
+      preLoaderRoute: typeof AuthenticatedPortalPaymentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/portal-communications': {
+      id: '/_authenticated/portal-communications'
+      path: '/portal-communications'
+      fullPath: '/portal-communications'
+      preLoaderRoute: typeof AuthenticatedPortalCommunicationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/portal': {
       id: '/_authenticated/portal'
       path: '/portal'
@@ -406,6 +446,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
+  AuthenticatedPortalCommunicationsRoute: typeof AuthenticatedPortalCommunicationsRoute
+  AuthenticatedPortalPaymentsRoute: typeof AuthenticatedPortalPaymentsRoute
   AuthenticatedPortfolioRoute: typeof AuthenticatedPortfolioRoute
   AuthenticatedPropertiesRoute: typeof AuthenticatedPropertiesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -425,6 +467,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedPortalRoute: AuthenticatedPortalRoute,
+  AuthenticatedPortalCommunicationsRoute:
+    AuthenticatedPortalCommunicationsRoute,
+  AuthenticatedPortalPaymentsRoute: AuthenticatedPortalPaymentsRoute,
   AuthenticatedPortfolioRoute: AuthenticatedPortfolioRoute,
   AuthenticatedPropertiesRoute: AuthenticatedPropertiesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
