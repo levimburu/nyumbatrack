@@ -6,6 +6,7 @@ import { formatKES, formatDate } from "@/lib/format";
 import { Download, Home, Wallet, Calendar, Eye, Building2, Phone, Mail } from "lucide-react";
 import { downloadReceipt, getReceiptDataUrl, type ReceiptData } from "@/lib/receipt";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/portal")({
   component: TenantPortal,
@@ -156,6 +157,16 @@ function TenantPortal() {
           )}
         </div>
       </div>
+
+      {/* Pay Rent — real button, but no payment gateway is connected yet,
+          so it says so honestly rather than faking a successful payment. */}
+      <button
+        onClick={() => toast.info("Online payments aren't set up yet — please pay your landlord directly for now.")}
+        className="w-full rounded-xl py-3.5 text-base font-bold text-white flex items-center justify-center gap-2"
+        style={{ background: "#166534" }}
+      >
+        <Wallet className="h-5 w-5" /> Pay Rent
+      </button>
 
       {/* Deposit info */}
       {tenant.deposit != null && Number(tenant.deposit) > 0 && (
