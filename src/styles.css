@@ -176,3 +176,36 @@
     transform: translateY(0) scale(1);
   }
 }
+
+/* Modern, thin scrollbar — blends into the page instead of the default
+   thick native one, in the app's own green rather than plain gray.
+   Plain rgba fallback first, color-mix() override after — if a browser
+   doesn't support color-mix(), it just ignores that line and keeps the
+   fallback rather than showing nothing. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 101, 52, 0.35) transparent;
+  scrollbar-color: color-mix(in srgb, var(--primary) 35%, transparent) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(22, 101, 52, 0.35);
+  background-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(22, 101, 52, 0.55);
+  background-color: color-mix(in srgb, var(--primary) 55%, transparent);
+}
