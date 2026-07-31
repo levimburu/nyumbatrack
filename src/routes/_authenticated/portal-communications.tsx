@@ -64,7 +64,10 @@ function TenantCommunications() {
           <input
             type="text" value={reportTitle} onChange={(e) => setReportTitle(e.target.value)}
             placeholder="e.g. Leaking tap in the kitchen"
-            className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none" style={{ borderColor: "#E5E7EB" }}
+            className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition-colors"
+            style={{ borderColor: "#E5E7EB" }}
+            onFocus={(e) => (e.target.style.borderColor = "#166534")}
+            onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
           />
         </div>
         <div>
@@ -72,7 +75,10 @@ function TenantCommunications() {
           <textarea
             value={reportDescription} onChange={(e) => setReportDescription(e.target.value)}
             rows={4} placeholder="Anything that would help — when it started, how bad it is, etc."
-            className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none resize-none" style={{ borderColor: "#E5E7EB" }}
+            className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none resize-none transition-colors"
+            style={{ borderColor: "#E5E7EB" }}
+            onFocus={(e) => (e.target.style.borderColor = "#166534")}
+            onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
           />
         </div>
         <p className="text-xs text-muted-foreground">
@@ -80,8 +86,8 @@ function TenantCommunications() {
         </p>
         <button
           onClick={handleSubmitReport} disabled={submitting}
-          className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-60 flex items-center justify-center gap-2"
-          style={{ background: "#166534" }}
+          className="w-full rounded-2xl py-3.5 text-sm font-bold text-white disabled:opacity-60 flex items-center justify-center gap-2 transition-transform active:scale-[0.98]"
+          style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)", boxShadow: "0 8px 20px -6px rgba(22,101,52,0.4)" }}
         >
           {submitting ? "Submitting…" : "Submit Report"}
         </button>

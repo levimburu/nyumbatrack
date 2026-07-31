@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
-import { Download, Eye } from "lucide-react";
+import { Download, Eye, CheckCircle2, TrendingUp } from "lucide-react";
 import { downloadReceipt, getReceiptDataUrl, type ReceiptData } from "@/lib/receipt";
 import { useState } from "react";
 import { useMyTenant } from "@/hooks/use-my-tenant";
@@ -40,6 +40,20 @@ function TenantPayments() {
         <p className="text-sm text-muted-foreground mt-0.5">Your full rent payment history and receipts.</p>
       </div>
 
+      {!!payments?.length && (
+        <div className="card-surface p-5 flex items-center gap-3">
+          <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
+            <TrendingUp className="h-5 w-5" style={{ color: "#16A34A" }} />
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Total Paid ({payments.length} {payments.length === 1 ? "payment" : "payments"})</div>
+            <div className="font-display text-lg font-bold" style={{ color: "#16A34A" }}>
+              {formatKES(payments.reduce((s, p) => s + Number(p.amount), 0))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card-surface">
         {/* Mobile cards */}
         <div className="divide-y divide-border md:hidden">
@@ -57,11 +71,16 @@ function TenantPayments() {
             return (
               <div key={p.id} className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <div className="text-sm font-semibold">
-                      {p.payment_month ?? formatDate(p.paid_on)}
+                  <div className="flex items-center gap-2.5">
+                    <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full" style={{ background: "#DCFCE7" }}>
+                      <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />
                     </div>
-                    <div className="text-xs text-muted-foreground">{formatDate(p.paid_on)}</div>
+                    <div>
+                      <div className="text-sm font-semibold">
+                        {p.payment_month ?? formatDate(p.paid_on)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{formatDate(p.paid_on)}</div>
+                    </div>
                   </div>
                   <div className="font-display font-bold" style={{ color: "#16A34A" }}>
                     +{formatKES(p.amount)}
