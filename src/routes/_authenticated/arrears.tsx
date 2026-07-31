@@ -327,6 +327,17 @@ function RecordPaymentModal({
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Freeze the background page while this modal is open — otherwise the
+  // Arrears list keeps scrolling underneath it, which looks broken and
+  // makes the modal feel like it's floating over moving content.
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, []);
+
   const handleTypeChange = (type: PaymentType) => {
     setPaymentType(type);
     if (type === "full" || type === "topup") setAmount(row.due);
