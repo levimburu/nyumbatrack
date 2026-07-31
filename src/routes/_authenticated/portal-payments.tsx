@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { formatKES, formatDate } from "@/lib/format";
-import { Download, Eye, CheckCircle2, TrendingUp } from "lucide-react";
+import { Download, Eye, CheckCircle2, TrendingUp, Search } from "lucide-react";
 import { downloadReceipt, getReceiptDataUrl, type ReceiptData } from "@/lib/receipt";
 import { useState } from "react";
 import { useMyTenant } from "@/hooks/use-my-tenant";
@@ -12,22 +10,9 @@ export const Route = createFileRoute("/_authenticated/portal-payments")({
 });
 
 function TenantPayments() {
-  const { data: tenant } = useMyTenant();
+  const { tenant, payments } = useMyTenant();
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null);
-
-  const { data: payments } = useQuery({
-    queryKey: ["my-payments", tenant?.id],
-    enabled: !!tenant,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("payments")
-        .select("*")
-        .eq("tenant_id", tenant!.id)
-        .order("paid_on", { ascending: false });
-      if (error) throw error;
-      return data as any[];
-    },
-  });
+  const [searchQuery, setSearchQuery] = useState("");
 
   // TenantShell already gates on "no linked tenant" before rendering any
   // page, so by the time we're here tenant is guaranteed to exist.
@@ -38,6 +23,22 @@ function TenantPayments() {
       <div>
         <h1 className="font-display text-xl font-bold text-foreground">Payments</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Your full rent payment history and receipts.</p>
+      </div>
+
+      {/* Search — UI only for now, filtering isn't wired up yet. */}
+      <div>
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by month or reference…"
+            className="w-full rounded-xl border pl-10 pr-4 py-2.5 text-sm outline-none transition-colors"
+            style={{ borderColor: "#E5E7EB" }}
+            onFocus={(e) => (e.target.style.borderColor = "#166534")}
+            onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground mt-1.5">Search is coming soon — for now, browse the full list below.</p>
       </div>
 
       {!!payments?.length && (

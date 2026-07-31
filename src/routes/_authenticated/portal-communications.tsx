@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_authenticated/portal-communications")({
 });
 
 function TenantCommunications() {
-  const { data: tenant } = useMyTenant();
+  const { tenant } = useMyTenant();
   const [reportTitle, setReportTitle] = useState("");
   const [reportDescription, setReportDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);

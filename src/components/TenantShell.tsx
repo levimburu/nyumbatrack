@@ -12,7 +12,7 @@ const TABS = [
 export function TenantShell({ children, email }: { children: React.ReactNode; email?: string }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { data: tenant, isLoading } = useMyTenant();
+  const { tenant, isLoading } = useMyTenant();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

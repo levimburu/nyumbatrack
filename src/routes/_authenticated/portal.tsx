@@ -1,24 +1,66 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { formatKES } from "@/lib/format";
-import { Home, Wallet, Calendar, Building2, Phone, Mail, CheckCircle2, AlertCircle, Shield } from "lucide-react";
+import { outstandingForDueMonth } from "@/lib/reminders";
+import { Home, Wallet, Calendar, Building2, Phone, Mail, CheckCircle2, AlertCircle, Shield, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useMyTenant } from "@/hooks/use-my-tenant";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useRef } from "react";
 
 export const Route = createFileRoute("/_authenticated/portal")({
   component: TenantHome,
 });
 
 function TenantHome() {
-  const { data: tenant } = useMyTenant();
+  const { tenant, payments, avatarUrl, refetchAvatar } = useMyTenant();
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // TenantShell already gates on "no linked tenant" before rendering any
   // page, so by the time we're here tenant is guaranteed to exist.
   if (!tenant) return null;
 
-  const isOverdue = tenant.next_due_date && new Date(tenant.next_due_date) < new Date() && Number(tenant.balance) > 0;
-  const isCleared = Number(tenant.balance) === 0;
+  // The real amount owed, calculated the same way the rest of the app
+  // does — tenants.balance itself is never kept in sync with payments, so
+  // it's never read directly here.
+  const { due, status } = outstandingForDueMonth(tenant.rent_amount, tenant.next_due_date, payments);
+  const isOverdue = tenant.next_due_date && new Date(tenant.next_due_date) < new Date() && due > 0;
   const firstName = tenant.full_name?.split(" ")[0];
   const initials = tenant.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+
+  const balanceColor = status === "paid" ? "#16A34A" : status === "partial" ? "#D97706" : "#DC2626";
+  const balanceChipBg = status === "paid" ? "#DCFCE7" : status === "partial" ? "#FEF3C7" : "#FEE2E2";
+
+  const handleAvatarClick = () => fileInputRef.current?.click();
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+    setUploadingAvatar(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const { error: updateError } = await (supabase as any)
+        .from("profiles")
+        .update({ avatar_url: `${urlData.publicUrl}?t=${Date.now()}` })
+        .eq("id", user.id);
+      if (updateError) throw updateError;
+      toast.success("Photo updated!");
+      refetchAvatar();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't upload photo");
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -28,12 +70,23 @@ function TenantHome() {
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
           <div className="absolute bottom-0 left-0 w-28 h-28 rounded-full opacity-10 pointer-events-none" style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }} />
           <div className="relative flex items-center gap-4">
-            <div
-              className="grid h-16 w-16 place-items-center rounded-2xl text-xl font-bold text-white flex-shrink-0"
-              style={{ background: "#F59E0B" }}
+            <button
+              onClick={handleAvatarClick}
+              disabled={uploadingAvatar}
+              className="relative grid h-16 w-16 place-items-center rounded-2xl text-xl font-bold text-white flex-shrink-0 overflow-hidden"
+              style={{ background: avatarUrl ? "transparent" : "#F59E0B" }}
+              aria-label="Change profile photo"
             >
-              {initials}
-            </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Your photo" className="h-full w-full object-cover" />
+              ) : (
+                initials
+              )}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
+                {uploadingAvatar ? <Loader2 className="h-5 w-5 text-white animate-spin" /> : <Camera className="h-5 w-5 text-white" />}
+              </div>
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             <div>
               <h1 className="font-display text-2xl font-bold text-white">Hello, {firstName}!</h1>
               <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.7)" }}>Unit {tenant.unit}</p>
@@ -50,10 +103,14 @@ function TenantHome() {
           </div>
         )}
 
-        {/* Tenant details */}
+        {/* Tenant details — email/phone are tappable since they can be
+            longer than the card is wide; tapping shows the full value. */}
         <div className="grid grid-cols-2 gap-px bg-border">
           {tenant.email && (
-            <div className="p-4 bg-white flex items-start gap-3">
+            <button
+              onClick={() => toast.info(tenant.email!, { duration: 5000 })}
+              className="p-4 bg-white flex items-start gap-3 text-left hover:bg-muted/40 transition-colors"
+            >
               <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
                 <Mail className="h-4 w-4" style={{ color: "#2563EB" }} />
               </div>
@@ -61,18 +118,21 @@ function TenantHome() {
                 <div className="text-xs text-muted-foreground">Email</div>
                 <div className="text-sm font-semibold truncate">{tenant.email}</div>
               </div>
-            </div>
+            </button>
           )}
           {tenant.phone && (
-            <div className="p-4 bg-white flex items-start gap-3">
+            <button
+              onClick={() => toast.info(tenant.phone!, { duration: 5000 })}
+              className="p-4 bg-white flex items-start gap-3 text-left hover:bg-muted/40 transition-colors"
+            >
               <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
                 <Phone className="h-4 w-4" style={{ color: "#16A34A" }} />
               </div>
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">Phone</div>
-                <div className="text-sm font-semibold">{tenant.phone}</div>
+                <div className="text-sm font-semibold truncate">{tenant.phone}</div>
               </div>
-            </div>
+            </button>
           )}
           {tenant.move_in_date && (
             <div className="p-4 bg-white flex items-start gap-3">
@@ -97,24 +157,21 @@ function TenantHome() {
         </div>
       </div>
 
-      {/* Balance + next due */}
+      {/* Balance + next due — due amount comes from real payment history,
+          not the stale tenants.balance column. */}
       <div className="grid grid-cols-2 gap-4">
         <div className="card-surface p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium text-muted-foreground">Current Balance</span>
-            <div className="grid h-8 w-8 place-items-center rounded-lg flex-shrink-0" style={{ background: isCleared ? "#DCFCE7" : "#FEE2E2" }}>
-              {isCleared ? <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} /> : <AlertCircle className="h-4 w-4" style={{ color: "#DC2626" }} />}
+            <div className="grid h-8 w-8 place-items-center rounded-lg flex-shrink-0" style={{ background: balanceChipBg }}>
+              {status === "paid" ? <CheckCircle2 className="h-4 w-4" style={{ color: balanceColor }} /> : <AlertCircle className="h-4 w-4" style={{ color: balanceColor }} />}
             </div>
           </div>
-          <div
-            className="font-display text-xl font-bold leading-tight break-words"
-            style={{ color: isCleared ? "#16A34A" : "#DC2626" }}
-          >
-            {isCleared ? "Cleared ✓" : formatKES(tenant.balance)}
+          <div className="font-display text-xl font-bold leading-tight break-words" style={{ color: balanceColor }}>
+            {status === "paid" ? "Cleared ✓" : formatKES(due)}
           </div>
-          {!isCleared && (
-            <div className="text-xs mt-1" style={{ color: "#DC2626" }}>Outstanding</div>
-          )}
+          {status === "partial" && <div className="text-xs mt-1" style={{ color: balanceColor }}>Partially paid — balance remaining</div>}
+          {status === "unpaid" && <div className="text-xs mt-1" style={{ color: balanceColor }}>{isOverdue ? "Overdue" : "Outstanding"}</div>}
         </div>
         <div className="card-surface p-5">
           <div className="flex items-center justify-between mb-3">
@@ -123,15 +180,10 @@ function TenantHome() {
               <Calendar className="h-4 w-4" style={{ color: isOverdue ? "#DC2626" : "#166534" }} />
             </div>
           </div>
-          <div
-            className="font-display text-lg font-bold"
-            style={{ color: isOverdue ? "#DC2626" : "#166534" }}
-          >
+          <div className="font-display text-lg font-bold" style={{ color: isOverdue ? "#DC2626" : "#166534" }}>
             {tenant.next_due_date ?? "—"}
           </div>
-          {isOverdue && (
-            <div className="text-xs mt-1" style={{ color: "#DC2626" }}>Overdue</div>
-          )}
+          {isOverdue && <div className="text-xs mt-1" style={{ color: "#DC2626" }}>Overdue</div>}
         </div>
       </div>
 
@@ -145,18 +197,19 @@ function TenantHome() {
         <Wallet className="h-5 w-5" /> Pay Rent
       </button>
 
-      {/* Deposit info */}
-      {tenant.deposit != null && Number(tenant.deposit) > 0 && (
-        <div className="card-surface p-4 flex items-center gap-3">
-          <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
-            <Shield className="h-4 w-4" style={{ color: "#6D28D9" }} />
-          </div>
-          <div className="flex-1 flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">Deposit Held</div>
-            <div className="text-sm font-semibold text-foreground">{formatKES(tenant.deposit)}</div>
+      {/* Deposit info — always shown now, with an honest fallback instead
+          of silently disappearing when there's nothing on file. */}
+      <div className="card-surface p-4 flex items-center gap-3">
+        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
+          <Shield className="h-4 w-4" style={{ color: "#6D28D9" }} />
+        </div>
+        <div className="flex-1 flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">Deposit Held</div>
+          <div className="text-sm font-semibold text-foreground">
+            {tenant.deposit != null && Number(tenant.deposit) > 0 ? formatKES(tenant.deposit) : "No deposit recorded"}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
