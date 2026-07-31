@@ -15,7 +15,7 @@ export interface MyTenant {
   next_due_date: string | null;
   move_in_date: string | null;
   property_id: string;
-  properties: { name: string; location: string | null } | null;
+  properties: { name: string; location: string | null; total_units: number | null; description: string | null } | null;
 }
 
 export interface MyPayment {
@@ -43,7 +43,7 @@ export function useMyTenant() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("tenants")
-        .select("*, properties(name, location)")
+        .select("*, properties(name, location, total_units, description)")
         .eq("user_id", user!.id)
         .maybeSingle();
       if (error) throw error;

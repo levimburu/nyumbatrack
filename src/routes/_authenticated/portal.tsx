@@ -94,12 +94,24 @@ function TenantHome() {
           </div>
         </div>
 
-        {/* Property info */}
+        {/* Property info — a real section now, not a thin one-line mention. */}
         {tenant.properties && (
-          <div className="px-6 py-3 border-b border-border flex items-center gap-2 text-sm text-muted-foreground bg-white">
-            <Building2 className="h-4 w-4 flex-shrink-0" />
-            <span className="font-medium text-foreground">{tenant.properties.name}</span>
-            {tenant.properties.location && <span>· {tenant.properties.location}</span>}
+          <div className="px-6 py-4 border-b border-border bg-white flex items-start gap-3">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#FEF3C7" }}>
+              <Building2 className="h-5 w-5" style={{ color: "#D97706" }} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground">Your Property</div>
+              <div className="font-display font-bold text-foreground truncate">{tenant.properties.name}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {tenant.properties.location && <span>{tenant.properties.location}</span>}
+                {tenant.properties.location && tenant.properties.total_units ? " · " : ""}
+                {tenant.properties.total_units ? <span>{tenant.properties.total_units} units</span> : null}
+              </div>
+              {tenant.properties.description && tenant.properties.description !== "Seed demo property" && (
+                <p className="text-xs text-muted-foreground mt-1.5">{tenant.properties.description}</p>
+              )}
+            </div>
           </div>
         )}
 
