@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout } from "@/components/AppLayout";
+import { TenantShell } from "@/components/TenantShell";
 import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -35,6 +36,14 @@ function AuthenticatedShell() {
       <div className="grid min-h-screen place-items-center bg-background">
         <div className="text-sm text-muted-foreground">Loading…</div>
       </div>
+    );
+  }
+
+  if (role === "tenant") {
+    return (
+      <TenantShell email={user?.email ?? undefined}>
+        <Outlet />
+      </TenantShell>
     );
   }
 
