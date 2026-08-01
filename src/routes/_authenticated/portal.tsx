@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { formatKES } from "@/lib/format";
 import { outstandingForDueMonth } from "@/lib/reminders";
-import { Home, Wallet, Calendar, Building2, Phone, Mail, CheckCircle2, AlertCircle, Shield, Camera, Loader2 } from "lucide-react";
+import { Home, Wallet, Calendar, Building2, Phone, Mail, CheckCircle2, AlertCircle, Shield, Camera, Loader2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useMyTenant } from "@/hooks/use-my-tenant";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/portal")({
 function TenantHome() {
   const { tenant, payments, avatarUrl, refetchAvatar } = useMyTenant();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [leaseFundsOpen, setLeaseFundsOpen] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // TenantShell already gates on "no linked tenant" before rendering any
@@ -169,58 +170,74 @@ function TenantHome() {
         </div>
       </div>
 
-      {/* Balance + next due — due amount comes from real payment history,
-          not the stale tenants.balance column. */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="card-surface p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-muted-foreground">Current Balance</span>
-            <div className="grid h-8 w-8 place-items-center rounded-lg flex-shrink-0" style={{ background: balanceChipBg }}>
-              {status === "paid" ? <CheckCircle2 className="h-4 w-4" style={{ color: balanceColor }} /> : <AlertCircle className="h-4 w-4" style={{ color: balanceColor }} />}
+      {/* Payment Overview — Balance, Next Due, and Pay Rent grouped under
+          one labeled card, rather than floating as separate pieces. */}
+      <div className="card-surface p-5">
+        <h2 className="font-display font-bold text-foreground mb-4">Payment Overview</h2>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="rounded-xl p-4" style={{ background: "#F5F5F0" }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground">Balance</span>
+              <div className="grid h-7 w-7 place-items-center rounded-lg flex-shrink-0" style={{ background: balanceChipBg }}>
+                {status === "paid" ? <CheckCircle2 className="h-3.5 w-3.5" style={{ color: balanceColor }} /> : <AlertCircle className="h-3.5 w-3.5" style={{ color: balanceColor }} />}
+              </div>
             </div>
-          </div>
-          <div className="font-display text-xl font-bold leading-tight break-words" style={{ color: balanceColor }}>
-            {status === "paid" ? "Cleared ✓" : formatKES(due)}
-          </div>
-          {status === "partial" && <div className="text-xs mt-1" style={{ color: balanceColor }}>Partially paid — balance remaining</div>}
-          {status === "unpaid" && <div className="text-xs mt-1" style={{ color: balanceColor }}>{isOverdue ? "Overdue" : "Outstanding"}</div>}
-        </div>
-        <div className="card-surface p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-muted-foreground">Next Due Date</span>
-            <div className="grid h-8 w-8 place-items-center rounded-lg flex-shrink-0" style={{ background: isOverdue ? "#FEE2E2" : "#F0FDF4" }}>
-              <Calendar className="h-4 w-4" style={{ color: isOverdue ? "#DC2626" : "#166534" }} />
+            <div className="font-display text-lg font-bold leading-tight break-words" style={{ color: balanceColor }}>
+              {status === "paid" ? "Cleared ✓" : formatKES(due)}
             </div>
+            {status === "partial" && <div className="text-xs mt-1" style={{ color: balanceColor }}>Partially paid</div>}
+            {status === "unpaid" && <div className="text-xs mt-1" style={{ color: balanceColor }}>{isOverdue ? "Overdue" : "Outstanding"}</div>}
           </div>
-          <div className="font-display text-lg font-bold" style={{ color: isOverdue ? "#DC2626" : "#166534" }}>
-            {tenant.next_due_date ?? "—"}
+          <div className="rounded-xl p-4" style={{ background: "#F5F5F0" }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground">Due Date</span>
+              <div className="grid h-7 w-7 place-items-center rounded-lg flex-shrink-0" style={{ background: isOverdue ? "#FEE2E2" : "#F0FDF4" }}>
+                <Calendar className="h-3.5 w-3.5" style={{ color: isOverdue ? "#DC2626" : "#166534" }} />
+              </div>
+            </div>
+            <div className="font-display text-base font-bold" style={{ color: isOverdue ? "#DC2626" : "#166534" }}>
+              {tenant.next_due_date ?? "—"}
+            </div>
+            {isOverdue && <div className="text-xs mt-1" style={{ color: "#DC2626" }}>Overdue</div>}
           </div>
-          {isOverdue && <div className="text-xs mt-1" style={{ color: "#DC2626" }}>Overdue</div>}
         </div>
+
+        {/* Pay Rent — real button, but no payment gateway is connected yet,
+            so it says so honestly rather than faking a successful payment. */}
+        <button
+          onClick={() => toast.info("Online payments aren't set up yet — please pay your landlord directly for now.")}
+          className="w-full rounded-2xl py-4 text-base font-bold text-white flex items-center justify-center gap-2.5 transition-transform active:scale-[0.98]"
+          style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)", boxShadow: "0 8px 20px -6px rgba(22,101,52,0.4)" }}
+        >
+          <Wallet className="h-5 w-5" /> Pay Rent
+        </button>
       </div>
 
-      {/* Pay Rent — real button, but no payment gateway is connected yet,
-          so it says so honestly rather than faking a successful payment. */}
-      <button
-        onClick={() => toast.info("Online payments aren't set up yet — please pay your landlord directly for now.")}
-        className="w-full rounded-2xl py-4 text-base font-bold text-white flex items-center justify-center gap-2.5 transition-transform active:scale-[0.98]"
-        style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)", boxShadow: "0 8px 20px -6px rgba(22,101,52,0.4)" }}
-      >
-        <Wallet className="h-5 w-5" /> Pay Rent
-      </button>
-
-      {/* Deposit info — always shown now, with an honest fallback instead
-          of silently disappearing when there's nothing on file. */}
-      <div className="card-surface p-4 flex items-center gap-3">
-        <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
-          <Shield className="h-4 w-4" style={{ color: "#6D28D9" }} />
-        </div>
-        <div className="flex-1 flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">Deposit Held</div>
-          <div className="text-sm font-semibold text-foreground">
-            {tenant.deposit != null && Number(tenant.deposit) > 0 ? formatKES(tenant.deposit) : "No deposit recorded"}
+      {/* Lease & Funds — collapsible, since deposit info is useful but not
+          something you need staring at you every time you open the app. */}
+      <div className="card-surface overflow-hidden">
+        <button
+          onClick={() => setLeaseFundsOpen(!leaseFundsOpen)}
+          className="w-full flex items-center justify-between p-5"
+        >
+          <h2 className="font-display font-bold text-foreground">Lease & Funds</h2>
+          <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform" style={{ transform: leaseFundsOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
+        </button>
+        {leaseFundsOpen && (
+          <div className="px-5 pb-5 pt-0 border-t border-border">
+            <div className="flex items-center gap-3 pt-4">
+              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
+                <Shield className="h-4 w-4" style={{ color: "#6D28D9" }} />
+              </div>
+              <div className="flex-1 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">Deposit Held</div>
+                <div className="text-sm font-semibold text-foreground">
+                  {tenant.deposit != null && Number(tenant.deposit) > 0 ? formatKES(tenant.deposit) : "No deposit recorded"}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
