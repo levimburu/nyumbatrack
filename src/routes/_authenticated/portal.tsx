@@ -90,7 +90,10 @@ function TenantHome() {
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             <div>
               <h1 className="font-display text-2xl font-bold text-white">Hello, {firstName}!</h1>
-              <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.7)" }}>Unit {tenant.unit}</p>
+              <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.7)" }}>
+                Unit {tenant.unit}
+                {tenant.properties?.name ? ` · ${tenant.properties.name}` : ""}
+              </p>
             </div>
           </div>
         </div>
