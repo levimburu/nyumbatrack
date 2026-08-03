@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Receipt, BarChart3, Building2, Menu, X, Home, Wallet, Bell, Info, LogOut, Trash2, UserX, Lock, ChevronRight, Grid3x3, Wrench, PieChart, ShieldCheck, Hammer, MessageSquare, FileText, Search, AlertCircle, Clock } from "lucide-react";
+import { LayoutDashboard, Users, Receipt, BarChart3, Building2, Menu, X, Home, Wallet, Bell, Info, LogOut, Trash2, UserX, Lock, ChevronRight, Grid3x3, Wrench, PieChart, ShieldCheck, Hammer, MessageSquare, FileText, Search, AlertCircle, Clock, Landmark } from "lucide-react";
 import { GlobalSearch } from "./GlobalSearch";
 import { useState, useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -20,6 +20,7 @@ const adminNav: NavItem[] = [
   { to: "/compliance", label: "Compliance", icon: ShieldCheck },
   { to: "/vendors", label: "Vendors", icon: Hammer },
   { to: "/communications", label: "Communications", icon: MessageSquare },
+  { to: "/financials", label: "Financials", icon: Landmark },
   { to: "/statements", label: "Statements", icon: FileText },
 ];
 
