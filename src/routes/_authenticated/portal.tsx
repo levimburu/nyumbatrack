@@ -98,7 +98,8 @@ function TenantHome() {
           </div>
         </div>
 
-        {/* Property info — a real section now, not a thin one-line mention. */}
+        {/* Property info — kept minimal on purpose: tenants see the name
+            and location only, nothing about unit count or manager notes. */}
         {tenant.properties && (
           <div className="px-6 py-4 border-b border-border bg-white flex items-start gap-3">
             <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#FEF3C7" }}>
@@ -107,13 +108,8 @@ function TenantHome() {
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground">Your Property</div>
               <div className="font-display font-bold text-foreground truncate">{tenant.properties.name}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">
-                {tenant.properties.location && <span>{tenant.properties.location}</span>}
-                {tenant.properties.location && tenant.properties.total_units ? " · " : ""}
-                {tenant.properties.total_units ? <span>{tenant.properties.total_units} units</span> : null}
-              </div>
-              {tenant.properties.description && tenant.properties.description !== "Seed demo property" && (
-                <p className="text-xs text-muted-foreground mt-1.5">{tenant.properties.description}</p>
+              {tenant.properties.location && (
+                <div className="text-xs text-muted-foreground mt-0.5">{tenant.properties.location}</div>
               )}
             </div>
           </div>
