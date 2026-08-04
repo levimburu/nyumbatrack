@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Wrench, Building2, Clock, CheckCircle2, Circle } from "lucide-react";
+import { Plus, X, Wrench, Building2, Clock, CheckCircle2, Circle, User } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/maintenance")({
@@ -21,6 +21,13 @@ interface Vendor {
   id: string;
   name: string;
   trade: string | null;
+}
+
+interface TenantMin {
+  id: string;
+  full_name: string;
+  unit: string;
+  property_id: string;
 }
 
 type TicketStatus = "open" | "in_progress" | "done";
@@ -133,6 +140,30 @@ function MaintenancePage() {
   });
 
   const propertyName = (id: string) => properties?.find((p) => p.id === id)?.name ?? "Unknown property";
+
+  // Tickets don't have a direct tenant link — only a free-text unit — so a
+  // ticket is matched to a tenant by property + unit, same as the rest of
+  // the app does. Case/whitespace-insensitive since both fields are
+  // free-typed elsewhere.
+  const { data: tenants } = useQuery({
+    queryKey: ["maintenance-tenants", propertyIds.join(",")],
+    enabled: propertyIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("tenants")
+        .select("id, full_name, unit, property_id")
+        .in("property_id", propertyIds);
+      if (error) throw error;
+      return data as TenantMin[];
+    },
+  });
+
+  const tenantKey = (propertyId: string, unit: string) => `${propertyId}::${unit.trim().toLowerCase()}`;
+  const tenantByPropertyUnit: Record<string, TenantMin> = {};
+  (tenants ?? []).forEach((tn) => { tenantByPropertyUnit[tenantKey(tn.property_id, tn.unit)] = tn; });
+  const ticketTenant = (propertyId: string, unit: string | null) =>
+    unit ? tenantByPropertyUnit[tenantKey(propertyId, unit)] ?? null : null;
+
 
   // RLS scopes this to vendors created by me or by someone linked to me,
   // same as the vendors directory page itself.
@@ -315,6 +346,12 @@ function MaintenancePage() {
                   <Building2 className="h-3 w-3" />
                   {propertyName(t.property_id)}{t.unit ? ` · Unit ${t.unit}` : " · Property-wide"}
                 </div>
+                {ticketTenant(t.property_id, t.unit) && (
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    Tenant: <span className="font-medium text-foreground">{ticketTenant(t.property_id, t.unit)!.full_name}</span>
+                  </div>
+                )}
                 <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   Logged {new Date(t.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} at {new Date(t.created_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
