@@ -30,6 +30,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
+  const [emailLocked, setEmailLocked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSignIn, setIsSignIn] = useState(false);
   const [newResetPassword, setNewResetPassword] = useState("");
@@ -87,7 +88,7 @@ function AuthPage() {
     try {
       const { data: codeData } = await (supabase as any)
         .from("invite_codes")
-        .select("code_type")
+        .select("code_type, intended_email")
         .eq("code", inviteCode.trim().toUpperCase())
         .eq("used", false)
         .maybeSingle();
@@ -96,7 +97,13 @@ function AuthPage() {
         return;
       }
       setRole(codeData.code_type === "agent_invite" ? "agent" : "landlord");
-      setStep("name");
+      if (codeData.intended_email) {
+        setEmail(codeData.intended_email);
+        setEmailLocked(true);
+      } else {
+        setEmailLocked(false);
+      }
+      setStep("email");
     } catch {
       toast.error("Couldn't check that code — try again");
     } finally {
@@ -177,16 +184,16 @@ function AuthPage() {
 
   const back = () => {
     if (step === "invite_code") setStep("welcome");
-    else if (step === "name") setStep("invite_code");
-    else if (step === "email") setStep("name");
-    else if (step === "password") setStep("email");
+    else if (step === "email") setStep("invite_code");
+    else if (step === "name") setStep("email");
+    else if (step === "password") setStep("name");
     else if (step === "tenant_welcome") setStep("welcome");
     else if (step === "tenant_code") setStep("tenant_welcome");
     else if (step === "signin_email") setStep("welcome");
     else if (step === "signin_password") setStep("signin_email");
   };
 
-  const progress = { welcome: 0, invite_code: 1, name: 2, email: 3, password: 4, tenant_welcome: 1, tenant_code: 2, signin_email: 1, signin_password: 2, reset_password: 1 }[step];
+  const progress = { welcome: 0, invite_code: 1, email: 2, name: 3, password: 4, tenant_welcome: 1, tenant_code: 2, signin_email: 1, signin_password: 2, reset_password: 1 }[step];
   const totalSteps = isSignIn ? 2 : 4;
 
   const startSignIn = () => {
@@ -245,23 +252,34 @@ function AuthPage() {
             </div>
           )}
 
+          {step === "email" && (
+            <div>
+              <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
+              {emailLocked ? (
+                <>
+                  <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>This invite is for you</h1>
+                  <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Your account will be created as {role === "agent" ? "a Property Manager" : "a Landlord"} using this email.</p>
+                  <div className="w-full rounded-xl border px-4 py-3 text-sm mb-4" style={{ borderColor: "#E5E7EB", background: "#F0FDF4", color: "#111827" }}>{email}</div>
+                  <button onClick={() => setStep("name")} className="w-full rounded-xl py-3 text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
+                </>
+              ) : (
+                <>
+                  <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Your email address</h1>
+                  <p className="text-sm mb-6" style={{ color: "#6B7280" }}>We'll use this to secure your account.</p>
+                  <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("name"); }} placeholder="you@example.com" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+                  <button onClick={() => email.trim() && setStep("name")} disabled={!email.trim()} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
+                </>
+              )}
+            </div>
+          )}
+
           {step === "name" && (
             <div>
               <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>What's your name?</h1>
               <p className="text-sm mb-6" style={{ color: "#6B7280" }}>We'll use this to personalise your experience.</p>
-              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && fullName.trim()) setStep("email"); }} placeholder="Full name" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
-              <button onClick={() => fullName.trim() && setStep("email")} disabled={!fullName.trim()} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
-            </div>
-          )}
-
-          {step === "email" && (
-            <div>
-              <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
-              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Your email address</h1>
-              <p className="text-sm mb-6" style={{ color: "#6B7280" }}>We'll use this to secure your account.</p>
-              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("password"); }} placeholder="you@example.com" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
-              <button onClick={() => email.trim() && setStep("password")} disabled={!email.trim()} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
+              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && fullName.trim()) setStep("password"); }} placeholder="Full name" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-4" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
+              <button onClick={() => fullName.trim() && setStep("password")} disabled={!fullName.trim()} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>Continue <ChevronRight className="h-4 w-4" /></button>
             </div>
           )}
 
@@ -443,21 +461,32 @@ function AuthPage() {
             </div>
           )}
 
+          {step === "email" && (
+            <div className="flex flex-col flex-1">
+              {emailLocked ? (
+                <>
+                  <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>This invite is for you</h1>
+                  <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Your account will be created as {role === "agent" ? "a Property Manager" : "a Landlord"} using this email.</p>
+                  <div className="w-full rounded-2xl border-2 px-5 py-4 text-base" style={{ borderColor: "#E5E7EB", background: "#F0FDF4", color: "#111827" }}>{email}</div>
+                  <button onClick={() => setStep("name")} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
+                </>
+              ) : (
+                <>
+                  <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Your email address</h1>
+                  <p className="text-sm mb-8" style={{ color: "#6B7280" }}>We'll use this to secure your account.</p>
+                  <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("name"); }} placeholder="you@example.com" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+                  <button onClick={() => email.trim() && setStep("name")} disabled={!email.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
+                </>
+              )}
+            </div>
+          )}
+
           {step === "name" && (
             <div className="flex flex-col flex-1">
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>What's your name?</h1>
               <p className="text-sm mb-8" style={{ color: "#6B7280" }}>We'll use this to personalise your experience.</p>
-              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && fullName.trim()) setStep("email"); }} placeholder="Full name" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
-              <button onClick={() => fullName.trim() && setStep("email")} disabled={!fullName.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
-            </div>
-          )}
-
-          {step === "email" && (
-            <div className="flex flex-col flex-1">
-              <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Your email address</h1>
-              <p className="text-sm mb-8" style={{ color: "#6B7280" }}>We'll use this to secure your account.</p>
-              <input autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && email.trim()) setStep("password"); }} placeholder="you@example.com" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
-              <button onClick={() => email.trim() && setStep("password")} disabled={!email.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
+              <input autoFocus type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && fullName.trim()) setStep("password"); }} placeholder="Full name" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
+              <button onClick={() => fullName.trim() && setStep("password")} disabled={!fullName.trim()} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">Continue <ChevronRight className="h-5 w-5" /></button>
             </div>
           )}
 
