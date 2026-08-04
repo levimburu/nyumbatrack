@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Wrench, Building2, Clock, CheckCircle2, Circle, User } from "lucide-react";
+import { Plus, X, Wrench, Building2, Clock, CheckCircle2, Circle, User, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/maintenance")({
@@ -36,6 +36,7 @@ interface Ticket {
   id: string;
   property_id: string;
   unit: string | null;
+  tenant_id: string | null;
   title: string;
   description: string | null;
   status: TicketStatus;
@@ -73,6 +74,7 @@ function MaintenancePage() {
   const [isAgent, setIsAgent] = useState<boolean | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | TicketStatus>("all");
 
   useEffect(() => {
@@ -158,11 +160,15 @@ function MaintenancePage() {
     },
   });
 
+  const tenantById: Record<string, TenantMin> = {};
+  (tenants ?? []).forEach((tn) => { tenantById[tn.id] = tn; });
   const tenantKey = (propertyId: string, unit: string) => `${propertyId}::${unit.trim().toLowerCase()}`;
   const tenantByPropertyUnit: Record<string, TenantMin> = {};
   (tenants ?? []).forEach((tn) => { tenantByPropertyUnit[tenantKey(tn.property_id, tn.unit)] = tn; });
-  const ticketTenant = (propertyId: string, unit: string | null) =>
-    unit ? tenantByPropertyUnit[tenantKey(propertyId, unit)] ?? null : null;
+  const ticketTenant = (ticket: Ticket) =>
+    (ticket.tenant_id ? tenantById[ticket.tenant_id] : null)
+    ?? (ticket.unit ? tenantByPropertyUnit[tenantKey(ticket.property_id, ticket.unit)] : null)
+    ?? null;
 
 
   // RLS scopes this to vendors created by me or by someone linked to me,
@@ -201,6 +207,29 @@ function MaintenancePage() {
       qc.invalidateQueries({ queryKey: ["maintenance-tickets"] });
       setAdding(false);
       toast.success("Ticket logged!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateTicket = useMutation({
+    mutationFn: async (t: { id: string; property_id: string; unit: string; title: string; description: string; vendor_id: string; cost: string }) => {
+      const { error } = await (supabase as any)
+        .from("maintenance_tickets")
+        .update({
+          property_id: t.property_id,
+          unit: t.unit || null,
+          title: t.title,
+          description: t.description || null,
+          vendor_id: t.vendor_id || null,
+          cost: t.cost ? Number(t.cost) : null,
+        })
+        .eq("id", t.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["maintenance-tickets"] });
+      setEditingTicket(null);
+      toast.success("Ticket updated!");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -334,7 +363,9 @@ function MaintenancePage() {
             No tickets {statusFilter !== "all" ? `marked "${statusLabel(statusFilter as TicketStatus)}"` : "yet"}.
           </div>
         )}
-        {filteredTickets.map((t) => (
+        {filteredTickets.map((t) => {
+          const tenant = ticketTenant(t);
+          return (
           <div key={t.id} className="card-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -346,10 +377,10 @@ function MaintenancePage() {
                   <Building2 className="h-3 w-3" />
                   {propertyName(t.property_id)}{t.unit ? ` · Unit ${t.unit}` : " · Property-wide"}
                 </div>
-                {ticketTenant(t.property_id, t.unit) && (
+                {tenant && (
                   <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     <User className="h-3 w-3" />
-                    Tenant: <span className="font-medium text-foreground">{ticketTenant(t.property_id, t.unit)!.full_name}</span>
+                    Tenant: <span className="font-medium text-foreground">{tenant.full_name}</span>
                   </div>
                 )}
                 <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -370,13 +401,22 @@ function MaintenancePage() {
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => deleteTicket.mutate(t.id)}
-                className="text-xs text-muted-foreground hover:text-red-600 flex-shrink-0"
-                aria-label="Remove ticket"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <button
+                  onClick={() => setEditingTicket(t)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  aria-label="Edit ticket"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => deleteTicket.mutate(t.id)}
+                  className="text-xs text-muted-foreground hover:text-red-600"
+                  aria-label="Remove ticket"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2 mt-3">
               {(["open", "in_progress", "done"] as TicketStatus[]).map((s) => {
@@ -399,16 +439,22 @@ function MaintenancePage() {
               })}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
-      {adding && (
+      {(adding || editingTicket) && (
         <TicketForm
           properties={properties}
           vendors={vendors ?? []}
-          onSave={(t) => createTicket.mutate(t)}
-          onClose={() => setAdding(false)}
-          saving={createTicket.isPending}
+          initial={editingTicket}
+          onSave={(t) =>
+            editingTicket
+              ? updateTicket.mutate({ id: editingTicket.id, ...t })
+              : createTicket.mutate(t)
+          }
+          onClose={() => { setAdding(false); setEditingTicket(null); }}
+          saving={createTicket.isPending || updateTicket.isPending}
         />
       )}
     </div>
@@ -416,20 +462,21 @@ function MaintenancePage() {
 }
 
 function TicketForm({
-  properties, vendors, onSave, onClose, saving,
+  properties, vendors, initial, onSave, onClose, saving,
 }: {
   properties: Property[];
   vendors: Vendor[];
+  initial?: Ticket | null;
   onSave: (t: { property_id: string; unit: string; title: string; description: string; vendor_id: string; cost: string }) => void;
   onClose: () => void;
   saving: boolean;
 }) {
-  const [propertyId, setPropertyId] = useState(properties[0]?.id ?? "");
-  const [unit, setUnit] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [vendorId, setVendorId] = useState("");
-  const [cost, setCost] = useState("");
+  const [propertyId, setPropertyId] = useState(initial?.property_id ?? properties[0]?.id ?? "");
+  const [unit, setUnit] = useState(initial?.unit ?? "");
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [vendorId, setVendorId] = useState(initial?.vendor_id ?? "");
+  const [cost, setCost] = useState(initial?.cost != null ? String(initial.cost) : "");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -457,7 +504,7 @@ function TicketForm({
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="card-surface w-full max-w-lg p-6 animate-slide-up max-h-[90vh] overflow-y-auto">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-display text-xl font-semibold">Log Maintenance Ticket</h2>
+          <h2 className="font-display text-xl font-semibold">{initial ? "Edit Maintenance Ticket" : "Log Maintenance Ticket"}</h2>
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
