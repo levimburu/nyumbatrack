@@ -76,7 +76,7 @@ function CollectionsPage() {
   const propertyIds = (properties ?? []).map((p) => p.id);
   const safePropertyIds = propertyIds.length ? propertyIds : [PLACEHOLDER_ID];
 
-  const { data: tenants } = useQuery({
+  const { data: tenants, error: tenantsError } = useQuery({
     queryKey: ["collections-tenants", propertyIds.join(",")],
     enabled: propertyIds.length > 0,
     queryFn: async () => {
@@ -90,7 +90,7 @@ function CollectionsPage() {
   const tenantIds = (tenants ?? []).map((t) => t.id);
   const safeTenantIds = tenantIds.length ? tenantIds : [PLACEHOLDER_ID];
 
-  const { data: payments } = useQuery({
+  const { data: payments, error: paymentsError } = useQuery({
     queryKey: ["collections-payments", tenantIds.join(",")],
     enabled: tenantIds.length > 0,
     queryFn: async () => {
@@ -221,7 +221,22 @@ function CollectionsPage() {
         <p className="text-sm text-muted-foreground mt-0.5">
           Summarized across all {properties?.length ?? 0} {properties?.length === 1 ? "property" : "properties"} you manage
         </p>
+        <p className="text-xs mt-2 px-2 py-1 inline-block rounded" style={{ background: "#FEF9C3", color: "#854D0E" }}>
+          Diagnostic (temporary): {propertyIds.length} property IDs → {tenants?.length ?? "not loaded"} tenants matched → {payments?.length ?? "not loaded"} payments matched
+        </p>
       </div>
+
+      {(tenantsError || paymentsError) && (
+        <div className="card-surface p-4 border-l-4" style={{ borderLeftColor: "#DC2626", background: "#FEF2F2" }}>
+          <p className="text-sm font-semibold" style={{ color: "#991B1B" }}>Couldn't load some data for this report</p>
+          {tenantsError && (
+            <p className="text-xs mt-1" style={{ color: "#991B1B" }}>Tenants: {(tenantsError as any)?.message ?? String(tenantsError)}</p>
+          )}
+          {paymentsError && (
+            <p className="text-xs mt-1" style={{ color: "#991B1B" }}>Payments: {(paymentsError as any)?.message ?? String(paymentsError)}</p>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <button onClick={() => setShowTotalBreakdown(true)} className="card-surface p-5 text-left hover:shadow-md transition-shadow">
