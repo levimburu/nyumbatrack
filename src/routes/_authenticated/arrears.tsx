@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES } from "@/lib/format";
 import { outstandingForDueMonth } from "@/lib/reminders";
@@ -328,13 +329,15 @@ function RecordPaymentModal({
   const [saving, setSaving] = useState(false);
 
   // Freeze the background page while this modal is open — otherwise the
-  // Arrears list keeps scrolling underneath it, which looks broken and
-  // makes the modal feel like it's floating over moving content.
+  // Arrears list keeps scrolling underneath it. The app's actual scrollable
+  // element is <main> (it has its own overflow-y-auto), not <body>, so
+  // that's what needs locking here.
   useEffect(() => {
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const scrollEl = document.querySelector("main");
+    const original = scrollEl ? scrollEl.style.overflow : "";
+    if (scrollEl) scrollEl.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = original;
+      if (scrollEl) scrollEl.style.overflow = original;
     };
   }, []);
 
@@ -388,7 +391,11 @@ function RecordPaymentModal({
     }
   };
 
-  return (
+  // createPortal escapes <main>'s animate-fade-in class — without this,
+  // "fixed" positioning anchors to that animated ancestor instead of the
+  // real viewport, which is what made the modal visually drift as the
+  // background scrolled. Same pattern every other modal in the app uses.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4 backdrop-blur-sm">
       <form onSubmit={handleSubmit} className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-white">
@@ -470,6 +477,7 @@ function RecordPaymentModal({
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body
   );
 }
