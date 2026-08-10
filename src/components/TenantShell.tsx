@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Home, Wallet, MessageSquare, LogOut, Building2 } from "lucide-react";
 import { useMyTenant } from "@/hooks/use-my-tenant";
 import { supabase } from "@/integrations/supabase/client";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 const TABS = [
   { to: "/portal", label: "Home", icon: Home },
@@ -14,7 +16,8 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
   const navigate = useNavigate();
   const { tenant, isLoading } = useMyTenant();
 
-  const handleSignOut = async () => {
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  const performSignOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
@@ -39,7 +42,7 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
             </div>
             <span className="font-display text-sm font-semibold">NyumbaTrack</span>
           </div>
-          <button onClick={handleSignOut} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Sign out">
+          <button onClick={() => setConfirmingSignOut(true)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Sign out">
             <LogOut className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
@@ -55,6 +58,15 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
             Your email: <span className="font-medium text-foreground">{email}</span>
           </p>
         </div>
+        {confirmingSignOut && (
+          <ConfirmDialog
+            title="Sign out?"
+            message="You'll need to sign in again to access your account."
+            confirmLabel="Sign Out"
+            onConfirm={performSignOut}
+            onCancel={() => setConfirmingSignOut(false)}
+          />
+        )}
       </div>
     );
   }
@@ -69,7 +81,7 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
           </div>
           <span className="font-display text-sm font-semibold">NyumbaTrack</span>
         </div>
-        <button onClick={handleSignOut} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Sign out">
+        <button onClick={() => setConfirmingSignOut(true)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Sign out">
           <LogOut className="h-4 w-4 text-muted-foreground" />
         </button>
       </div>
@@ -105,6 +117,15 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
           );
         })}
       </div>
+      {confirmingSignOut && (
+        <ConfirmDialog
+          title="Sign out?"
+          message="You'll need to sign in again to access your account."
+          confirmLabel="Sign Out"
+          onConfirm={performSignOut}
+          onCancel={() => setConfirmingSignOut(false)}
+        />
+      )}
     </div>
   );
 }

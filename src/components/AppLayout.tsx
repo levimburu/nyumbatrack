@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import type { AppRole } from "@/hooks/use-auth";
 import { useProperty } from "@/context/PropertyContext";
 import { toast } from "sonner";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 interface NavItem { to: string; label: string; icon: typeof Users; }
 
@@ -311,14 +312,16 @@ export function AppLayout({ children, role, email, displayName }: {
     );
   };
 
-  const handleSignOut = async () => {
+  const [confirmAction, setConfirmAction] = useState<null | "signout" | "signoutAll" | "delete">(null);
+
+  const handleSignOut = () => setConfirmAction("signout");
+  const performSignOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
 
-  const handleDeleteAccount = async () => {
-    if (!confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
-    if (!confirm("This will delete ALL your data. Final confirmation?")) return;
+  const handleDeleteAccount = () => setConfirmAction("delete");
+  const performDeleteAccount = async () => {
     try {
       await supabase.auth.signOut();
       toast.success("Account deleted.");
@@ -351,11 +354,19 @@ export function AppLayout({ children, role, email, displayName }: {
     setConfirmPassword("");
   };
 
-  const handleSignOutAllDevices = async () => {
-    if (!confirm("Sign out from all devices?")) return;
+  const handleSignOutAllDevices = () => setConfirmAction("signoutAll");
+  const performSignOutAllDevices = async () => {
     await supabase.auth.signOut({ scope: "global" });
     navigate({ to: "/auth", replace: true });
   };
+
+  const handleConfirmedAction = async () => {
+    if (confirmAction === "signout") await performSignOut();
+    else if (confirmAction === "signoutAll") await performSignOutAllDevices();
+    else if (confirmAction === "delete") await performDeleteAccount();
+    setConfirmAction(null);
+  };
+
 
   const handleBackToProperties = () => {
     setSelectedProperty(null);
@@ -905,6 +916,25 @@ export function AppLayout({ children, role, email, displayName }: {
             </div>
           </div>
         </div>
+      )}
+
+      {confirmAction && (
+        <ConfirmDialog
+          title={
+            confirmAction === "delete" ? "Delete your account?" :
+            confirmAction === "signoutAll" ? "Sign out from all devices?" :
+            "Sign out?"
+          }
+          message={
+            confirmAction === "delete" ? "This permanently deletes your account and all of your data. This cannot be undone." :
+            confirmAction === "signoutAll" ? "You'll be signed out on every device where you're currently logged in, not just this one." :
+            "You'll need to sign in again to access your account."
+          }
+          confirmLabel={confirmAction === "delete" ? "Delete Account" : "Sign Out"}
+          danger={confirmAction === "delete"}
+          onConfirm={handleConfirmedAction}
+          onCancel={() => setConfirmAction(null)}
+        />
       )}
     </div>
   );
