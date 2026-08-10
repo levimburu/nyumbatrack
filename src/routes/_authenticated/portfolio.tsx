@@ -509,7 +509,7 @@ function PortfolioDashboard() {
               <span className="font-semibold" style={{ color: "#DC2626" }}>{formatKES(overdueAmount)}</span>
             </div>
           </div>
-          <a href="/reports" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+          <a href="/collections" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
             View Rent Collection
           </a>
         </div>
@@ -715,7 +715,7 @@ function PortfolioDashboard() {
               </ResponsiveContainer>
             </div>
           )}
-          <a href="/reports" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+          <a href="/collections" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
             View Collections Report
           </a>
         </div>

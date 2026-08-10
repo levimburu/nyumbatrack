@@ -29,6 +29,7 @@ import { Route as AuthenticatedDepositsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedComplianceRouteImport } from './routes/_authenticated/compliance'
 import { Route as AuthenticatedCommunicationsRouteImport } from './routes/_authenticated/communications'
+import { Route as AuthenticatedCollectionsRouteImport } from './routes/_authenticated/collections'
 import { Route as AuthenticatedArrearsRouteImport } from './routes/_authenticated/arrears'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 
@@ -135,6 +136,12 @@ const AuthenticatedCommunicationsRoute =
     path: '/communications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCollectionsRoute =
+  AuthenticatedCollectionsRouteImport.update({
+    id: '/collections',
+    path: '/collections',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedArrearsRoute = AuthenticatedArrearsRouteImport.update({
   id: '/arrears',
   path: '/arrears',
@@ -151,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/activity': typeof AuthenticatedActivityRoute
   '/arrears': typeof AuthenticatedArrearsRoute
+  '/collections': typeof AuthenticatedCollectionsRoute
   '/communications': typeof AuthenticatedCommunicationsRoute
   '/compliance': typeof AuthenticatedComplianceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -174,6 +182,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/activity': typeof AuthenticatedActivityRoute
   '/arrears': typeof AuthenticatedArrearsRoute
+  '/collections': typeof AuthenticatedCollectionsRoute
   '/communications': typeof AuthenticatedCommunicationsRoute
   '/compliance': typeof AuthenticatedComplianceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -199,6 +208,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/arrears': typeof AuthenticatedArrearsRoute
+  '/_authenticated/collections': typeof AuthenticatedCollectionsRoute
   '/_authenticated/communications': typeof AuthenticatedCommunicationsRoute
   '/_authenticated/compliance': typeof AuthenticatedComplianceRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/activity'
     | '/arrears'
+    | '/collections'
     | '/communications'
     | '/compliance'
     | '/dashboard'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/activity'
     | '/arrears'
+    | '/collections'
     | '/communications'
     | '/compliance'
     | '/dashboard'
@@ -271,6 +283,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/activity'
     | '/_authenticated/arrears'
+    | '/_authenticated/collections'
     | '/_authenticated/communications'
     | '/_authenticated/compliance'
     | '/_authenticated/dashboard'
@@ -438,6 +451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCommunicationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/collections': {
+      id: '/_authenticated/collections'
+      path: '/collections'
+      fullPath: '/collections'
+      preLoaderRoute: typeof AuthenticatedCollectionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/arrears': {
       id: '/_authenticated/arrears'
       path: '/arrears'
@@ -458,6 +478,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedArrearsRoute: typeof AuthenticatedArrearsRoute
+  AuthenticatedCollectionsRoute: typeof AuthenticatedCollectionsRoute
   AuthenticatedCommunicationsRoute: typeof AuthenticatedCommunicationsRoute
   AuthenticatedComplianceRoute: typeof AuthenticatedComplianceRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -480,6 +501,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedArrearsRoute: AuthenticatedArrearsRoute,
+  AuthenticatedCollectionsRoute: AuthenticatedCollectionsRoute,
   AuthenticatedCommunicationsRoute: AuthenticatedCommunicationsRoute,
   AuthenticatedComplianceRoute: AuthenticatedComplianceRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
