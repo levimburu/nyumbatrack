@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { ListSearchInput } from "@/components/ListSearchInput";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES } from "@/lib/format";
 import { outstandingForDueMonth } from "@/lib/reminders";
@@ -178,6 +179,18 @@ function ArrearsPage() {
 
   const totalOwed = rows.reduce((s, r) => s + r.due, 0);
 
+  const [search, setSearch] = useState("");
+  const filteredRows = rows.filter((r) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      r.full_name.toLowerCase().includes(q) ||
+      (r.unit ?? "").toLowerCase().includes(q) ||
+      (r.phone ?? "").toLowerCase().includes(q) ||
+      propertyName(r.property_id).toLowerCase().includes(q)
+    );
+  });
+
   const goToTenant = (propertyId: string) => {
     const prop = properties?.find((p) => p.id === propertyId);
     if (prop) setSelectedProperty({ id: prop.id, name: prop.name, location: prop.location });
@@ -242,7 +255,15 @@ function ArrearsPage() {
             No one's behind on rent right now.
           </div>
         )}
-        {rows.map((r) => (
+        {rows.length > 0 && (
+          <ListSearchInput value={search} onChange={setSearch} placeholder="Search by tenant name, unit, phone, or property..." />
+        )}
+        {rows.length > 0 && filteredRows.length === 0 && (
+          <div className="card-surface p-8 text-center text-sm text-muted-foreground">
+            No tenants match "{search}"
+          </div>
+        )}
+        {filteredRows.map((r) => (
           <div key={r.id} className="card-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

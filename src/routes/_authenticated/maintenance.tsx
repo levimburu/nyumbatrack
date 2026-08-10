@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { ListSearchInput } from "@/components/ListSearchInput";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, X, Wrench, Building2, Clock, CheckCircle2, Circle, User, Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -263,7 +264,19 @@ function MaintenancePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const filteredTickets = (tickets ?? []).filter((t) => statusFilter === "all" || t.status === statusFilter);
+  const statusFilteredTickets = (tickets ?? []).filter((t) => statusFilter === "all" || t.status === statusFilter);
+  const [search, setSearch] = useState("");
+  const filteredTickets = statusFilteredTickets.filter((t) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      t.title.toLowerCase().includes(q) ||
+      (t.description ?? "").toLowerCase().includes(q) ||
+      (t.unit ?? "").toLowerCase().includes(q) ||
+      propertyName(t.property_id).toLowerCase().includes(q) ||
+      (ticketTenant(t)?.full_name ?? "").toLowerCase().includes(q)
+    );
+  });
 
   const counts = {
     open: (tickets ?? []).filter((t) => t.status === "open").length,
@@ -358,9 +371,14 @@ function MaintenancePage() {
 
       {/* Ticket list */}
       <div className="space-y-3">
+        {!!statusFilteredTickets.length && (
+          <ListSearchInput value={search} onChange={setSearch} placeholder="Search by title, tenant name, unit, or property..." />
+        )}
         {filteredTickets.length === 0 && (
           <div className="card-surface p-8 text-center text-sm text-muted-foreground">
-            No tickets {statusFilter !== "all" ? `marked "${statusLabel(statusFilter as TicketStatus)}"` : "yet"}.
+            {search.trim()
+              ? `No tickets match "${search}"`
+              : `No tickets ${statusFilter !== "all" ? `marked "${statusLabel(statusFilter as TicketStatus)}"` : "yet"}.`}
           </div>
         )}
         {filteredTickets.map((t) => {

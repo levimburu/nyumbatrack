@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ListSearchInput } from "@/components/ListSearchInput";
 import { Plus, X, MessageSquare, Building2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
@@ -129,6 +130,19 @@ function CommunicationsPage() {
     },
   });
 
+  const [search, setSearch] = useState("");
+  const filteredEntries = (entries ?? []).filter((e) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      e.tenant_name.toLowerCase().includes(q) ||
+      e.type.toLowerCase().includes(q) ||
+      e.note.toLowerCase().includes(q) ||
+      propertyName(e.property_id).toLowerCase().includes(q)
+    );
+  });
+
+
   const createEntry = useMutation({
     mutationFn: async (e: { property_id: string; tenant_id: string; tenant_name: string; type: string; note: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -232,7 +246,15 @@ function CommunicationsPage() {
             No communications logged yet.
           </div>
         )}
-        {entries?.map((e) => (
+        {!!entries?.length && (
+          <ListSearchInput value={search} onChange={setSearch} placeholder="Search by tenant name, type, note, or property..." />
+        )}
+        {!!entries?.length && !filteredEntries.length && (
+          <div className="card-surface p-8 text-center text-sm text-muted-foreground">
+            No entries match "{search}"
+          </div>
+        )}
+        {filteredEntries.map((e) => (
           <div key={e.id} className="card-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

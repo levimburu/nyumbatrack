@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ListSearchInput } from "@/components/ListSearchInput";
 import { Plus, X, Phone, Mail, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,6 +56,18 @@ function VendorsPage() {
       if (error) throw error;
       return data as Vendor[];
     },
+  });
+
+  const [search, setSearch] = useState("");
+  const filteredVendors = (vendors ?? []).filter((v) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      v.name.toLowerCase().includes(q) ||
+      (v.trade ?? "").toLowerCase().includes(q) ||
+      (v.phone ?? "").toLowerCase().includes(q) ||
+      (v.email ?? "").toLowerCase().includes(q)
+    );
   });
 
   const createVendor = useMutation({
@@ -139,6 +152,10 @@ function VendorsPage() {
         </button>
       </div>
 
+      {!!vendors?.length && (
+        <ListSearchInput value={search} onChange={setSearch} placeholder="Search vendors by name, trade, phone, or email..." />
+      )}
+
       {!vendors?.length ? (
         <div className="flex min-h-[40vh] flex-col items-center justify-center px-4 text-center">
           <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
@@ -150,9 +167,13 @@ function VendorsPage() {
             options when assigning a maintenance ticket.
           </p>
         </div>
+      ) : !filteredVendors.length ? (
+        <div className="flex min-h-[30vh] flex-col items-center justify-center px-4 text-center">
+          <p className="text-sm text-muted-foreground">No vendors match "{search}"</p>
+        </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {vendors.map((v) => (
+          {filteredVendors.map((v) => (
             <div key={v.id} className="card-surface p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">

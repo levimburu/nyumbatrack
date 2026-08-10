@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { ListSearchInput } from "@/components/ListSearchInput";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, X, ShieldCheck, Building2, AlertTriangle, CheckCircle2, Pencil } from "lucide-react";
 import { toast } from "sonner";
@@ -206,7 +207,17 @@ function CompliancePage() {
   });
 
   const recordsWithStatus = (records ?? []).map((r) => ({ ...r, status: getStatus(r.expiry_date) }));
-  const filteredRecords = recordsWithStatus.filter((r) => statusFilter === "all" || r.status === statusFilter);
+  const statusFiltered = recordsWithStatus.filter((r) => statusFilter === "all" || r.status === statusFilter);
+  const [search, setSearch] = useState("");
+  const filteredRecords = statusFiltered.filter((r) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      r.type.toLowerCase().includes(q) ||
+      (r.document_number ?? "").toLowerCase().includes(q) ||
+      propertyName(r.property_id).toLowerCase().includes(q)
+    );
+  });
 
   const counts = {
     valid: recordsWithStatus.filter((r) => r.status === "valid").length,
@@ -301,9 +312,14 @@ function CompliancePage() {
 
       {/* Records list */}
       <div className="space-y-3">
+        {!!recordsWithStatus.length && (
+          <ListSearchInput value={search} onChange={setSearch} placeholder="Search by type, document number, or property..." />
+        )}
         {filteredRecords.length === 0 && (
           <div className="card-surface p-8 text-center text-sm text-muted-foreground">
-            No records {statusFilter !== "all" ? `marked "${statusLabel(statusFilter as ComplianceStatus)}"` : "yet"}.
+            {search.trim()
+              ? `No records match "${search}"`
+              : `No records ${statusFilter !== "all" ? `marked "${statusLabel(statusFilter as ComplianceStatus)}"` : "yet"}.`}
           </div>
         )}
         {filteredRecords.map((r) => (
