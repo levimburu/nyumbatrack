@@ -31,7 +31,8 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
   }
 
   // No linked tenant record yet — show the invite-code guidance full-screen,
-  // no point showing a bottom nav to pages with nothing behind them.
+  // no point showing nav (sidebar or bottom bar) to pages with nothing
+  // behind them, on any screen size.
   if (!tenant) {
     return (
       <div className="min-h-screen bg-background">
@@ -71,52 +72,96 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-white flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#F59E0B" }}>
-            <Building2 className="h-4 w-4 text-white" />
+  // Same 3 destinations power both navs — a side rail on desktop (matching
+  // the landlord/agent app's sidebar exactly, same colors and active-state
+  // treatment) and the existing bottom tab bar on mobile, which stays
+  // untouched below.
+  const NavLinks = ({ vertical }: { vertical: boolean }) =>
+    TABS.map((tab) => {
+      const isActive = location.pathname === tab.to;
+      const Icon = tab.icon;
+      return vertical ? (
+        <Link
+          key={tab.to}
+          to={tab.to}
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150"
+          style={isActive ? { background: "#166534", color: "#FFFFFF" } : { color: "#9CA3AF" }}
+        >
+          <Icon className="h-4 w-4 flex-shrink-0" />
+          {tab.label}
+          {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />}
+        </Link>
+      ) : (
+        <Link
+          key={tab.to}
+          to={tab.to}
+          className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5"
+          style={{ color: isActive ? "#166534" : "#9CA3AF" }}
+        >
+          <div className="grid h-7 w-9 place-items-center rounded-full transition-colors" style={{ background: isActive ? "#DCFCE7" : "transparent" }}>
+            <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
           </div>
-          <span className="font-display text-sm font-semibold">NyumbaTrack</span>
+          <span className="text-[11px] font-medium">{tab.label}</span>
+        </Link>
+      );
+    });
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      {/* Desktop side nav — hidden on mobile, where the bottom tab bar
+          (further down) takes over instead. */}
+      <aside className="hidden md:flex h-full w-64 flex-col flex-shrink-0" style={{ background: "#0d2818" }}>
+        <div className="flex items-center gap-3 px-5 py-5">
+          <div className="grid h-9 w-9 place-items-center rounded-xl shadow-md" style={{ background: "#F59E0B" }}>
+            <Building2 className="h-5 w-5 text-white" />
+          </div>
+          <span className="font-display text-lg font-bold text-white">NyumbaTrack</span>
         </div>
-        <button onClick={() => setConfirmingSignOut(true)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Sign out">
-          <LogOut className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <nav className="flex-1 min-h-0 space-y-0.5 px-3">
+          <NavLinks vertical />
+        </nav>
+        <div className="p-3 mt-2" style={{ borderTop: "1px solid #1a3a28" }}>
+          <button
+            onClick={() => setConfirmingSignOut(true)}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 hover:text-white"
+            style={{ color: "#9CA3AF" }}
+          >
+            <LogOut className="h-4 w-4 flex-shrink-0" />
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
+        {/* Mobile top bar — the desktop sidebar above already covers the
+            logo and sign-out, so this only renders on small screens. */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-white flex-shrink-0 md:hidden">
+          <div className="flex items-center gap-2">
+            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#F59E0B" }}>
+              <Building2 className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-display text-sm font-semibold">NyumbaTrack</span>
+          </div>
+          <button onClick={() => setConfirmingSignOut(true)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Sign out">
+            <LogOut className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Page content — bottom padding clears the fixed mobile tab bar;
+            not needed on desktop since there's no bottom bar there. */}
+        <div className="flex-1 px-4 py-6 pb-24 md:pb-6 md:px-8 overflow-y-auto">
+          {children}
+        </div>
+
+        {/* Bottom tab bar — mobile only */}
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-white flex items-stretch z-40 md:hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)", boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
+        >
+          <NavLinks vertical={false} />
+        </div>
       </div>
 
-      {/* Page content — bottom padding clears the fixed tab bar */}
-      <div className="flex-1 px-4 py-6 pb-24 overflow-y-auto">
-        {children}
-      </div>
-
-      {/* Bottom tab bar */}
-      <div
-        className="fixed bottom-0 left-0 right-0 bg-white flex items-stretch z-40"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)", boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
-      >
-        {TABS.map((tab) => {
-          const isActive = location.pathname === tab.to;
-          const Icon = tab.icon;
-          return (
-            <Link
-              key={tab.to}
-              to={tab.to}
-              className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5"
-              style={{ color: isActive ? "#166534" : "#9CA3AF" }}
-            >
-              <div
-                className="grid h-7 w-9 place-items-center rounded-full transition-colors"
-                style={{ background: isActive ? "#DCFCE7" : "transparent" }}
-              >
-                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-              </div>
-              <span className="text-[11px] font-medium">{tab.label}</span>
-            </Link>
-          );
-        })}
-      </div>
       {confirmingSignOut && (
         <ConfirmDialog
           title="Sign out?"
