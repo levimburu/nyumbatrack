@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { formatKES } from "@/lib/format";
 import { outstandingForDueMonth } from "@/lib/reminders";
-import { Home, Wallet, Calendar, Building2, Phone, Mail, CheckCircle2, AlertCircle, Shield, Camera, Loader2, ChevronDown } from "lucide-react";
+import { Home, Calendar, Building2, Phone, Mail, CheckCircle2, AlertCircle, Shield, Camera, Loader2, ChevronDown, ChevronRight, Bell, ArrowRight, Receipt, Wrench, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useMyTenant } from "@/hooks/use-my-tenant";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,15 +13,44 @@ export const Route = createFileRoute("/_authenticated/portal")({
   component: TenantHome,
 });
 
+interface TicketMin {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+}
+
+const ticketStatusLabel: Record<string, string> = { open: "Open", in_progress: "In Progress", done: "Done" };
+const ticketStatusColor: Record<string, string> = { open: "#DC2626", in_progress: "#D97706", done: "#16A34A" };
+
 function TenantHome() {
+  const navigate = useNavigate();
   const { tenant, payments, avatarUrl, refetchAvatar } = useMyTenant();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [leaseFundsOpen, setLeaseFundsOpen] = useState(true);
+  const [leaseFundsOpen, setLeaseFundsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // TenantShell already gates on "no linked tenant" before rendering any
   // page, so by the time we're here tenant is guaranteed to exist.
   if (!tenant) return null;
+
+  // Recent maintenance requests this tenant submitted, to merge into the
+  // activity feed alongside payments — matches Home in Progress ‧ #1234
+  // style, using the ticket's real title since there's no ticket-number
+  // system in the schema.
+  const { data: tickets } = useQuery({
+    queryKey: ["portal-recent-tickets", tenant.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("maintenance_tickets")
+        .select("id, title, status, created_at")
+        .eq("tenant_id", tenant.id)
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return data as TicketMin[];
+    },
+  });
 
   // The real amount owed, calculated the same way the rest of the app
   // does — tenants.balance itself is never kept in sync with payments, so
@@ -28,9 +59,30 @@ function TenantHome() {
   const isOverdue = tenant.next_due_date && new Date(tenant.next_due_date) < new Date() && due > 0;
   const firstName = tenant.full_name?.split(" ")[0];
   const initials = tenant.full_name?.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  const balanceColor = status === "paid" ? "#16A34A" : status === "partial" ? "#D97706" : "#DC2626";
-  const balanceChipBg = status === "paid" ? "#DCFCE7" : status === "partial" ? "#FEF3C7" : "#FEE2E2";
+  const balanceColor = status === "paid" ? "#16A34A" : isOverdue ? "#DC2626" : "#F59E0B";
+  const dueBadge = status === "paid" ? null : isOverdue ? { label: "Overdue", bg: "#FEE2E2", fg: "#DC2626" } : { label: "Due Soon", bg: "#F59E0B", fg: "#78350F" };
+
+  // Recent Activity — payments and maintenance requests merged into one
+  // feed, newest first, capped to the 4 most recent items total.
+  const activity = [
+    ...payments.slice(0, 5).map((p) => ({
+      kind: "payment" as const,
+      date: p.paid_on,
+      title: p.payment_month ? `Rent for ${p.payment_month}` : "Rent payment",
+      subtitle: `Paid on ${new Date(p.paid_on).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`,
+      amount: p.amount,
+    })),
+    ...(tickets ?? []).map((t) => ({
+      kind: "ticket" as const,
+      date: t.created_at,
+      title: t.title,
+      subtitle: ticketStatusLabel[t.status] ?? t.status,
+      statusColor: ticketStatusColor[t.status] ?? "#6B7280",
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4);
 
   const handleAvatarClick = () => fileInputRef.current?.click();
 
@@ -65,41 +117,135 @@ function TenantHome() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      {/* Header */}
-      <div className="card-surface overflow-hidden">
-        <div className="p-6 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2818 0%, #166534 100%)" }}>
-          <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
-          <div className="absolute bottom-0 left-0 w-28 h-28 rounded-full opacity-10 pointer-events-none" style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }} />
-          <div className="relative flex items-center gap-4">
-            <button
-              onClick={handleAvatarClick}
-              disabled={uploadingAvatar}
-              className="relative grid h-16 w-16 place-items-center rounded-2xl text-xl font-bold text-white flex-shrink-0 overflow-hidden"
-              style={{ background: avatarUrl ? "transparent" : "#F59E0B" }}
-              aria-label="Change profile photo"
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="Your photo" className="h-full w-full object-cover" />
-              ) : (
-                initials
-              )}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
-                {uploadingAvatar ? <Loader2 className="h-5 w-5 text-white animate-spin" /> : <Camera className="h-5 w-5 text-white" />}
-              </div>
-            </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-            <div>
-              <h1 className="font-display text-2xl font-bold text-white">Hello, {firstName}!</h1>
-              <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.7)" }}>
-                Unit {tenant.unit}
-                {tenant.properties?.name ? ` · ${tenant.properties.name}` : ""}
-              </p>
+      {/* Greeting row */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleAvatarClick}
+            disabled={uploadingAvatar}
+            className="relative grid h-12 w-12 place-items-center rounded-2xl text-sm font-bold text-white flex-shrink-0 overflow-hidden"
+            style={{ background: avatarUrl ? "transparent" : "#F59E0B" }}
+            aria-label="Change profile photo"
+          >
+            {avatarUrl ? <img src={avatarUrl} alt="Your photo" className="h-full w-full object-cover" /> : initials}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
+              {uploadingAvatar ? <Loader2 className="h-4 w-4 text-white animate-spin" /> : <Camera className="h-4 w-4 text-white" />}
             </div>
+          </button>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          <div>
+            <h1 className="font-display text-xl font-bold text-foreground">{greeting}, {firstName} 👋</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">Here's what's happening with your home.</p>
           </div>
         </div>
+        <button
+          onClick={() => toast.info("No new notifications yet")}
+          className="relative grid h-10 w-10 flex-shrink-0 place-items-center rounded-full hover:bg-muted transition-colors"
+          aria-label="Notifications"
+        >
+          <Bell className="h-5 w-5 text-foreground" />
+        </button>
+      </div>
 
-        {/* Property info — kept minimal on purpose: tenants see the name
-            and location only, nothing about unit count or manager notes. */}
+      {/* Payment Overview — dark card, matching the amber/green brand
+          palette used across the rest of the app. */}
+      <div className="rounded-2xl p-5 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2818 0%, #166534 100%)" }}>
+        <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
+        <div className="relative flex items-center justify-between mb-4">
+          <h2 className="font-display font-bold text-white">Payment Overview</h2>
+          {dueBadge && (
+            <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: dueBadge.bg, color: dueBadge.fg }}>
+              {dueBadge.label}
+            </span>
+          )}
+        </div>
+        <div className="relative mb-4">
+          <div className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>Rent Balance</div>
+          <div className="font-display text-3xl font-bold mt-1" style={{ color: status === "paid" ? "#FFFFFF" : balanceColor }}>
+            {status === "paid" ? "Cleared ✓" : formatKES(due)}
+          </div>
+        </div>
+        <div className="relative flex items-center justify-between pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.15)" }}>
+          <div>
+            <div className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>Due Date</div>
+            <div className="text-sm font-bold text-white mt-0.5">{tenant.next_due_date ?? "—"}</div>
+          </div>
+          <button
+            onClick={() => navigate({ to: "/portal-payments" })}
+            className="flex items-center gap-1 rounded-full px-3.5 py-2 text-xs font-semibold text-white transition-colors"
+            style={{ background: "rgba(255,255,255,0.12)" }}
+          >
+            View Statement <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Pay Rent — real button, but no payment gateway is connected yet,
+          so it says so honestly rather than faking a successful payment. */}
+      <button
+        onClick={() => toast.info("Online payments aren't set up yet — please pay your landlord directly for now.")}
+        className="w-full rounded-2xl py-4 text-base font-bold text-white flex items-center justify-center gap-2.5 transition-transform active:scale-[0.98]"
+        style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)", boxShadow: "0 8px 20px -6px rgba(22,101,52,0.4)" }}
+      >
+        Pay Rent <ArrowRight className="h-5 w-5" />
+      </button>
+
+      {/* Recent Activity — payments and maintenance requests merged into
+          one feed, newest first. */}
+      <div className="card-surface p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display font-bold text-foreground">Recent Activity</h2>
+          <button onClick={() => navigate({ to: "/portal-payments" })} className="text-xs font-semibold" style={{ color: "#166534" }}>
+            See all
+          </button>
+        </div>
+        {activity.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">Nothing here yet.</p>
+        ) : (
+          <div className="divide-y divide-border">
+            {activity.map((item, i) => (
+              <div key={i} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full" style={{ background: item.kind === "payment" ? "#DCFCE7" : "#FEF3C7" }}>
+                  {item.kind === "payment" ? <Receipt className="h-4 w-4" style={{ color: "#16A34A" }} /> : <Wrench className="h-4 w-4" style={{ color: "#D97706" }} />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-foreground truncate">{item.title}</div>
+                  <div className="text-xs mt-0.5" style={item.kind === "ticket" ? { color: item.statusColor } : { color: "#9CA3AF" }}>
+                    {item.subtitle}
+                  </div>
+                </div>
+                {item.kind === "payment" ? (
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-semibold text-foreground">{formatKES(item.amount)}</div>
+                    <div className="text-xs" style={{ color: "#16A34A" }}>Paid</div>
+                  </div>
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Need help — routes to the existing Communications tab, where
+          messaging/maintenance reporting already works. */}
+      <button
+        onClick={() => navigate({ to: "/portal-communications" })}
+        className="card-surface p-4 w-full flex items-center justify-between text-left hover:bg-muted/30 transition-colors"
+      >
+        <div>
+          <div className="text-sm font-bold text-foreground">Need help?</div>
+          <div className="text-xs text-muted-foreground mt-0.5">Message your property manager</div>
+        </div>
+        <span className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold flex-shrink-0" style={{ background: "#DCFCE7", color: "#166534" }}>
+          <MessageCircle className="h-3.5 w-3.5" /> Message
+        </span>
+      </button>
+
+      {/* Property + lease details — kept, just moved below the new
+          activity-first layout above rather than removed. */}
+      <div className="card-surface overflow-hidden">
         {tenant.properties && (
           <div className="px-6 py-4 border-b border-border bg-white flex items-start gap-3">
             <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#FEF3C7" }}>
@@ -111,12 +257,10 @@ function TenantHome() {
               {tenant.properties.location && (
                 <div className="text-xs text-muted-foreground mt-0.5">{tenant.properties.location}</div>
               )}
+              <div className="text-xs text-muted-foreground mt-0.5">Unit {tenant.unit}</div>
             </div>
           </div>
         )}
-
-        {/* Tenant details — email/phone are tappable since they can be
-            longer than the card is wide; tapping shows the full value. */}
         <div className="grid grid-cols-2 gap-px bg-border">
           {tenant.email && (
             <button
@@ -169,56 +313,10 @@ function TenantHome() {
         </div>
       </div>
 
-      {/* Payment Overview — Balance, Next Due, and Pay Rent grouped under
-          one labeled card, rather than floating as separate pieces. */}
-      <div className="card-surface p-5">
-        <h2 className="font-display font-bold text-foreground mb-4">Payment Overview</h2>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="rounded-xl p-4" style={{ background: "#F5F5F0" }}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Balance</span>
-              <div className="grid h-7 w-7 place-items-center rounded-lg flex-shrink-0" style={{ background: balanceChipBg }}>
-                {status === "paid" ? <CheckCircle2 className="h-3.5 w-3.5" style={{ color: balanceColor }} /> : <AlertCircle className="h-3.5 w-3.5" style={{ color: balanceColor }} />}
-              </div>
-            </div>
-            <div className="font-display text-lg font-bold leading-tight break-words" style={{ color: balanceColor }}>
-              {status === "paid" ? "Cleared ✓" : formatKES(due)}
-            </div>
-            {status === "partial" && <div className="text-xs mt-1" style={{ color: balanceColor }}>Partially paid</div>}
-            {status === "unpaid" && <div className="text-xs mt-1" style={{ color: balanceColor }}>{isOverdue ? "Overdue" : "Outstanding"}</div>}
-          </div>
-          <div className="rounded-xl p-4" style={{ background: "#F5F5F0" }}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-muted-foreground">Due Date</span>
-              <div className="grid h-7 w-7 place-items-center rounded-lg flex-shrink-0" style={{ background: isOverdue ? "#FEE2E2" : "#F0FDF4" }}>
-                <Calendar className="h-3.5 w-3.5" style={{ color: isOverdue ? "#DC2626" : "#166534" }} />
-              </div>
-            </div>
-            <div className="font-display text-base font-bold" style={{ color: isOverdue ? "#DC2626" : "#166534" }}>
-              {tenant.next_due_date ?? "—"}
-            </div>
-            {isOverdue && <div className="text-xs mt-1" style={{ color: "#DC2626" }}>Overdue</div>}
-          </div>
-        </div>
-
-        {/* Pay Rent — real button, but no payment gateway is connected yet,
-            so it says so honestly rather than faking a successful payment. */}
-        <button
-          onClick={() => toast.info("Online payments aren't set up yet — please pay your landlord directly for now.")}
-          className="w-full rounded-2xl py-4 text-base font-bold text-white flex items-center justify-center gap-2.5 transition-transform active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)", boxShadow: "0 8px 20px -6px rgba(22,101,52,0.4)" }}
-        >
-          <Wallet className="h-5 w-5" /> Pay Rent
-        </button>
-      </div>
-
-      {/* Lease & Funds — collapsible, since deposit info is useful but not
-          something you need staring at you every time you open the app. */}
+      {/* Lease & Funds — collapsible, defaults closed now that it's lower
+          on the page and not the first thing a tenant sees. */}
       <div className="card-surface overflow-hidden">
-        <button
-          onClick={() => setLeaseFundsOpen(!leaseFundsOpen)}
-          className="w-full flex items-center justify-between p-5"
-        >
+        <button onClick={() => setLeaseFundsOpen(!leaseFundsOpen)} className="w-full flex items-center justify-between p-5">
           <h2 className="font-display font-bold text-foreground">Lease & Funds</h2>
           <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform" style={{ transform: leaseFundsOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
         </button>

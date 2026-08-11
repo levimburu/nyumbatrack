@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Home, Wallet, MessageSquare, LogOut, Building2 } from "lucide-react";
+import { Home, CreditCard, MessageSquare, LogOut, Building2 } from "lucide-react";
 import { useMyTenant } from "@/hooks/use-my-tenant";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 const TABS = [
   { to: "/portal", label: "Home", icon: Home },
-  { to: "/portal-payments", label: "Payments", icon: Wallet },
+  { to: "/portal-payments", label: "Payments", icon: CreditCard },
   { to: "/portal-communications", label: "Communications", icon: MessageSquare },
 ];
 
@@ -95,12 +95,11 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
         <Link
           key={tab.to}
           to={tab.to}
-          className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5"
+          className="relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5"
           style={{ color: isActive ? "#166534" : "#9CA3AF" }}
         >
-          <div className="grid h-7 w-9 place-items-center rounded-full transition-colors" style={{ background: isActive ? "#DCFCE7" : "transparent" }}>
-            <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-          </div>
+          {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full" style={{ background: "#166534" }} />}
+          <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
           <span className="text-[11px] font-medium">{tab.label}</span>
         </Link>
       );
