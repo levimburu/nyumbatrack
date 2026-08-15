@@ -30,27 +30,33 @@ function TenantHome() {
   const [leaseFundsOpen, setLeaseFundsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // TenantShell already gates on "no linked tenant" before rendering any
-  // page, so by the time we're here tenant is guaranteed to exist.
-  if (!tenant) return null;
-
   // Recent maintenance requests this tenant submitted, to merge into the
   // activity feed alongside payments — matches Home in Progress ‧ #1234
   // style, using the ticket's real title since there's no ticket-number
   // system in the schema.
+  //
+  // This hook must run on every render, before any early return below —
+  // React requires the same hooks in the same order every time. Guard
+  // with `enabled` instead of skipping the call entirely.
   const { data: tickets } = useQuery({
-    queryKey: ["portal-recent-tickets", tenant.id],
+    queryKey: ["portal-recent-tickets", tenant?.id],
+    enabled: !!tenant?.id,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("maintenance_tickets")
         .select("id, title, status, created_at")
-        .eq("tenant_id", tenant.id)
+        .eq("tenant_id", tenant!.id)
         .order("created_at", { ascending: false })
         .limit(3);
       if (error) throw error;
       return data as TicketMin[];
     },
   });
+
+  // TenantShell already gates on "no linked tenant" before rendering any
+  // page, so by the time we're here tenant is guaranteed to exist — but
+  // the check has to come after every hook above it, not before.
+  if (!tenant) return null;
 
   // The real amount owed, calculated the same way the rest of the app
   // does — tenants.balance itself is never kept in sync with payments, so
