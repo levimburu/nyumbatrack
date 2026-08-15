@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Home, CreditCard, MessageSquare, LogOut, Building2 } from "lucide-react";
+import { Home, CreditCard, MessageSquare, LogOut, Building2, Bell } from "lucide-react";
 import { useMyTenant } from "@/hooks/use-my-tenant";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { toast } from "sonner";
 
 const TABS = [
   { to: "/portal" as const, label: "Home", icon: Home },
@@ -149,8 +150,8 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
             </div>
             <span className="font-display text-sm font-semibold">NyumbaTrack</span>
           </div>
-          <button onClick={() => setConfirmingSignOut(true)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Sign out">
-            <LogOut className="h-4 w-4 text-muted-foreground" />
+          <button onClick={() => toast.info("No new notifications yet")} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Notifications">
+            <Bell className="h-4 w-4 text-foreground" />
           </button>
         </div>
 

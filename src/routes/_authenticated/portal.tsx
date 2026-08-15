@@ -3,11 +3,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { formatKES } from "@/lib/format";
 import { outstandingForDueMonth } from "@/lib/reminders";
-import { Home, Calendar, Building2, Phone, Mail, CheckCircle2, AlertCircle, Shield, Camera, Loader2, ChevronDown, ChevronRight, Bell, ArrowRight, Receipt, Wrench, MessageCircle } from "lucide-react";
+import { Home, Calendar, Building2, Phone, Mail, CheckCircle2, AlertCircle, Shield, Camera, Loader2, ChevronDown, ChevronRight, ArrowRight, Receipt, Wrench, MessageCircle, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useMyTenant } from "@/hooks/use-my-tenant";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useRef } from "react";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export const Route = createFileRoute("/_authenticated/portal")({
   component: TenantHome,
@@ -28,6 +29,8 @@ function TenantHome() {
   const { tenant, payments, avatarUrl, refetchAvatar } = useMyTenant();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [leaseFundsOpen, setLeaseFundsOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Recent maintenance requests this tenant submitted, to merge into the
@@ -90,6 +93,11 @@ function TenantHome() {
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4);
 
+  const performSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
   const handleAvatarClick = () => fileInputRef.current?.click();
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,32 +134,56 @@ function TenantHome() {
       {/* Greeting row */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <button
-            onClick={handleAvatarClick}
-            disabled={uploadingAvatar}
-            className="relative grid h-12 w-12 place-items-center rounded-2xl text-sm font-bold text-white flex-shrink-0 overflow-hidden"
-            style={{ background: avatarUrl ? "transparent" : "#F59E0B" }}
-            aria-label="Change profile photo"
-          >
-            {avatarUrl ? <img src={avatarUrl} alt="Your photo" className="h-full w-full object-cover" /> : initials}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
-              {uploadingAvatar ? <Loader2 className="h-4 w-4 text-white animate-spin" /> : <Camera className="h-4 w-4 text-white" />}
-            </div>
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setAvatarMenuOpen((v) => !v)}
+              disabled={uploadingAvatar}
+              className="relative grid h-12 w-12 place-items-center rounded-2xl text-sm font-bold text-white flex-shrink-0 overflow-hidden"
+              style={{ background: avatarUrl ? "transparent" : "#F59E0B" }}
+              aria-label="Account menu"
+            >
+              {avatarUrl ? <img src={avatarUrl} alt="Your photo" className="h-full w-full object-cover" /> : initials}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
+                {uploadingAvatar ? <Loader2 className="h-4 w-4 text-white animate-spin" /> : <Camera className="h-4 w-4 text-white" />}
+              </div>
+            </button>
+            {avatarMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setAvatarMenuOpen(false)} />
+                <div className="absolute left-0 top-full mt-2 w-48 rounded-xl border border-border bg-white py-1.5 shadow-lg z-40">
+                  <button
+                    onClick={() => { setAvatarMenuOpen(false); handleAvatarClick(); }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-foreground hover:bg-muted text-left"
+                  >
+                    <Camera className="h-4 w-4 text-muted-foreground" /> Change Photo
+                  </button>
+                  <button
+                    onClick={() => { setAvatarMenuOpen(false); setConfirmingSignOut(true); }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-foreground hover:bg-muted text-left"
+                  >
+                    <LogOut className="h-4 w-4 text-muted-foreground" /> Sign Out
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
           <div>
             <h1 className="font-display text-xl font-bold text-foreground">{greeting}, {firstName} 👋</h1>
             <p className="text-xs text-muted-foreground mt-0.5">Here's what's happening with your home.</p>
           </div>
         </div>
-        <button
-          onClick={() => toast.info("No new notifications yet")}
-          className="relative grid h-10 w-10 flex-shrink-0 place-items-center rounded-full hover:bg-muted transition-colors"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5 text-foreground" />
-        </button>
       </div>
+
+      {confirmingSignOut && (
+        <ConfirmDialog
+          title="Sign out?"
+          message="You'll need to sign in again to access your account."
+          confirmLabel="Sign Out"
+          onConfirm={performSignOut}
+          onCancel={() => setConfirmingSignOut(false)}
+        />
+      )}
 
       {/* Payment Overview — dark card, matching the amber/green brand
           palette used across the rest of the app. */}
