@@ -26,12 +26,12 @@ function IndexPage() {
           .maybeSingle();
 
         if (data?.role === "admin") {
-          window.location.replace("/portfolio");
+          navigate({ to: "/portfolio", replace: true });
         } else {
-          window.location.replace("/portal");
+          navigate({ to: "/portal", replace: true });
         }
       } catch {
-        window.location.replace("/portfolio");
+        navigate({ to: "/portfolio", replace: true });
       }
     });
   }, [navigate]);
