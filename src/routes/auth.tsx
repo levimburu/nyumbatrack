@@ -42,8 +42,18 @@ function AuthPage() {
       setStep("reset_password");
       return;
     }
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !hash.includes("type=recovery")) navigate({ to: "/", replace: true });
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session || hash.includes("type=recovery")) return;
+      try {
+        const { data } = await (supabase as any)
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        navigate({ to: data?.role === "admin" ? "/portfolio" : "/portal", replace: true });
+      } catch {
+        navigate({ to: "/portfolio", replace: true });
+      }
     });
   }, [navigate]);
 
@@ -54,7 +64,13 @@ function AuthPage() {
       if (error) throw error;
       localStorage.removeItem("nyumbatrack_selected_property");
       toast.success("Welcome back!");
-      navigate({ to: "/", replace: true });
+      const { data: { user } } = await supabase.auth.getUser();
+      let destination: "/portfolio" | "/portal" = "/portfolio";
+      if (user) {
+        const { data } = await (supabase as any).from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
+        destination = data?.role === "admin" ? "/portfolio" : "/portal";
+      }
+      navigate({ to: destination, replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign in failed");
     } finally {
@@ -72,7 +88,7 @@ function AuthPage() {
       if (!authData.user) throw new Error("No user returned");
       localStorage.removeItem("nyumbatrack_selected_property");
       toast.success("Account created! Welcome to NyumbaTrack.");
-      navigate({ to: "/", replace: true });
+      navigate({ to: "/portfolio", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign up failed";
       toast.error(msg.toLowerCase().includes("invite") ? msg : "Sign up failed — your invite code may have just been used by someone else. Please check with whoever sent it.");
@@ -174,7 +190,7 @@ function AuthPage() {
 
       localStorage.removeItem("nyumbatrack_selected_property");
       toast.success("Welcome! Your account is ready.");
-      navigate({ to: "/", replace: true });
+      navigate({ to: "/portal", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
