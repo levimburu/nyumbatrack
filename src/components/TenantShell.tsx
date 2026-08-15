@@ -144,14 +144,17 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
       <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
         {/* Mobile top bar */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-white flex-shrink-0 md:hidden">
-          <div className="flex items-center gap-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#F59E0B" }}>
-              <Building2 className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-2.5">
+            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#F59E0B" }}>
+              <Home className="h-5 w-5 text-white" />
             </div>
-            <span className="font-display text-sm font-semibold">NyumbaTrack</span>
+            <div>
+              <div className="font-display text-base font-bold leading-tight text-foreground">NyumbaTrack</div>
+              <div className="text-xs text-muted-foreground leading-tight">Tenant Portal</div>
+            </div>
           </div>
-          <button onClick={() => toast.info("No new notifications yet")} className="grid h-9 w-9 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Notifications">
-            <Bell className="h-4 w-4 text-foreground" />
+          <button onClick={() => toast.info("No new notifications yet")} className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full hover:bg-muted transition-colors" aria-label="Notifications">
+            <Bell className="h-5 w-5 text-foreground" />
           </button>
         </div>
 
