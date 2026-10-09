@@ -407,13 +407,17 @@ function PortfolioDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      {/* Page header — plain text, no colored banner, matching the reference.
-          No greeting here since the app's top bar already shows one. */}
-      <div>
-        <h1 className="font-display text-2xl font-bold text-foreground">Portfolio Overview</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Here's what's happening across all {properties.length} {properties.length === 1 ? "property" : "properties"} this month.
-        </p>
+      {/* Page header — building photo cover band with a dark-green scrim so
+          the title stays readable. No greeting here since the top bar shows one. */}
+      <div className="relative overflow-hidden rounded-2xl">
+        <div className="absolute inset-0" style={{ backgroundImage: "url(/portfolio-cover.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(120deg, rgba(13,40,24,0.92) 0%, rgba(13,40,24,0.68) 55%, rgba(22,101,52,0.72) 100%)" }} />
+        <div className="relative z-10 p-6 sm:p-7">
+          <h1 className="font-display text-2xl font-bold text-white">Portfolio Overview</h1>
+          <p className="text-sm text-white/75 mt-1">
+            Here's what's happening across all {properties.length} {properties.length === 1 ? "property" : "properties"} this month.
+          </p>
+        </div>
       </div>
 
       {/* Top stat cards — negative margin here pulls this row a little
