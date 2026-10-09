@@ -896,7 +896,11 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
             )}
           </FormField>
           <FormField label="Due day (1-31)">
-            <input type="number" min={1} max={31} value={form.due_day ?? 1} onChange={(e) => set("due_day", Math.min(31, Math.max(1, Number(e.target.value))))} className="form-input" />
+            <select value={form.due_day ?? 1} onChange={(e) => set("due_day", Number(e.target.value))} className="form-input">
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
           </FormField>
           <FormField label="Monthly rent (KES)">
             <input type="number" min={0} value={form.rent_amount ?? 0} onChange={(e) => set("rent_amount", Number(e.target.value))} className="form-input" />

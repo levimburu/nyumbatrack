@@ -18,6 +18,21 @@ function TenantPayments() {
   // page, so by the time we're here tenant is guaranteed to exist.
   if (!tenant) return null;
 
+  // Filter by month, reference, payment method, or paid-on date. Matching is
+  // case-insensitive and client-side (the full history is already loaded).
+  const q = searchQuery.trim().toLowerCase();
+  const methodText = (m: string) =>
+    m === "mpesa" ? "m-pesa mpesa" : m === "bank" ? "bank transfer" : m === "cash" ? "cash" : m;
+  const allPayments = payments ?? [];
+  const filteredPayments = q
+    ? allPayments.filter((p) =>
+        [p.payment_month ?? "", p.reference ?? "", methodText(p.method), formatDate(p.paid_on)]
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      )
+    : allPayments;
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -25,20 +40,24 @@ function TenantPayments() {
         <p className="text-sm text-muted-foreground mt-0.5">Your full rent payment history and receipts.</p>
       </div>
 
-      {/* Search — UI only for now, filtering isn't wired up yet. */}
+      {/* Search — filters the list below by month, reference, method or date. */}
       <div>
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by month or reference…"
+            placeholder="Search by month, reference or method…"
             className="w-full rounded-xl border pl-10 pr-4 py-2.5 text-sm outline-none transition-colors"
             style={{ borderColor: "#E5E7EB" }}
             onFocus={(e) => (e.target.style.borderColor = "#166534")}
             onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
           />
         </div>
-        <p className="text-xs text-muted-foreground mt-1.5">Search is coming soon — for now, browse the full list below.</p>
+        {q && (
+          <p className="text-xs text-muted-foreground mt-1.5">
+            Showing {filteredPayments.length} of {allPayments.length} {allPayments.length === 1 ? "payment" : "payments"}
+          </p>
+        )}
       </div>
 
       {!!payments?.length && (
@@ -58,7 +77,7 @@ function TenantPayments() {
       <div className="card-surface">
         {/* Mobile cards */}
         <div className="divide-y divide-border md:hidden">
-          {payments?.map((p) => {
+          {filteredPayments.map((p) => {
             const receiptData: ReceiptData = {
               tenantName: tenant.full_name,
               unit: tenant.unit,
@@ -117,8 +136,10 @@ function TenantPayments() {
               </div>
             );
           })}
-          {!payments?.length && (
-            <div className="p-10 text-center text-sm text-muted-foreground">No payments yet.</div>
+          {!filteredPayments.length && (
+            <div className="p-10 text-center text-sm text-muted-foreground">
+              {allPayments.length ? "No payments match your search." : "No payments yet."}
+            </div>
           )}
         </div>
 
@@ -135,7 +156,7 @@ function TenantPayments() {
             </tr>
           </thead>
           <tbody>
-            {payments?.map((p) => {
+            {filteredPayments.map((p) => {
               const receiptData: ReceiptData = {
                 tenantName: tenant.full_name,
                 unit: tenant.unit,
@@ -193,10 +214,10 @@ function TenantPayments() {
                 </tr>
               );
             })}
-            {!payments?.length && (
+            {!filteredPayments.length && (
               <tr>
                 <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted-foreground">
-                  No payments yet.
+                  {allPayments.length ? "No payments match your search." : "No payments yet."}
                 </td>
               </tr>
             )}
