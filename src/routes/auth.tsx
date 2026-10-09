@@ -389,15 +389,19 @@ function AuthPage() {
       </div>
 
       {/* ── DESKTOP RIGHT: Branding ── */}
-      <div className="hidden md:flex md:w-1/2 flex-col items-center justify-center min-h-screen px-12 relative overflow-hidden" style={{ background: "linear-gradient(160deg, #0d2818 0%, #166534 100%)" }}>
+      <div className="hidden md:flex md:w-1/2 flex-col items-center justify-center min-h-screen px-12 relative overflow-hidden" style={{ background: "#0d2818" }}>
+        {/* Real property photo behind the brand panel */}
+        <div className="absolute inset-0" style={{ backgroundImage: "url(/auth-building.jpg)", backgroundSize: "cover", backgroundPosition: "center" }} />
+        {/* Dark-green scrim keeps the headline and features readable over the photo */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, rgba(13,40,24,0.92) 0%, rgba(13,40,24,0.70) 45%, rgba(22,101,52,0.80) 100%)" }} />
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
         <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-10" style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }} />
-        <div className="relative text-center max-w-sm">
+        <div className="relative z-10 text-center max-w-sm">
           <div className="mx-auto mb-8 grid h-20 w-20 place-items-center rounded-3xl" style={{ background: "#F59E0B" }}>
             <Building2 className="h-10 w-10 text-white" />
           </div>
           <h1 className="font-display text-4xl font-bold text-white mb-4 leading-tight">NyumbaTrack</h1>
-          <p className="text-white/60 text-base leading-relaxed mb-10">
+          <p className="text-white/75 text-base leading-relaxed mb-10">
             The smart way to manage your rental properties. Track tenants, payments, and deposits — built for Kenyan landlords.
           </p>
           <div className="space-y-3 text-left">
