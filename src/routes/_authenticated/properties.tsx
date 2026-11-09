@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Building2, MapPin, Users, TrendingUp, Pencil, Wallet } from "lucide-react";
+import { Plus, X, Building2, MapPin, Users, TrendingUp, Pencil, Wallet, Camera, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useProperty } from "@/context/PropertyContext";
 import { formatKES, formatKESCompact } from "@/lib/format";
@@ -35,6 +35,7 @@ interface Property {
   payment_method: PaymentMethod | null;
   payment_number: string | null;
   payment_account: string | null;
+  photo_url: string | null;
 }
 
 /** What the property form collects and hands to the add/edit mutations. */
@@ -199,6 +200,53 @@ function PropertiesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoTargetRef = useRef<Property | null>(null);
+
+  const pickPhoto = (property: Property) => {
+    photoTargetRef.current = property;
+    fileInputRef.current?.click();
+  };
+
+  const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const property = photoTargetRef.current;
+    e.target.value = "";
+    if (!file || !property) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image is too large — max 5MB");
+      return;
+    }
+    setUploadingId(property.id);
+    try {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const path = `${property.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("property-photos")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("property-photos").getPublicUrl(path);
+      const { data: updated, error } = await (supabase as any)
+        .from("properties")
+        .update({ photo_url: pub.publicUrl })
+        .eq("id", property.id)
+        .select("id");
+      if (error) throw error;
+      if (!updated?.length) throw new Error("You don't have permission to change this property's photo");
+      qc.invalidateQueries({ queryKey: ["properties"] });
+      toast.success("Photo updated!");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Couldn't upload photo");
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
   const openProperty = (property: Property) => {
     setSelectedProperty({ id: property.id, name: property.name, location: property.location });
     navigate({ to: "/dashboard" });
@@ -333,19 +381,36 @@ function PropertiesPage() {
                 className="card-surface card-hover overflow-hidden cursor-pointer"
                 onClick={() => openProperty(p)}
               >
-                <div className="relative h-28 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}>
+                <div className="relative h-28 flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}>
+                  {p.photo_url && (
+                    <>
+                      <img src={p.photo_url} alt={p.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                      <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 55%)" }} />
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); pickPhoto(p); }}
+                    disabled={uploadingId === p.id}
+                    aria-label={p.photo_url ? "Change photo" : "Add photo"}
+                    className="absolute top-3 left-3 z-10 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-70"
+                    style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)" }}
+                  >
+                    {uploadingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
+                    {uploadingId === p.id ? "Uploading…" : p.photo_url ? "Change" : "Add photo"}
+                  </button>
                   {stats.occupancyRate > 0 && (
-                    <div className="absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ background: "rgba(0,0,0,0.25)" }}>
+                    <div className="absolute top-3 right-3 z-10 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ background: "rgba(0,0,0,0.25)" }}>
                       {stats.occupancyRate}% occupied
                     </div>
                   )}
                   {stats.totalUnits > 0 && (
-                    <div className="absolute bottom-3 left-3 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#F59E0B", color: "#FFFFFF" }}>
+                    <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#F59E0B", color: "#FFFFFF" }}>
                       <Users className="h-3 w-3" />
                       {stats.totalUnits} units
                     </div>
                   )}
-                  <Building2 className="h-12 w-12 opacity-20 text-white" />
+                  {!p.photo_url && <Building2 className="h-12 w-12 opacity-20 text-white" />}
                 </div>
                 <div className="p-4">
                   <h3 className="font-display font-bold text-foreground">{p.name}</h3>
@@ -444,6 +509,7 @@ function PropertiesPage() {
   return (
     <div>
       {renderContent()}
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelected} />
       {adding && (
         <PropertyForm
           onSave={(p) => addProperty.mutate(p)}
