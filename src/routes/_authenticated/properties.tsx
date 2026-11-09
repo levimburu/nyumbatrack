@@ -47,6 +47,7 @@ interface PropertyFormValues {
   payment_method: PaymentMethod | null;
   payment_number: string | null;
   payment_account: string | null;
+  photo_url: string | null;
 }
 
 function PropertiesPage() {
@@ -164,6 +165,7 @@ function PropertiesPage() {
         payment_method: p.payment_method,
         payment_number: p.payment_number,
         payment_account: p.payment_account,
+        photo_url: p.photo_url,
       });
       if (error) throw error;
     },
@@ -185,6 +187,7 @@ function PropertiesPage() {
         payment_method: p.payment_method,
         payment_number: p.payment_number,
         payment_account: p.payment_account,
+        photo_url: p.photo_url,
       }).eq("id", p.id);
       if (error) throw error;
     },
@@ -199,53 +202,6 @@ function PropertiesPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  const [uploadingId, setUploadingId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const photoTargetRef = useRef<Property | null>(null);
-
-  const pickPhoto = (property: Property) => {
-    photoTargetRef.current = property;
-    fileInputRef.current?.click();
-  };
-
-  const handlePhotoSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    const property = photoTargetRef.current;
-    e.target.value = "";
-    if (!file || !property) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image is too large — max 5MB");
-      return;
-    }
-    setUploadingId(property.id);
-    try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-      const path = `${property.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("property-photos")
-        .upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr) throw upErr;
-      const { data: pub } = supabase.storage.from("property-photos").getPublicUrl(path);
-      const { data: updated, error } = await (supabase as any)
-        .from("properties")
-        .update({ photo_url: pub.publicUrl })
-        .eq("id", property.id)
-        .select("id");
-      if (error) throw error;
-      if (!updated?.length) throw new Error("You don't have permission to change this property's photo");
-      qc.invalidateQueries({ queryKey: ["properties"] });
-      toast.success("Photo updated!");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Couldn't upload photo");
-    } finally {
-      setUploadingId(null);
-    }
-  };
 
   const openProperty = (property: Property) => {
     setSelectedProperty({ id: property.id, name: property.name, location: property.location });
@@ -388,17 +344,6 @@ function PropertiesPage() {
                       <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 55%)" }} />
                     </>
                   )}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); pickPhoto(p); }}
-                    disabled={uploadingId === p.id}
-                    aria-label={p.photo_url ? "Change photo" : "Add photo"}
-                    className="absolute top-3 left-3 z-10 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-70"
-                    style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(4px)" }}
-                  >
-                    {uploadingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
-                    {uploadingId === p.id ? "Uploading…" : p.photo_url ? "Change" : "Add photo"}
-                  </button>
                   {stats.occupancyRate > 0 && (
                     <div className="absolute top-3 right-3 z-10 rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ background: "rgba(0,0,0,0.25)" }}>
                       {stats.occupancyRate}% occupied
@@ -509,7 +454,6 @@ function PropertiesPage() {
   return (
     <div>
       {renderContent()}
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelected} />
       {adding && (
         <PropertyForm
           onSave={(p) => addProperty.mutate(p)}
@@ -550,6 +494,38 @@ function PropertyForm({
   );
   const [paymentNumber, setPaymentNumber] = useState(initial?.payment_number ?? "");
   const [paymentAccount, setPaymentAccount] = useState(initial?.payment_account ?? "");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(initial?.photo_url ?? null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image is too large — max 5MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const path = `${initial?.id ?? crypto.randomUUID()}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("property-photos")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      setPhotoUrl(supabase.storage.from("property-photos").getPublicUrl(path).data.publicUrl);
+      toast.success("Photo ready — press Save to apply");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Couldn't upload photo");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const numberLabel: Record<PaymentMethod, string> = {
     mpesa_paybill: "Paybill number",
@@ -576,6 +552,7 @@ function PropertyForm({
       payment_number: paymentMethod && paymentMethod !== "cash" ? paymentNumber.trim() : null,
       payment_account:
         paymentMethod === "mpesa_paybill" && paymentAccount.trim() ? paymentAccount.trim() : null,
+      photo_url: photoUrl,
     });
   };
 
@@ -591,6 +568,36 @@ function PropertyForm({
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-foreground">Property photo</label>
+            <div
+              className="relative h-36 w-full overflow-hidden rounded-xl grid place-items-center"
+              style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}
+            >
+              {photoUrl ? (
+                <img src={photoUrl} alt="Property" className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <Building2 className="h-12 w-12 opacity-20 text-white" />
+              )}
+            </div>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium disabled:opacity-60"
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                {uploading ? "Uploading…" : photoUrl ? "Change photo" : "Add photo"}
+              </button>
+              {photoUrl && !uploading && (
+                <button type="button" onClick={() => setPhotoUrl(null)} className="rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted">
+                  Remove
+                </button>
+              )}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+          </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Property name *</label>
             <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Kindaruma Apartments" className="form-input" />
@@ -669,7 +676,7 @@ function PropertyForm({
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
+            <button type="submit" disabled={saving || uploading} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
