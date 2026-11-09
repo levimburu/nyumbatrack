@@ -247,10 +247,17 @@ function Dashboard() {
       {/* Hero header */}
       <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2818 0%, #166534 100%)" }}>
         {propertyData?.photo_url ? (
-          <>
-            <img src={propertyData.photo_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(13,40,24,0.85) 0%, rgba(13,40,24,0.45) 60%, rgba(13,40,24,0.25) 100%)" }} />
-          </>
+          <div
+            className="absolute inset-y-0 right-0 w-full sm:w-3/5 pointer-events-none"
+            style={{
+              backgroundImage: `url(${propertyData.photo_url})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              opacity: 0.55,
+              WebkitMaskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 100%)",
+              maskImage: "linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 35%, #000 100%)",
+            }}
+          />
         ) : (
           <div className="absolute inset-0 opacity-10">
             <div className="absolute top-0 right-0 w-64 h-64 rounded-full" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
