@@ -86,11 +86,11 @@ function Dashboard() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from("properties")
-        .select("total_units")
+        .select("total_units, photo_url")
         .eq("id", selectedProperty!.id)
         .maybeSingle();
       if (error) throw error;
-      return data as { total_units: number };
+      return data as { total_units: number; photo_url: string | null };
     },
   });
 
@@ -246,10 +246,17 @@ function Dashboard() {
 
       {/* Hero header */}
       <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2818 0%, #166534 100%)" }}>
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-64 h-64 rounded-full" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
-          <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full" style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }} />
-        </div>
+        {propertyData?.photo_url ? (
+          <>
+            <img src={propertyData.photo_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(90deg, rgba(13,40,24,0.85) 0%, rgba(13,40,24,0.45) 60%, rgba(13,40,24,0.25) 100%)" }} />
+          </>
+        ) : (
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
+            <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full" style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }} />
+          </div>
+        )}
         <div className="relative">
           <div className="flex items-start justify-between">
             <div>

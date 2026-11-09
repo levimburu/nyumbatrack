@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useProperty } from "@/context/PropertyContext";
 import { formatKES, formatKESCompact } from "@/lib/format";
 import type { PaymentMethod } from "@/lib/reminders";
+import { PhotoCropper } from "@/components/PhotoCropper";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -197,6 +198,7 @@ function PropertiesPage() {
       // property id — without this, an edit here wouldn't show up on the
       // Tenants/Payments pages until something else invalidated it.
       qc.invalidateQueries({ queryKey: ["property-payment-details"] });
+      qc.invalidateQueries({ queryKey: ["property-detail"] });
       setEditing(null);
       toast.success("Property updated!");
     },
@@ -498,7 +500,9 @@ function PropertyForm({
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -506,17 +510,26 @@ function PropertyForm({
       toast.error("Please choose an image file");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image is too large — max 5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image is too large — max 10MB");
       return;
     }
+    setCropSrc(URL.createObjectURL(file));
+  };
+
+  const closeCropper = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  };
+
+  const uploadCropped = async (blob: Blob) => {
+    closeCropper();
     setUploading(true);
     try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-      const path = `${initial?.id ?? crypto.randomUUID()}/${Date.now()}.${ext}`;
+      const path = `${initial?.id ?? crypto.randomUUID()}/${Date.now()}.jpg`;
       const { error } = await supabase.storage
         .from("property-photos")
-        .upload(path, file, { upsert: true, contentType: file.type });
+        .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
       if (error) throw error;
       setPhotoUrl(supabase.storage.from("property-photos").getPublicUrl(path).data.publicUrl);
       toast.success("Photo ready — press Save to apply");
@@ -681,6 +694,7 @@ function PropertyForm({
             </button>
           </div>
         </form>
+        {cropSrc && <PhotoCropper src={cropSrc} onCancel={closeCropper} onApply={uploadCropped} />}
         <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>,
