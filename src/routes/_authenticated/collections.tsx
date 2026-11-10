@@ -10,6 +10,29 @@ import {
   ResponsiveContainer, CartesianGrid, Cell
 } from "recharts";
 
+const ID_CHUNK = 100;
+const PAGE_SIZE = 1000;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
+
+/** Reads every row of a query, a page at a time, past the API's 1000-row cap. */
+async function fetchAllPages<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>,
+): Promise<T[]> {
+  const all: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await page(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    all.push(...((data ?? []) as T[]));
+    if (!data || data.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
 export const Route = createFileRoute("/_authenticated/collections")({
   component: CollectionsPage,
 });
@@ -80,10 +103,13 @@ function CollectionsPage() {
     queryKey: ["collections-tenants", propertyIds.join(",")],
     enabled: propertyIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("tenants").select("id, property_id, rent_amount").in("property_id", safePropertyIds);
-      if (error) throw error;
-      return data as TenantMin[];
+      const rows: TenantMin[] = [];
+      for (const ids of chunk(safePropertyIds, ID_CHUNK)) {
+        rows.push(...(await fetchAllPages<TenantMin>((from, to) =>
+          (supabase as any).from("tenants").select("id, property_id, rent_amount")
+            .in("property_id", ids).order("id").range(from, to))));
+      }
+      return rows;
     },
   });
 
@@ -94,11 +120,15 @@ function CollectionsPage() {
     queryKey: ["collections-payments", tenantIds.join(",")],
     enabled: tenantIds.length > 0,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("payments").select("tenant_id, amount, paid_on, method, payment_month")
-        .in("tenant_id", safeTenantIds).order("paid_on");
-      if (error) throw error;
-      return data as PaymentRow[];
+      // Tenant IDs go in batches: one request with hundreds of IDs makes the
+      // URL too long and the API rejects it with "Bad Request".
+      const rows: PaymentRow[] = [];
+      for (const ids of chunk(safeTenantIds, ID_CHUNK)) {
+        rows.push(...(await fetchAllPages<PaymentRow>((from, to) =>
+          (supabase as any).from("payments").select("tenant_id, amount, paid_on, method, payment_month")
+            .in("tenant_id", ids).order("paid_on").order("id").range(from, to))));
+      }
+      return rows;
     },
   });
 
@@ -220,9 +250,6 @@ function CollectionsPage() {
         <h1 className="font-display text-2xl font-bold text-foreground">Rent Collection Report</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           Summarized across all {properties?.length ?? 0} {properties?.length === 1 ? "property" : "properties"} you manage
-        </p>
-        <p className="text-xs mt-2 px-2 py-1 inline-block rounded" style={{ background: "#FEF9C3", color: "#854D0E" }}>
-          Diagnostic (temporary): {propertyIds.length} property IDs → {tenants?.length ?? "not loaded"} tenants matched → {payments?.length ?? "not loaded"} payments matched
         </p>
       </div>
 
