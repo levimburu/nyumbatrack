@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAccessRouteImport } from './routes/_authenticated/access'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 import { Route as AuthenticatedArrearsRouteImport } from './routes/_authenticated/arrears'
 import { Route as AuthenticatedCollectionsRouteImport } from './routes/_authenticated/collections'
@@ -21,6 +22,7 @@ import { Route as AuthenticatedComplianceRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDepositsRouteImport } from './routes/_authenticated/deposits'
 import { Route as AuthenticatedFinancialsRouteImport } from './routes/_authenticated/financials'
+import { Route as AuthenticatedLandlordsRouteImport } from './routes/_authenticated/landlords'
 import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
@@ -28,6 +30,7 @@ import { Route as AuthenticatedPortalCommunicationsRouteImport } from './routes/
 import { Route as AuthenticatedPortalPaymentsRouteImport } from './routes/_authenticated/portal-payments'
 import { Route as AuthenticatedPortfolioRouteImport } from './routes/_authenticated/portfolio'
 import { Route as AuthenticatedPropertiesRouteImport } from './routes/_authenticated/properties'
+import { Route as AuthenticatedRegisterPropertyRouteImport } from './routes/_authenticated/register-property'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStatementsRouteImport } from './routes/_authenticated/statements'
@@ -35,6 +38,7 @@ import { Route as AuthenticatedTenantsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedVacanciesRouteImport } from './routes/_authenticated/vacancies'
 import { Route as AuthenticatedVendorsRouteImport } from './routes/_authenticated/vendors'
+import { Route as AuthenticatedPropertyDetailsPropertyIdRouteImport } from './routes/_authenticated/property-details.$propertyId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -49,6 +53,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAccessRoute = AuthenticatedAccessRouteImport.update({
+  id: '/access',
+  path: '/access',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
   id: '/activity',
@@ -97,6 +106,11 @@ const AuthenticatedFinancialsRoute = AuthenticatedFinancialsRouteImport.update({
   path: '/financials',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLandlordsRoute = AuthenticatedLandlordsRouteImport.update({
+  id: '/landlords',
+  path: '/landlords',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMaintenanceRoute =
   AuthenticatedMaintenanceRouteImport.update({
     id: '/maintenance',
@@ -135,6 +149,12 @@ const AuthenticatedPropertiesRoute = AuthenticatedPropertiesRouteImport.update({
   path: '/properties',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRegisterPropertyRoute =
+  AuthenticatedRegisterPropertyRouteImport.update({
+    id: '/register-property',
+    path: '/register-property',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -170,10 +190,17 @@ const AuthenticatedVendorsRoute = AuthenticatedVendorsRouteImport.update({
   path: '/vendors',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPropertyDetailsPropertyIdRoute =
+  AuthenticatedPropertyDetailsPropertyIdRouteImport.update({
+    id: '/property-details/$propertyId',
+    path: '/property-details/$propertyId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/access': typeof AuthenticatedAccessRoute
   '/activity': typeof AuthenticatedActivityRoute
   '/arrears': typeof AuthenticatedArrearsRoute
   '/collections': typeof AuthenticatedCollectionsRoute
@@ -183,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deposits': typeof AuthenticatedDepositsRoute
   '/financials': typeof AuthenticatedFinancialsRoute
+  '/landlords': typeof AuthenticatedLandlordsRoute
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/portal': typeof AuthenticatedPortalRoute
@@ -190,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/portal-payments': typeof AuthenticatedPortalPaymentsRoute
   '/portfolio': typeof AuthenticatedPortfolioRoute
   '/properties': typeof AuthenticatedPropertiesRoute
+  '/register-property': typeof AuthenticatedRegisterPropertyRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/statements': typeof AuthenticatedStatementsRoute
@@ -197,10 +226,12 @@ export interface FileRoutesByFullPath {
   '/units': typeof AuthenticatedUnitsRoute
   '/vacancies': typeof AuthenticatedVacanciesRoute
   '/vendors': typeof AuthenticatedVendorsRoute
+  '/property-details/$propertyId': typeof AuthenticatedPropertyDetailsPropertyIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/access': typeof AuthenticatedAccessRoute
   '/activity': typeof AuthenticatedActivityRoute
   '/arrears': typeof AuthenticatedArrearsRoute
   '/collections': typeof AuthenticatedCollectionsRoute
@@ -210,6 +241,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deposits': typeof AuthenticatedDepositsRoute
   '/financials': typeof AuthenticatedFinancialsRoute
+  '/landlords': typeof AuthenticatedLandlordsRoute
   '/maintenance': typeof AuthenticatedMaintenanceRoute
   '/payments': typeof AuthenticatedPaymentsRoute
   '/portal': typeof AuthenticatedPortalRoute
@@ -217,6 +249,7 @@ export interface FileRoutesByTo {
   '/portal-payments': typeof AuthenticatedPortalPaymentsRoute
   '/portfolio': typeof AuthenticatedPortfolioRoute
   '/properties': typeof AuthenticatedPropertiesRoute
+  '/register-property': typeof AuthenticatedRegisterPropertyRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/statements': typeof AuthenticatedStatementsRoute
@@ -224,12 +257,14 @@ export interface FileRoutesByTo {
   '/units': typeof AuthenticatedUnitsRoute
   '/vacancies': typeof AuthenticatedVacanciesRoute
   '/vendors': typeof AuthenticatedVendorsRoute
+  '/property-details/$propertyId': typeof AuthenticatedPropertyDetailsPropertyIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/access': typeof AuthenticatedAccessRoute
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/arrears': typeof AuthenticatedArrearsRoute
   '/_authenticated/collections': typeof AuthenticatedCollectionsRoute
@@ -239,6 +274,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deposits': typeof AuthenticatedDepositsRoute
   '/_authenticated/financials': typeof AuthenticatedFinancialsRoute
+  '/_authenticated/landlords': typeof AuthenticatedLandlordsRoute
   '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/portal': typeof AuthenticatedPortalRoute
@@ -246,6 +282,7 @@ export interface FileRoutesById {
   '/_authenticated/portal-payments': typeof AuthenticatedPortalPaymentsRoute
   '/_authenticated/portfolio': typeof AuthenticatedPortfolioRoute
   '/_authenticated/properties': typeof AuthenticatedPropertiesRoute
+  '/_authenticated/register-property': typeof AuthenticatedRegisterPropertyRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/statements': typeof AuthenticatedStatementsRoute
@@ -253,12 +290,14 @@ export interface FileRoutesById {
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
   '/_authenticated/vacancies': typeof AuthenticatedVacanciesRoute
   '/_authenticated/vendors': typeof AuthenticatedVendorsRoute
+  '/_authenticated/property-details/$propertyId': typeof AuthenticatedPropertyDetailsPropertyIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
+    | '/access'
     | '/activity'
     | '/arrears'
     | '/collections'
@@ -268,6 +307,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deposits'
     | '/financials'
+    | '/landlords'
     | '/maintenance'
     | '/payments'
     | '/portal'
@@ -275,6 +315,7 @@ export interface FileRouteTypes {
     | '/portal-payments'
     | '/portfolio'
     | '/properties'
+    | '/register-property'
     | '/reports'
     | '/staff'
     | '/statements'
@@ -282,10 +323,12 @@ export interface FileRouteTypes {
     | '/units'
     | '/vacancies'
     | '/vendors'
+    | '/property-details/$propertyId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/access'
     | '/activity'
     | '/arrears'
     | '/collections'
@@ -295,6 +338,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deposits'
     | '/financials'
+    | '/landlords'
     | '/maintenance'
     | '/payments'
     | '/portal'
@@ -302,6 +346,7 @@ export interface FileRouteTypes {
     | '/portal-payments'
     | '/portfolio'
     | '/properties'
+    | '/register-property'
     | '/reports'
     | '/staff'
     | '/statements'
@@ -309,11 +354,13 @@ export interface FileRouteTypes {
     | '/units'
     | '/vacancies'
     | '/vendors'
+    | '/property-details/$propertyId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/access'
     | '/_authenticated/activity'
     | '/_authenticated/arrears'
     | '/_authenticated/collections'
@@ -323,6 +370,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/deposits'
     | '/_authenticated/financials'
+    | '/_authenticated/landlords'
     | '/_authenticated/maintenance'
     | '/_authenticated/payments'
     | '/_authenticated/portal'
@@ -330,6 +378,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portal-payments'
     | '/_authenticated/portfolio'
     | '/_authenticated/properties'
+    | '/_authenticated/register-property'
     | '/_authenticated/reports'
     | '/_authenticated/staff'
     | '/_authenticated/statements'
@@ -337,6 +386,7 @@ export interface FileRouteTypes {
     | '/_authenticated/units'
     | '/_authenticated/vacancies'
     | '/_authenticated/vendors'
+    | '/_authenticated/property-details/$propertyId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -367,6 +417,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/access': {
+      id: '/_authenticated/access'
+      path: '/access'
+      fullPath: '/access'
+      preLoaderRoute: typeof AuthenticatedAccessRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/activity': {
       id: '/_authenticated/activity'
@@ -431,6 +488,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinancialsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/landlords': {
+      id: '/_authenticated/landlords'
+      path: '/landlords'
+      fullPath: '/landlords'
+      preLoaderRoute: typeof AuthenticatedLandlordsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/maintenance': {
       id: '/_authenticated/maintenance'
       path: '/maintenance'
@@ -478,6 +542,13 @@ declare module '@tanstack/react-router' {
       path: '/properties'
       fullPath: '/properties'
       preLoaderRoute: typeof AuthenticatedPropertiesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/register-property': {
+      id: '/_authenticated/register-property'
+      path: '/register-property'
+      fullPath: '/register-property'
+      preLoaderRoute: typeof AuthenticatedRegisterPropertyRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/reports': {
@@ -529,10 +600,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVendorsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/property-details/$propertyId': {
+      id: '/_authenticated/property-details/$propertyId'
+      path: '/property-details/$propertyId'
+      fullPath: '/property-details/$propertyId'
+      preLoaderRoute: typeof AuthenticatedPropertyDetailsPropertyIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccessRoute: typeof AuthenticatedAccessRoute
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedArrearsRoute: typeof AuthenticatedArrearsRoute
   AuthenticatedCollectionsRoute: typeof AuthenticatedCollectionsRoute
@@ -542,6 +621,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDepositsRoute: typeof AuthenticatedDepositsRoute
   AuthenticatedFinancialsRoute: typeof AuthenticatedFinancialsRoute
+  AuthenticatedLandlordsRoute: typeof AuthenticatedLandlordsRoute
   AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
@@ -549,6 +629,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPortalPaymentsRoute: typeof AuthenticatedPortalPaymentsRoute
   AuthenticatedPortfolioRoute: typeof AuthenticatedPortfolioRoute
   AuthenticatedPropertiesRoute: typeof AuthenticatedPropertiesRoute
+  AuthenticatedRegisterPropertyRoute: typeof AuthenticatedRegisterPropertyRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStatementsRoute: typeof AuthenticatedStatementsRoute
@@ -556,9 +637,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUnitsRoute: typeof AuthenticatedUnitsRoute
   AuthenticatedVacanciesRoute: typeof AuthenticatedVacanciesRoute
   AuthenticatedVendorsRoute: typeof AuthenticatedVendorsRoute
+  AuthenticatedPropertyDetailsPropertyIdRoute: typeof AuthenticatedPropertyDetailsPropertyIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccessRoute: AuthenticatedAccessRoute,
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedArrearsRoute: AuthenticatedArrearsRoute,
   AuthenticatedCollectionsRoute: AuthenticatedCollectionsRoute,
@@ -568,6 +651,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDepositsRoute: AuthenticatedDepositsRoute,
   AuthenticatedFinancialsRoute: AuthenticatedFinancialsRoute,
+  AuthenticatedLandlordsRoute: AuthenticatedLandlordsRoute,
   AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedPortalRoute: AuthenticatedPortalRoute,
@@ -576,6 +660,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPortalPaymentsRoute: AuthenticatedPortalPaymentsRoute,
   AuthenticatedPortfolioRoute: AuthenticatedPortfolioRoute,
   AuthenticatedPropertiesRoute: AuthenticatedPropertiesRoute,
+  AuthenticatedRegisterPropertyRoute: AuthenticatedRegisterPropertyRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStatementsRoute: AuthenticatedStatementsRoute,
@@ -583,6 +668,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUnitsRoute: AuthenticatedUnitsRoute,
   AuthenticatedVacanciesRoute: AuthenticatedVacanciesRoute,
   AuthenticatedVendorsRoute: AuthenticatedVendorsRoute,
+  AuthenticatedPropertyDetailsPropertyIdRoute:
+    AuthenticatedPropertyDetailsPropertyIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

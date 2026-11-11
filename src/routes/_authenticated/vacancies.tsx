@@ -7,6 +7,7 @@ import { formatKES } from "@/lib/format";
 import { UNIT_TYPES, unitTypeLabel } from "@/lib/unitTypes";
 import { Search, MapPin, Building2, Copy, DoorOpen, X } from "lucide-react";
 import { toast } from "sonner";
+import { VacancyDetail } from "@/components/VacancyDetail";
 
 export const Route = createFileRoute("/_authenticated/vacancies")({
   component: VacanciesPage,
@@ -67,6 +68,7 @@ function VacanciesPage() {
   const [minRent, setMinRent] = useState("");
   const [maxRent, setMaxRent] = useState("");
   const [visible, setVisible] = useState(SHOW_STEP);
+  const [openVacancy, setOpenVacancy] = useState<Vacancy | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -276,7 +278,7 @@ function VacanciesPage() {
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.slice(0, visible).map((v) => (
-              <div key={v.id} className="card-surface overflow-hidden flex flex-col">
+              <div key={v.id} role="button" tabIndex={0} onClick={() => setOpenVacancy(v)} onKeyDown={(e) => { if (e.key === "Enter") setOpenVacancy(v); }} className="card-surface overflow-hidden flex flex-col cursor-pointer transition-shadow hover:shadow-md">
                 <div
                   className="relative h-28 grid place-items-center overflow-hidden"
                   style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}
@@ -316,7 +318,7 @@ function VacanciesPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => copyDetails(v)}
+                    onClick={(e) => { e.stopPropagation(); copyDetails(v); }}
                     className="mt-4 inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted transition-colors"
                   >
                     <Copy className="h-3.5 w-3.5" /> Copy details
@@ -337,6 +339,7 @@ function VacanciesPage() {
           )}
         </>
       )}
+      {openVacancy && <VacancyDetail vacancy={openVacancy} onClose={() => setOpenVacancy(null)} onCopy={() => copyDetails(openVacancy)} />}
     </div>
   );
 }

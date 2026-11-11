@@ -10,6 +10,7 @@ import { useProperty } from "@/context/PropertyContext";
 import { formatKES, formatKESCompact } from "@/lib/format";
 import type { PaymentMethod } from "@/lib/reminders";
 import { PhotoCropper } from "@/components/PhotoCropper";
+import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -55,6 +56,8 @@ interface PropertyFormValues {
 function PropertiesPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { data: companyAccess } = useCompanyAccess();
+  const isCompanyOfficer = (companyAccess?.officerCompanies.length ?? 0) > 0;
   const { setSelectedProperty } = useProperty();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Property | null>(null);
@@ -266,7 +269,7 @@ function PropertiesPage() {
           </div>
           {!isAgent && (
             <button
-              onClick={() => setAdding(true)}
+              onClick={() => (isCompanyOfficer ? navigate({ to: "/register-property" }) : setAdding(true))}
               className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all glow-primary"
               style={{ background: "#166534" }}
             >
@@ -296,7 +299,7 @@ function PropertiesPage() {
             {!isAgent && (
               <div className="flex gap-2">
                 <button
-                  onClick={() => setAdding(true)}
+                  onClick={() => (isCompanyOfficer ? navigate({ to: "/register-property" }) : setAdding(true))}
                   className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
                   style={{ background: "#166534" }}
                 >
@@ -394,6 +397,12 @@ function PropertiesPage() {
                     </div>
                   )}
                   <div className="flex items-center justify-between mt-3">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate({ to: "/property-details/$propertyId", params: { propertyId: p.id } }); }}
+                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                    >
+                      Details
+                    </button>
                     {!isAgent && (
                       <button
                         onClick={(e) => { e.stopPropagation(); setEditing(p); }}
@@ -413,7 +422,7 @@ function PropertiesPage() {
 
           {!isAgent && (
             <button
-              onClick={() => setAdding(true)}
+              onClick={() => (isCompanyOfficer ? navigate({ to: "/register-property" }) : setAdding(true))}
               className="card-surface flex flex-col items-center justify-center p-8 border-2 border-dashed hover:border-primary transition-colors min-h-[200px]"
               style={{ borderColor: "#D1D5DB" }}
             >
