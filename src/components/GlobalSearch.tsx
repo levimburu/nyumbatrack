@@ -84,7 +84,7 @@ const PAGES = [
 // bypass the safety already built into each action.
 const ACTIONS = [
   { key: "change_password", label: "Change Password", icon: Lock },
-  { key: "connected_agents", label: "Connected Agents", icon: Users },
+  { key: "connected_agents", label: "Connected Property Managers", icon: Users },
   { key: "signout_all", label: "Sign Out of All Devices", icon: Monitor },
   { key: "signout", label: "Sign Out", icon: LogOut },
   { key: "delete_account", label: "Delete Account", icon: Trash2 },

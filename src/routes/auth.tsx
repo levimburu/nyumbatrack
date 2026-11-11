@@ -330,7 +330,7 @@ function AuthPage() {
             <div>
               <button onClick={back} className="flex items-center gap-2 text-sm mb-6" style={{ color: "#6B7280" }}><ArrowLeft className="h-4 w-4" /> Back</button>
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Redeem your invite code</h1>
-              <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Enter the code your landlord or agent gave you, then set up your login.</p>
+              <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Enter the code your landlord or company gave you, then set up your login.</p>
               <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} placeholder="TNT-ABC123" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-3 text-center font-mono tracking-widest" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
               <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-3" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full rounded-xl border px-4 py-3 text-sm outline-none mb-3" style={{ borderColor: "#E5E7EB", color: "#111827" }} onFocus={(e) => e.target.style.borderColor = "#166534"} onBlur={(e) => e.target.style.borderColor = "#E5E7EB"} />
@@ -405,7 +405,7 @@ function AuthPage() {
             The smart way to manage your rental properties. Track tenants, payments, and deposits — built for Kenyan landlords.
           </p>
           <div className="space-y-3 text-left">
-            {["Track rent payments & receipts", "Manage multiple properties", "Agent & landlord collaboration", "Deposits & occupancy tracking"].map((f) => (
+            {["Track rent payments & receipts", "Manage multiple properties", "Property manager & landlord collaboration", "Deposits & occupancy tracking"].map((f) => (
               <div key={f} className="flex items-center gap-3">
                 <div className="grid h-6 w-6 place-items-center rounded-full flex-shrink-0" style={{ background: "#F59E0B" }}>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -538,7 +538,7 @@ function AuthPage() {
           {step === "tenant_code" && (
             <div className="flex flex-col flex-1">
               <h1 className="font-display text-2xl font-bold mb-2" style={{ color: "#111827" }}>Redeem your invite code</h1>
-              <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Enter the code your landlord or agent gave you, then set up your login.</p>
+              <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Enter the code your landlord or company gave you, then set up your login.</p>
               <input type="text" value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase())} placeholder="e.g. TNT-ABC123" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 tracking-widest text-center font-mono mb-3" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
               <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Full name" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 mb-3" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full rounded-2xl border-2 px-5 py-4 text-base outline-none focus:border-amber-400 mb-3" style={{ borderColor: "#E5E7EB", background: "white", color: "#111827" }} />

@@ -280,7 +280,7 @@ function Dashboard() {
                   className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold"
                   style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}
                 >
-                  <Key className="h-3.5 w-3.5" /> Invite Agent
+                  <Key className="h-3.5 w-3.5" /> Invite Property Manager
                 </button>
               )}
               <div className="grid h-12 w-12 place-items-center rounded-2xl" style={{ background: "rgba(255,255,255,0.15)" }}>
@@ -517,7 +517,7 @@ function Dashboard() {
             <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
               <Key className="h-7 w-7" style={{ color: "#166534" }} />
             </div>
-            <h2 className="font-display text-xl font-semibold mb-2">Agent Invite Code</h2>
+            <h2 className="font-display text-xl font-semibold mb-2">Property Manager Invite Code</h2>
             <p className="text-sm text-muted-foreground mb-2">
               Share this code with your agent for <span className="font-semibold text-foreground">{selectedProperty.name}</span>.
             </p>

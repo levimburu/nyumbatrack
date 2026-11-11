@@ -325,15 +325,15 @@ export function AppLayout({ children, role, email, displayName }: {
   };
 
   const handleDisconnectAgent = async (agentId: string) => {
-    if (!confirm("Disconnect this agent from your properties?")) return;
+    if (!confirm("Disconnect this property manager from your properties?")) return;
     const { error } = await (supabase as any)
       .from("agent_landlord")
       .delete()
       .eq("agent_id", agentId)
       .eq("landlord_id", userId);
-    if (error) { toast.error("Failed to disconnect agent"); return; }
+    if (error) { toast.error("Failed to disconnect property manager"); return; }
     setAgents((prev) => prev.filter((a) => a.agent_id !== agentId));
-    toast.success("Agent disconnected");
+    toast.success("Property manager disconnected");
   };
 
   const handleChangePassword = async () => {
@@ -380,7 +380,8 @@ export function AppLayout({ children, role, email, displayName }: {
 
   const displayLabel = displayName || email || "User";
   const initials = displayLabel.charAt(0).toUpperCase();
-  const roleLabel = profileRole === "agent" ? "Agent" : "Landlord";
+  const roleLabel =
+    profileRole === "agent" ? "Property Manager" : companyAccess?.officerCompanies.length ? "Senior Officer" : "Landlord";
 
   const notifTypeColor = (type: string): string => {
     if (type === "payment") return "#16A34A";
@@ -851,20 +852,20 @@ export function AppLayout({ children, role, email, displayName }: {
                   <span className="text-sm font-medium text-foreground">Connected Agents</span>
                 </div>
                 {agents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground pl-12">No agents connected.</p>
+                  <p className="text-xs text-muted-foreground pl-12">No property managers connected.</p>
                 ) : (
                   agents.map((a) => (
                     <div key={a.agent_id} className="flex items-center justify-between pl-12 py-1.5">
                       <div>
                         <div className="text-sm font-medium text-foreground">
-                          {a.profiles?.full_name ?? "Agent"}
+                          {a.profiles?.full_name ?? "Property Manager"}
                         </div>
-                        <div className="text-xs text-muted-foreground">Agent</div>
+                        <div className="text-xs text-muted-foreground">Property Manager</div>
                       </div>
                       <button
                         onClick={() => handleDisconnectAgent(a.agent_id)}
                         className="rounded-lg p-1.5 text-muted-foreground hover:text-red-600 transition-colors"
-                        title="Disconnect agent"
+                        title="Disconnect property manager"
                       >
                         <UserX className="h-4 w-4" />
                       </button>
