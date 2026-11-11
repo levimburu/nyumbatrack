@@ -31,7 +31,7 @@ begin
       on t.table_schema = c.table_schema and t.table_name = c.table_name and t.table_type = 'BASE TABLE'
     where c.table_schema = 'public'
       and c.column_name in ('property_id','tenant_id')
-      and c.table_name not in ('property_assignments','properties')
+      and c.table_name not in ('property_assignments','properties','agent_landlord','invite_codes')
   loop
     execute format('drop policy if exists company_access on public.%I', r.table_name);
     if r.column_name = 'property_id' then
