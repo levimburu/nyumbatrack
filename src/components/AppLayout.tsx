@@ -842,14 +842,14 @@ export function AppLayout({ children, role, email, displayName }: {
               )}
             </div>
 
-            {/* Connected Agents (landlords only) */}
+            {/* Connected property managers (landlords only) */}
             {profileRole === "landlord" && (
               <div className="px-5 py-4 border-b border-border">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#F5F5F0" }}>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <span className="text-sm font-medium text-foreground">Connected Agents</span>
+                  <span className="text-sm font-medium text-foreground">Connected Property Managers</span>
                 </div>
                 {agents.length === 0 ? (
                   <p className="text-xs text-muted-foreground pl-12">No property managers connected.</p>
