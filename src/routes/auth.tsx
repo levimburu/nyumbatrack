@@ -112,7 +112,7 @@ function AuthPage() {
         toast.error("Invalid or already-used invite code");
         return;
       }
-      setRole(codeData.code_type === "agent_invite" ? "agent" : "landlord");
+      setRole(codeData.code_type === "agent_invite" || codeData.code_type === "company_staff" ? "agent" : "landlord");
       if (codeData.intended_email) {
         setEmail(codeData.intended_email);
         setEmailLocked(true);

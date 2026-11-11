@@ -10,6 +10,7 @@ import type { AppRole } from "@/hooks/use-auth";
 import { useProperty } from "@/context/PropertyContext";
 import { toast } from "sonner";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 
 interface NavItem { to: string; label: string; icon: typeof Users; }
 
@@ -82,7 +83,15 @@ export function AppLayout({ children, role, email, displayName }: {
   const [profileRole, setProfileRole] = useState<string>("landlord");
   const [userId, setUserId] = useState<string | null>(null);
   const { selectedProperty, setSelectedProperty } = useProperty();
-  const items = role === "admin" ? adminNav : tenantNav;
+  const { data: companyAccess } = useCompanyAccess();
+  const items: NavItem[] =
+    role === "admin"
+      ? [
+          ...adminNav,
+          ...(companyAccess?.isPlatformAdmin ? [{ to: "/companies", label: "Companies", icon: Building2 }] : []),
+          ...(companyAccess?.officerCompanies.length ? [{ to: "/staff", label: "Staff", icon: Users }] : []),
+        ]
+      : tenantNav;
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);

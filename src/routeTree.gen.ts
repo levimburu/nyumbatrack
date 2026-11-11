@@ -16,6 +16,7 @@ import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedArrearsRouteImport } from './routes/_authenticated/arrears'
 import { Route as AuthenticatedCollectionsRouteImport } from './routes/_authenticated/collections'
 import { Route as AuthenticatedCommunicationsRouteImport } from './routes/_authenticated/communications'
+import { Route as AuthenticatedCompaniesRouteImport } from './routes/_authenticated/companies'
 import { Route as AuthenticatedComplianceRouteImport } from './routes/_authenticated/compliance'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedDepositsRouteImport } from './routes/_authenticated/deposits'
@@ -28,6 +29,7 @@ import { Route as AuthenticatedPortalPaymentsRouteImport } from './routes/_authe
 import { Route as AuthenticatedPortfolioRouteImport } from './routes/_authenticated/portfolio'
 import { Route as AuthenticatedPropertiesRouteImport } from './routes/_authenticated/properties'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStatementsRouteImport } from './routes/_authenticated/statements'
 import { Route as AuthenticatedTenantsRouteImport } from './routes/_authenticated/tenants'
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
@@ -70,6 +72,11 @@ const AuthenticatedCommunicationsRoute =
     path: '/communications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCompaniesRoute = AuthenticatedCompaniesRouteImport.update({
+  id: '/companies',
+  path: '/companies',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedComplianceRoute = AuthenticatedComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
@@ -133,6 +140,11 @@ const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStatementsRoute = AuthenticatedStatementsRouteImport.update({
   id: '/statements',
   path: '/statements',
@@ -166,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/arrears': typeof AuthenticatedArrearsRoute
   '/collections': typeof AuthenticatedCollectionsRoute
   '/communications': typeof AuthenticatedCommunicationsRoute
+  '/companies': typeof AuthenticatedCompaniesRoute
   '/compliance': typeof AuthenticatedComplianceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deposits': typeof AuthenticatedDepositsRoute
@@ -178,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/portfolio': typeof AuthenticatedPortfolioRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/staff': typeof AuthenticatedStaffRoute
   '/statements': typeof AuthenticatedStatementsRoute
   '/tenants': typeof AuthenticatedTenantsRoute
   '/units': typeof AuthenticatedUnitsRoute
@@ -191,6 +205,7 @@ export interface FileRoutesByTo {
   '/arrears': typeof AuthenticatedArrearsRoute
   '/collections': typeof AuthenticatedCollectionsRoute
   '/communications': typeof AuthenticatedCommunicationsRoute
+  '/companies': typeof AuthenticatedCompaniesRoute
   '/compliance': typeof AuthenticatedComplianceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deposits': typeof AuthenticatedDepositsRoute
@@ -203,6 +218,7 @@ export interface FileRoutesByTo {
   '/portfolio': typeof AuthenticatedPortfolioRoute
   '/properties': typeof AuthenticatedPropertiesRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/staff': typeof AuthenticatedStaffRoute
   '/statements': typeof AuthenticatedStatementsRoute
   '/tenants': typeof AuthenticatedTenantsRoute
   '/units': typeof AuthenticatedUnitsRoute
@@ -218,6 +234,7 @@ export interface FileRoutesById {
   '/_authenticated/arrears': typeof AuthenticatedArrearsRoute
   '/_authenticated/collections': typeof AuthenticatedCollectionsRoute
   '/_authenticated/communications': typeof AuthenticatedCommunicationsRoute
+  '/_authenticated/companies': typeof AuthenticatedCompaniesRoute
   '/_authenticated/compliance': typeof AuthenticatedComplianceRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deposits': typeof AuthenticatedDepositsRoute
@@ -230,6 +247,7 @@ export interface FileRoutesById {
   '/_authenticated/portfolio': typeof AuthenticatedPortfolioRoute
   '/_authenticated/properties': typeof AuthenticatedPropertiesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/statements': typeof AuthenticatedStatementsRoute
   '/_authenticated/tenants': typeof AuthenticatedTenantsRoute
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
@@ -245,6 +263,7 @@ export interface FileRouteTypes {
     | '/arrears'
     | '/collections'
     | '/communications'
+    | '/companies'
     | '/compliance'
     | '/dashboard'
     | '/deposits'
@@ -257,6 +276,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/properties'
     | '/reports'
+    | '/staff'
     | '/statements'
     | '/tenants'
     | '/units'
@@ -270,6 +290,7 @@ export interface FileRouteTypes {
     | '/arrears'
     | '/collections'
     | '/communications'
+    | '/companies'
     | '/compliance'
     | '/dashboard'
     | '/deposits'
@@ -282,6 +303,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/properties'
     | '/reports'
+    | '/staff'
     | '/statements'
     | '/tenants'
     | '/units'
@@ -296,6 +318,7 @@ export interface FileRouteTypes {
     | '/_authenticated/arrears'
     | '/_authenticated/collections'
     | '/_authenticated/communications'
+    | '/_authenticated/companies'
     | '/_authenticated/compliance'
     | '/_authenticated/dashboard'
     | '/_authenticated/deposits'
@@ -308,6 +331,7 @@ export interface FileRouteTypes {
     | '/_authenticated/portfolio'
     | '/_authenticated/properties'
     | '/_authenticated/reports'
+    | '/_authenticated/staff'
     | '/_authenticated/statements'
     | '/_authenticated/tenants'
     | '/_authenticated/units'
@@ -370,6 +394,13 @@ declare module '@tanstack/react-router' {
       path: '/communications'
       fullPath: '/communications'
       preLoaderRoute: typeof AuthenticatedCommunicationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/companies': {
+      id: '/_authenticated/companies'
+      path: '/companies'
+      fullPath: '/companies'
+      preLoaderRoute: typeof AuthenticatedCompaniesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/compliance': {
@@ -456,6 +487,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/staff': {
+      id: '/_authenticated/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof AuthenticatedStaffRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/statements': {
       id: '/_authenticated/statements'
       path: '/statements'
@@ -499,6 +537,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedArrearsRoute: typeof AuthenticatedArrearsRoute
   AuthenticatedCollectionsRoute: typeof AuthenticatedCollectionsRoute
   AuthenticatedCommunicationsRoute: typeof AuthenticatedCommunicationsRoute
+  AuthenticatedCompaniesRoute: typeof AuthenticatedCompaniesRoute
   AuthenticatedComplianceRoute: typeof AuthenticatedComplianceRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDepositsRoute: typeof AuthenticatedDepositsRoute
@@ -511,6 +550,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPortfolioRoute: typeof AuthenticatedPortfolioRoute
   AuthenticatedPropertiesRoute: typeof AuthenticatedPropertiesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStatementsRoute: typeof AuthenticatedStatementsRoute
   AuthenticatedTenantsRoute: typeof AuthenticatedTenantsRoute
   AuthenticatedUnitsRoute: typeof AuthenticatedUnitsRoute
@@ -523,6 +563,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedArrearsRoute: AuthenticatedArrearsRoute,
   AuthenticatedCollectionsRoute: AuthenticatedCollectionsRoute,
   AuthenticatedCommunicationsRoute: AuthenticatedCommunicationsRoute,
+  AuthenticatedCompaniesRoute: AuthenticatedCompaniesRoute,
   AuthenticatedComplianceRoute: AuthenticatedComplianceRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDepositsRoute: AuthenticatedDepositsRoute,
@@ -536,6 +577,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPortfolioRoute: AuthenticatedPortfolioRoute,
   AuthenticatedPropertiesRoute: AuthenticatedPropertiesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStatementsRoute: AuthenticatedStatementsRoute,
   AuthenticatedTenantsRoute: AuthenticatedTenantsRoute,
   AuthenticatedUnitsRoute: AuthenticatedUnitsRoute,
