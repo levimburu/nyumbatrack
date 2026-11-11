@@ -84,11 +84,13 @@ export function AppLayout({ children, role, email, displayName }: {
   const [userId, setUserId] = useState<string | null>(null);
   const { selectedProperty, setSelectedProperty } = useProperty();
   const { data: companyAccess } = useCompanyAccess();
+  const companyMemberships = (companyAccess?.memberships ?? []).filter((m) => m.company?.kind === "company");
+  const isSuspended = companyMemberships.length > 0 && companyMemberships.every((m) => m.company?.status === "suspended");
   const items: NavItem[] =
     role === "admin"
       ? [
           ...adminNav,
-          ...(companyAccess?.isPlatformAdmin ? [{ to: "/companies", label: "Companies", icon: Building2 }] : []),
+          ...(companyAccess?.isPlatformAdmin ? [{ to: "/owner", label: "Owner console", icon: Building2 }] : []),
           ...(companyAccess?.memberships.some((m) => m.company?.kind === "company") ? [{ to: "/landlords", label: "Landlords", icon: Users }] : []),
           ...(companyAccess?.officerCompanies.length ? [{ to: "/staff", label: "Staff", icon: Users }, { to: "/access", label: "Access", icon: ShieldCheck }] : []),
         ]
@@ -640,7 +642,14 @@ export function AppLayout({ children, role, email, displayName }: {
           )}
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:px-8 md:py-5 animate-fade-in">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 md:px-8 md:py-5 animate-fade-in">
+          {isSuspended ? (
+            <div className="mx-auto mt-16 max-w-md rounded-2xl border border-border bg-white p-6 text-center">
+              <h2 className="font-display text-xl font-bold">Account suspended</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Your company's NyumbaTrack account is suspended. Your data is safe. Please contact NyumbaTrack to restore access.</p>
+            </div>
+          ) : children}
+        </main>
       </div>
 
       {/* MOBILE SEARCH OVERLAY — full-screen since the mobile header has no

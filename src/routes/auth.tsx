@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { fetchManagedPropertyIds } from "@/lib/managedProperties";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Building2, Loader2, ChevronRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
@@ -70,6 +71,16 @@ function AuthPage() {
         const { data } = await (supabase as any).from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
         destination = data?.role === "admin" ? "/portfolio" : "/portal";
       }
+      // a dedicated owner login (platform admin with no properties of its own) opens the owner console
+      let ownerHome = false;
+      try {
+        const { data: isOwner } = await (supabase as any).rpc("is_platform_admin");
+        if (isOwner === true) {
+          const ids = await fetchManagedPropertyIds();
+          ownerHome = ids.length === 0;
+        }
+      } catch { /* fall back to the normal home */ }
+      if (ownerHome) { navigate({ to: "/owner", replace: true }); return; }
       navigate({ to: destination, replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign in failed");

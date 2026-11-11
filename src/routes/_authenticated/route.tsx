@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { AppLayout } from "@/components/AppLayout";
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedShell() {
   const { role, user, loading } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [profileName, setProfileName] = useState<string>("");
 
   useEffect(() => {
@@ -38,6 +39,9 @@ function AuthenticatedShell() {
       </div>
     );
   }
+
+  // the owner console has its own layout
+  if (pathname === "/owner" || pathname.startsWith("/owner/")) return <Outlet />;
 
   if (role === "tenant") {
     return (

@@ -24,6 +24,7 @@ import { Route as AuthenticatedDepositsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedFinancialsRouteImport } from './routes/_authenticated/financials'
 import { Route as AuthenticatedLandlordsRouteImport } from './routes/_authenticated/landlords'
 import { Route as AuthenticatedMaintenanceRouteImport } from './routes/_authenticated/maintenance'
+import { Route as AuthenticatedOwnerRouteImport } from './routes/_authenticated/owner'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedPortalRouteImport } from './routes/_authenticated/portal'
 import { Route as AuthenticatedPortalCommunicationsRouteImport } from './routes/_authenticated/portal-communications'
@@ -38,6 +39,9 @@ import { Route as AuthenticatedTenantsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedUnitsRouteImport } from './routes/_authenticated/units'
 import { Route as AuthenticatedVacanciesRouteImport } from './routes/_authenticated/vacancies'
 import { Route as AuthenticatedVendorsRouteImport } from './routes/_authenticated/vendors'
+import { Route as AuthenticatedOwnerIndexRouteImport } from './routes/_authenticated/owner.index'
+import { Route as AuthenticatedOwnerCompaniesRouteImport } from './routes/_authenticated/owner.companies'
+import { Route as AuthenticatedOwnerSupportRouteImport } from './routes/_authenticated/owner.support'
 import { Route as AuthenticatedPropertyDetailsPropertyIdRouteImport } from './routes/_authenticated/property-details.$propertyId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -117,6 +121,11 @@ const AuthenticatedMaintenanceRoute =
     path: '/maintenance',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOwnerRoute = AuthenticatedOwnerRouteImport.update({
+  id: '/owner',
+  path: '/owner',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
@@ -190,6 +199,23 @@ const AuthenticatedVendorsRoute = AuthenticatedVendorsRouteImport.update({
   path: '/vendors',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOwnerIndexRoute = AuthenticatedOwnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedOwnerRoute,
+} as any)
+const AuthenticatedOwnerCompaniesRoute =
+  AuthenticatedOwnerCompaniesRouteImport.update({
+    id: '/companies',
+    path: '/companies',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
+const AuthenticatedOwnerSupportRoute =
+  AuthenticatedOwnerSupportRouteImport.update({
+    id: '/support',
+    path: '/support',
+    getParentRoute: () => AuthenticatedOwnerRoute,
+  } as any)
 const AuthenticatedPropertyDetailsPropertyIdRoute =
   AuthenticatedPropertyDetailsPropertyIdRouteImport.update({
     id: '/property-details/$propertyId',
@@ -212,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/financials': typeof AuthenticatedFinancialsRoute
   '/landlords': typeof AuthenticatedLandlordsRoute
   '/maintenance': typeof AuthenticatedMaintenanceRoute
+  '/owner': typeof AuthenticatedOwnerRouteWithChildren
   '/payments': typeof AuthenticatedPaymentsRoute
   '/portal': typeof AuthenticatedPortalRoute
   '/portal-communications': typeof AuthenticatedPortalCommunicationsRoute
@@ -226,7 +253,10 @@ export interface FileRoutesByFullPath {
   '/units': typeof AuthenticatedUnitsRoute
   '/vacancies': typeof AuthenticatedVacanciesRoute
   '/vendors': typeof AuthenticatedVendorsRoute
+  '/owner/companies': typeof AuthenticatedOwnerCompaniesRoute
+  '/owner/support': typeof AuthenticatedOwnerSupportRoute
   '/property-details/$propertyId': typeof AuthenticatedPropertyDetailsPropertyIdRoute
+  '/owner/': typeof AuthenticatedOwnerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -257,7 +287,10 @@ export interface FileRoutesByTo {
   '/units': typeof AuthenticatedUnitsRoute
   '/vacancies': typeof AuthenticatedVacanciesRoute
   '/vendors': typeof AuthenticatedVendorsRoute
+  '/owner/companies': typeof AuthenticatedOwnerCompaniesRoute
+  '/owner/support': typeof AuthenticatedOwnerSupportRoute
   '/property-details/$propertyId': typeof AuthenticatedPropertyDetailsPropertyIdRoute
+  '/owner': typeof AuthenticatedOwnerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -276,6 +309,7 @@ export interface FileRoutesById {
   '/_authenticated/financials': typeof AuthenticatedFinancialsRoute
   '/_authenticated/landlords': typeof AuthenticatedLandlordsRoute
   '/_authenticated/maintenance': typeof AuthenticatedMaintenanceRoute
+  '/_authenticated/owner': typeof AuthenticatedOwnerRouteWithChildren
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
   '/_authenticated/portal': typeof AuthenticatedPortalRoute
   '/_authenticated/portal-communications': typeof AuthenticatedPortalCommunicationsRoute
@@ -290,7 +324,10 @@ export interface FileRoutesById {
   '/_authenticated/units': typeof AuthenticatedUnitsRoute
   '/_authenticated/vacancies': typeof AuthenticatedVacanciesRoute
   '/_authenticated/vendors': typeof AuthenticatedVendorsRoute
+  '/_authenticated/owner/companies': typeof AuthenticatedOwnerCompaniesRoute
+  '/_authenticated/owner/support': typeof AuthenticatedOwnerSupportRoute
   '/_authenticated/property-details/$propertyId': typeof AuthenticatedPropertyDetailsPropertyIdRoute
+  '/_authenticated/owner/': typeof AuthenticatedOwnerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -309,6 +346,7 @@ export interface FileRouteTypes {
     | '/financials'
     | '/landlords'
     | '/maintenance'
+    | '/owner'
     | '/payments'
     | '/portal'
     | '/portal-communications'
@@ -323,7 +361,10 @@ export interface FileRouteTypes {
     | '/units'
     | '/vacancies'
     | '/vendors'
+    | '/owner/companies'
+    | '/owner/support'
     | '/property-details/$propertyId'
+    | '/owner/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -354,7 +395,10 @@ export interface FileRouteTypes {
     | '/units'
     | '/vacancies'
     | '/vendors'
+    | '/owner/companies'
+    | '/owner/support'
     | '/property-details/$propertyId'
+    | '/owner'
   id:
     | '__root__'
     | '/'
@@ -372,6 +416,7 @@ export interface FileRouteTypes {
     | '/_authenticated/financials'
     | '/_authenticated/landlords'
     | '/_authenticated/maintenance'
+    | '/_authenticated/owner'
     | '/_authenticated/payments'
     | '/_authenticated/portal'
     | '/_authenticated/portal-communications'
@@ -386,7 +431,10 @@ export interface FileRouteTypes {
     | '/_authenticated/units'
     | '/_authenticated/vacancies'
     | '/_authenticated/vendors'
+    | '/_authenticated/owner/companies'
+    | '/_authenticated/owner/support'
     | '/_authenticated/property-details/$propertyId'
+    | '/_authenticated/owner/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -502,6 +550,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMaintenanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/owner': {
+      id: '/_authenticated/owner'
+      path: '/owner'
+      fullPath: '/owner'
+      preLoaderRoute: typeof AuthenticatedOwnerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/payments': {
       id: '/_authenticated/payments'
       path: '/payments'
@@ -600,6 +655,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVendorsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/owner/': {
+      id: '/_authenticated/owner/'
+      path: '/'
+      fullPath: '/owner/'
+      preLoaderRoute: typeof AuthenticatedOwnerIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
+    '/_authenticated/owner/companies': {
+      id: '/_authenticated/owner/companies'
+      path: '/companies'
+      fullPath: '/owner/companies'
+      preLoaderRoute: typeof AuthenticatedOwnerCompaniesRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
+    '/_authenticated/owner/support': {
+      id: '/_authenticated/owner/support'
+      path: '/support'
+      fullPath: '/owner/support'
+      preLoaderRoute: typeof AuthenticatedOwnerSupportRouteImport
+      parentRoute: typeof AuthenticatedOwnerRoute
+    }
     '/_authenticated/property-details/$propertyId': {
       id: '/_authenticated/property-details/$propertyId'
       path: '/property-details/$propertyId'
@@ -609,6 +685,21 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthenticatedOwnerRouteChildren {
+  AuthenticatedOwnerCompaniesRoute: typeof AuthenticatedOwnerCompaniesRoute
+  AuthenticatedOwnerSupportRoute: typeof AuthenticatedOwnerSupportRoute
+  AuthenticatedOwnerIndexRoute: typeof AuthenticatedOwnerIndexRoute
+}
+
+const AuthenticatedOwnerRouteChildren: AuthenticatedOwnerRouteChildren = {
+  AuthenticatedOwnerCompaniesRoute: AuthenticatedOwnerCompaniesRoute,
+  AuthenticatedOwnerSupportRoute: AuthenticatedOwnerSupportRoute,
+  AuthenticatedOwnerIndexRoute: AuthenticatedOwnerIndexRoute,
+}
+
+const AuthenticatedOwnerRouteWithChildren =
+  AuthenticatedOwnerRoute._addFileChildren(AuthenticatedOwnerRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccessRoute: typeof AuthenticatedAccessRoute
@@ -623,6 +714,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinancialsRoute: typeof AuthenticatedFinancialsRoute
   AuthenticatedLandlordsRoute: typeof AuthenticatedLandlordsRoute
   AuthenticatedMaintenanceRoute: typeof AuthenticatedMaintenanceRoute
+  AuthenticatedOwnerRoute: typeof AuthenticatedOwnerRouteWithChildren
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
   AuthenticatedPortalRoute: typeof AuthenticatedPortalRoute
   AuthenticatedPortalCommunicationsRoute: typeof AuthenticatedPortalCommunicationsRoute
@@ -653,6 +745,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFinancialsRoute: AuthenticatedFinancialsRoute,
   AuthenticatedLandlordsRoute: AuthenticatedLandlordsRoute,
   AuthenticatedMaintenanceRoute: AuthenticatedMaintenanceRoute,
+  AuthenticatedOwnerRoute: AuthenticatedOwnerRouteWithChildren,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
   AuthenticatedPortalRoute: AuthenticatedPortalRoute,
   AuthenticatedPortalCommunicationsRoute:

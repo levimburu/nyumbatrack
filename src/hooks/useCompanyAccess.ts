@@ -6,7 +6,7 @@ const db = supabase as any;
 export interface CompanyMembership {
   company_id: string;
   role: "senior_officer" | "property_manager";
-  company: { id: string; name: string; kind: "company" | "individual" } | null;
+  company: { id: string; name: string; kind: "company" | "individual"; status: "active" | "suspended" } | null;
 }
 
 export interface CompanyAccess {
@@ -26,7 +26,7 @@ export function useCompanyAccess() {
       if (!user) return { userId: null, isPlatformAdmin: false, memberships: [], officerCompanies: [] };
       const [admin, members] = await Promise.all([
         db.rpc("is_platform_admin"),
-        db.from("company_members").select("company_id, role, company:companies(id, name, kind)").eq("user_id", user.id),
+        db.from("company_members").select("company_id, role, company:companies(id, name, kind, status)").eq("user_id", user.id),
       ]);
       const memberships = ((members.data ?? []) as CompanyMembership[]);
       return {
@@ -34,7 +34,7 @@ export function useCompanyAccess() {
         isPlatformAdmin: admin.data === true,
         memberships,
         officerCompanies: memberships
-          .filter((m) => m.role === "senior_officer" && m.company?.kind === "company")
+          .filter((m) => m.role === "senior_officer" && m.company?.kind === "company" && m.company?.status === "active")
           .map((m) => ({ id: m.company_id, name: m.company!.name })),
       };
     },
