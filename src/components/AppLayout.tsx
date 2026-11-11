@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { fetchManagedProperties, fetchManagedPropertyIds } from "@/lib/managedProperties";
 import { LayoutDashboard, Users, Receipt, BarChart3, Building2, Menu, X, Home, Wallet, Bell, Info, LogOut, Trash2, UserX, Lock, ChevronRight, Grid3x3, Wrench, PieChart, ShieldCheck, Hammer, MessageSquare, FileText, Search, AlertCircle, Clock, Landmark, TrendingUp, DoorOpen } from "lucide-react";
 import { GlobalSearch } from "./GlobalSearch";
 import { useState, useEffect, type ReactNode } from "react";
@@ -97,27 +98,7 @@ export function AppLayout({ children, role, email, displayName }: {
     if (!notifOpen || !userId) return;
     setQuickSummaryLoading(true);
     (async () => {
-      let propertyIds: string[] = [];
-      if (profileRole === "agent") {
-        const { data: links } = await (supabase as any)
-          .from("agent_landlord")
-          .select("landlord_id")
-          .eq("agent_id", userId);
-        const landlordIds = (links ?? []).map((l: any) => l.landlord_id);
-        if (landlordIds.length) {
-          const { data: props } = await (supabase as any)
-            .from("properties")
-            .select("id")
-            .in("user_id", landlordIds);
-          propertyIds = (props ?? []).map((p: any) => p.id);
-        }
-      } else {
-        const { data: props } = await (supabase as any)
-          .from("properties")
-          .select("id")
-          .eq("user_id", userId);
-        propertyIds = (props ?? []).map((p: any) => p.id);
-      }
+      const propertyIds: string[] = await fetchManagedPropertyIds();
 
       if (!propertyIds.length) {
         setQuickSummary({ paymentsToday: 0, openTickets: 0, complianceExpiring: 0 });

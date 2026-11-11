@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { fetchManagedProperties } from "@/lib/managedProperties";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -98,31 +99,7 @@ function MaintenancePage() {
     queryKey: ["maintenance-properties", profileLoaded, isAgent],
     enabled: profileLoaded && isAgent !== null,
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      if (isAgent) {
-        const { data: agentLinks } = await (supabase as any)
-          .from("agent_landlord")
-          .select("landlord_id")
-          .eq("agent_id", user.id);
-        if (!agentLinks?.length) return [] as Property[];
-        const landlordIds = agentLinks.map((l: any) => l.landlord_id);
-        const { data, error } = await (supabase as any)
-          .from("properties")
-          .select("id, name, location, user_id")
-          .in("user_id", landlordIds)
-          .order("name", { ascending: true });
-        if (error) throw error;
-        return data as Property[];
-      } else {
-        const { data, error } = await (supabase as any)
-          .from("properties")
-          .select("id, name, location, user_id")
-          .eq("user_id", user.id)
-          .order("name", { ascending: true });
-        if (error) throw error;
-        return data as Property[];
-      }
+      return (await fetchManagedProperties("id, name, location, user_id", { column: "name", ascending: true })) as Property[];
     },
   });
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { fetchManagedProperties, fetchManagedPropertyIds } from "@/lib/managedProperties";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Search, X, Users, Grid3x3, LayoutDashboard, PieChart, Receipt,
@@ -115,26 +116,10 @@ export function GlobalSearch({
   // keystroke rather than re-resolving "which properties can I see" each time.
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      if (isAgent) {
-        const { data: links } = await (supabase as any)
-          .from("agent_landlord")
-          .select("landlord_id")
-          .eq("agent_id", user.id);
-        const landlordIds = (links ?? []).map((l: any) => l.landlord_id);
-        if (!landlordIds.length) return;
-        const { data } = await (supabase as any)
-          .from("properties")
-          .select("id, name, location, user_id")
-          .in("user_id", landlordIds);
-        setProperties(data ?? []);
-      } else {
-        const { data } = await (supabase as any)
-          .from("properties")
-          .select("id, name, location, user_id")
-          .eq("user_id", user.id);
-        setProperties(data ?? []);
+      try {
+        setProperties(await fetchManagedProperties("id, name, location, user_id"));
+      } catch {
+        setProperties([]);
       }
     })();
   }, [isAgent]);

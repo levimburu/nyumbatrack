@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { fetchManagedProperties, fetchManagedPropertyIds } from "@/lib/managedProperties";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,20 +82,7 @@ function VacanciesPage() {
     queryKey: ["vacancies-properties", isAgent],
     enabled: isAgent !== null,
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const cols = "id, name, location, photo_url";
-      if (isAgent) {
-        const { data: links } = await (supabase as any).from("agent_landlord").select("landlord_id").eq("agent_id", user.id);
-        const landlordIds = (links ?? []).map((l: any) => l.landlord_id);
-        if (!landlordIds.length) return [] as PropertyRow[];
-        const { data, error } = await (supabase as any).from("properties").select(cols).in("user_id", landlordIds);
-        if (error) throw error;
-        return data as PropertyRow[];
-      }
-      const { data, error } = await (supabase as any).from("properties").select(cols).eq("user_id", user.id);
-      if (error) throw error;
-      return data as PropertyRow[];
+      return (await fetchManagedProperties("id, name, location, photo_url")) as PropertyRow[];
     },
   });
 
