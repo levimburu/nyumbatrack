@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CompanyInvites } from "@/components/CompanyInvites";
 import { ago, isOverdue, type CompanyStat } from "@/lib/ownerFormat";
 import { formatKES } from "@/lib/format";
+import { CompanyProfileForm, profileToValues } from "@/components/CompanyProfileForm";
 
 export const Route = createFileRoute("/_authenticated/owner/companies")({
   component: OwnerCompanies,
@@ -17,10 +18,7 @@ const input = "w-full rounded-lg border border-border px-3 py-2 text-sm outline-
 
 function OwnerCompanies() {
   const qc = useQueryClient();
-  const [name, setName] = useState("");
-  const [reg, setReg] = useState("");
-  const [earb, setEarb] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [showNew, setShowNew] = useState(false);
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["owner-stats"] });
@@ -47,17 +45,14 @@ function OwnerCompanies() {
     },
   });
 
-  const create = async () => {
-    if (!name.trim()) return;
-    setBusy(true);
+  const create = async (values: Record<string, string>) => {
     try {
-      const { error } = await db.rpc("create_company", { _name: name, _registration_no: reg || null, _earb_no: earb || null });
+      const { error } = await db.rpc("create_company_full", { _d: values });
       if (error) throw error;
       toast.success("Company created");
-      setName(""); setReg(""); setEarb("");
+      setShowNew(false);
       refresh();
     } catch (e: any) { toast.error(e?.message ?? "Couldn't create the company"); }
-    finally { setBusy(false); }
   };
 
   return (
@@ -68,15 +63,13 @@ function OwnerCompanies() {
       </div>
 
       <div className="card-surface space-y-3 p-4">
-        <div className="text-sm font-semibold">New company</div>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Company name" className={input} />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input value={reg} onChange={(e) => setReg(e.target.value)} placeholder="Registration number (optional)" className={input} />
-          <input value={earb} onChange={(e) => setEarb(e.target.value)} placeholder="EARB number (optional)" className={input} />
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-semibold">New company</div>
+          <button onClick={() => setShowNew((v) => !v)} className="inline-flex items-center gap-1 text-sm font-semibold text-green-800">
+            <Plus className="h-4 w-4" /> {showNew ? "Close" : "Add a company"}
+          </button>
         </div>
-        <button onClick={create} disabled={!name.trim() || busy} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "#166534" }}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Create company
-        </button>
+        {showNew && <CompanyProfileForm mode="owner-create" initial={profileToValues(null)} submitLabel="Create company" onSubmit={create} />}
       </div>
 
       {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
@@ -170,6 +163,8 @@ function CompanyCard({ c, members, onChanged }: { c: CompanyStat; members: any[]
         )}
       </div>
 
+      <CompanyDetails companyId={c.id} onChanged={onChanged} />
+
       <div className="space-y-1">
         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">People ({members.length})</div>
         {members.length === 0 && <div className="text-sm text-muted-foreground">No one has joined yet.</div>}
@@ -181,6 +176,35 @@ function CompanyCard({ c, members, onChanged }: { c: CompanyStat; members: any[]
         ))}
       </div>
       <CompanyInvites companyId={c.id} role="senior_officer" label="Invite a Senior Officer" />
+    </div>
+  );
+}
+
+function CompanyDetails({ companyId, onChanged }: { companyId: string; onChanged: () => void }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const { data } = useQuery({
+    queryKey: ["owner-company-profile", companyId],
+    enabled: open,
+    queryFn: async () => { const { data, error } = await db.rpc("owner_company_profile", { _company: companyId }); if (error) throw error; return data as Record<string, any>; },
+  });
+  const save = async (values: Record<string, string>) => {
+    const { error } = await db.rpc("owner_update_company_profile", { _company: companyId, _d: values });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Details saved");
+    qc.invalidateQueries({ queryKey: ["owner-company-profile", companyId] });
+    onChanged();
+  };
+  return (
+    <div className="rounded-xl border border-border p-3 text-sm">
+      <div className="flex items-center justify-between">
+        <div className="font-semibold">Company details</div>
+        <button onClick={() => setOpen((v) => !v)} className="text-xs font-semibold text-green-800">{open ? "Close" : "View / edit"}</button>
+      </div>
+      {open && !data && <div className="mt-2 text-muted-foreground">Loading…</div>}
+      {open && data && (
+        <div className="mt-3"><CompanyProfileForm key={JSON.stringify(data)} mode="owner-edit" initial={profileToValues(data)} submitLabel="Save details" onSubmit={save} /></div>
+      )}
     </div>
   );
 }

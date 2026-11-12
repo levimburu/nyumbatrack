@@ -84,6 +84,16 @@ function PropertyDetailsPage() {
     setCtName(""); setCtPhone("");
     qc.invalidateQueries({ queryKey: ["property-caretakers", propertyId] });
   };
+  const [editCt, setEditCt] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const saveCaretaker = async (id: string) => {
+    if (!editName.trim() || !editPhone.trim()) { toast.error("Name and phone are required"); return; }
+    const { error } = await db.from("caretakers").update({ full_name: editName.trim(), phone: editPhone.trim() }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setEditCt(null);
+    qc.invalidateQueries({ queryKey: ["property-caretakers", propertyId] });
+  };
   const removeCaretaker = async (id: string) => {
     if (!confirm("Remove this caretaker?")) return;
     const { error } = await db.from("caretakers").delete().eq("id", id);
@@ -148,11 +158,19 @@ function PropertyDetailsPage() {
       <div className="card-surface space-y-3 p-4">
         <div className="font-display text-base font-bold">Caretaker</div>
         {(caretakers ?? []).length === 0 && <div className="text-sm text-muted-foreground">No caretaker recorded.</div>}
-        {(caretakers ?? []).map((c) => (
+        {(caretakers ?? []).map((c) => editCt === c.id ? (
+          <div key={c.id} className="flex flex-col gap-2 rounded-lg border border-border p-3 sm:flex-row">
+            <input value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1 rounded-lg border border-border px-3 py-2 text-sm outline-none" />
+            <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="flex-1 rounded-lg border border-border px-3 py-2 text-sm outline-none" />
+            <button onClick={() => saveCaretaker(c.id)} className="rounded-lg px-4 py-2 text-sm font-bold text-white" style={{ background: "#166534" }}>Save</button>
+            <button onClick={() => setEditCt(null)} className="text-sm text-muted-foreground">Cancel</button>
+          </div>
+        ) : (
           <div key={c.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
             <div className="text-sm"><div className="font-semibold">{c.full_name}</div>{c.notes && <div className="text-xs text-muted-foreground">{c.notes}</div>}</div>
             <div className="flex items-center gap-3">
               <a href={telHref(c.phone)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold text-white" style={{ background: "#166534" }}><Phone className="h-3.5 w-3.5" />{c.phone}</a>
+              {isOfficer && <button onClick={() => { setEditCt(c.id); setEditName(c.full_name); setEditPhone(c.phone); }} className="text-xs font-semibold text-green-800">Edit</button>}
               {isOfficer && <button onClick={() => removeCaretaker(c.id)} className="text-red-600" aria-label="Remove caretaker"><Trash2 className="h-4 w-4" /></button>}
             </div>
           </div>

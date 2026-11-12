@@ -92,6 +92,7 @@ export function AppLayout({ children, role, email, displayName }: {
           ...adminNav,
           ...(companyAccess?.isPlatformAdmin ? [{ to: "/owner", label: "Owner console", icon: Building2 }] : []),
           ...(companyAccess?.memberships.some((m) => m.company?.kind === "company") ? [{ to: "/landlords", label: "Landlords", icon: Users }] : []),
+          ...(companyAccess?.memberships.some((m) => m.company?.kind === "company") ? [{ to: "/company", label: "Company", icon: Building2 }] : []),
           ...(companyAccess?.officerCompanies.length ? [{ to: "/staff", label: "Staff", icon: Users }, { to: "/access", label: "Access", icon: ShieldCheck }] : []),
         ]
       : tenantNav;

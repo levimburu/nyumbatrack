@@ -73,6 +73,17 @@ function StaffPage() {
     refresh();
   };
 
+  const changeRole = async (uid: string, role: "senior_officer" | "property_manager", label: string) => {
+    const msg = role === "senior_officer"
+      ? `Make ${label} a Senior Officer? They will see every company property and can manage staff.`
+      : `Make ${label} a Property Manager? They will only see properties you assign to them.`;
+    if (!confirm(msg)) return;
+    const { error } = await db.rpc("set_member_role", { _company: cid, _user: uid, _role: role });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Role changed");
+    refresh();
+  };
+
   const officers = (data?.members ?? []).filter((m) => m.role === "senior_officer");
   const managers = (data?.members ?? []).filter((m) => m.role === "property_manager");
 
@@ -96,9 +107,14 @@ function StaffPage() {
         {officers.map((m) => (
           <div key={m.user_id} className="flex items-center justify-between text-sm">
             <span>{m.profile?.full_name ?? m.profile?.email}{m.user_id === access!.userId ? " (you)" : ""}</span>
-            {m.user_id !== access!.userId && (
-              <button onClick={() => remove(m.user_id, m.profile?.full_name ?? "this person")} className="text-red-600"><Trash2 className="h-4 w-4" /></button>
-            )}
+            <div className="flex items-center gap-3">
+              {officers.length > 1 && (
+                <button onClick={() => changeRole(m.user_id, "property_manager", m.profile?.full_name ?? "this person")} className="text-xs font-semibold text-green-800">Make Property Manager</button>
+              )}
+              {m.user_id !== access!.userId && (
+                <button onClick={() => remove(m.user_id, m.profile?.full_name ?? "this person")} className="text-red-600"><Trash2 className="h-4 w-4" /></button>
+              )}
+            </div>
           </div>
         ))}
         <CompanyInvites companyId={company.id} role="senior_officer" label="Invite another Senior Officer" />
@@ -114,7 +130,10 @@ function StaffPage() {
                 <div className="text-sm font-semibold">{m.profile?.full_name ?? m.profile?.email}</div>
                 <div className="text-xs text-muted-foreground">{m.profile?.email}</div>
               </div>
-              <button onClick={() => remove(m.user_id, m.profile?.full_name ?? "this person")} className="text-red-600"><Trash2 className="h-4 w-4" /></button>
+              <div className="flex items-center gap-3">
+                <button onClick={() => changeRole(m.user_id, "senior_officer", m.profile?.full_name ?? "this person")} className="text-xs font-semibold text-green-800">Make Senior Officer</button>
+                <button onClick={() => remove(m.user_id, m.profile?.full_name ?? "this person")} className="text-red-600"><Trash2 className="h-4 w-4" /></button>
+              </div>
             </div>
             <div className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Can see these properties</div>
             <div className="mt-1 flex flex-wrap gap-1.5">

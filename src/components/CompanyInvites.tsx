@@ -53,6 +53,14 @@ export function CompanyInvites({ companyId, role, label }: {
     }
   };
 
+  const cancel = async (code: string) => {
+    if (!confirm(`Cancel code ${code}? It will stop working.`)) return;
+    const { error } = await db.rpc("revoke_company_invite", { _code: code });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Code cancelled");
+    qc.invalidateQueries({ queryKey: ["company-invites", companyId] });
+  };
+
   return (
     <div className="rounded-xl border border-border p-4">
       <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><KeyRound className="h-4 w-4" /> {label}</div>
@@ -80,7 +88,10 @@ export function CompanyInvites({ companyId, role, label }: {
           {mine.map((p) => (
             <div key={p.code} className="flex items-center justify-between text-sm">
               <span><span className="font-mono">{p.code}</span>{p.intended_email ? <span className="text-muted-foreground"> · {p.intended_email}</span> : null}</span>
-              <button onClick={() => copy(p.code)} className="text-xs font-semibold text-green-800">Copy</button>
+              <span className="flex items-center gap-3">
+                <button onClick={() => copy(p.code)} className="text-xs font-semibold text-green-800">Copy</button>
+                <button onClick={() => cancel(p.code)} className="text-xs font-semibold text-red-600">Cancel</button>
+              </span>
             </div>
           ))}
         </div>
