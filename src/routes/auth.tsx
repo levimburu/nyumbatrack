@@ -102,7 +102,18 @@ function AuthPage() {
       navigate({ to: "/portfolio", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign up failed";
-      toast.error(msg.toLowerCase().includes("invite") ? msg : "Sign up failed — your invite code may have just been used by someone else. Please check with whoever sent it.");
+      const low = msg.toLowerCase();
+      if (low.includes("already registered") || low.includes("already been registered")) {
+        toast.error("This email already has an account. Please log in instead.");
+      } else if (low.includes("database error")) {
+        toast.error("This invite code can't be used with this email. It may be locked to a different email, or already used. Check with whoever sent it.");
+      } else if (low.includes("password")) {
+        toast.error(msg);
+      } else if (low.includes("rate limit") || low.includes("too many")) {
+        toast.error("Too many attempts. Please wait a few minutes and try again.");
+      } else {
+        toast.error(msg || "Sign up failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -113,12 +124,7 @@ function AuthPage() {
     if (!inviteCode.trim()) return;
     setLoading(true);
     try {
-      const { data: codeData } = await (supabase as any)
-        .from("invite_codes")
-        .select("code_type, intended_email")
-        .eq("code", inviteCode.trim().toUpperCase())
-        .eq("used", false)
-        .maybeSingle();
+      const { data: codeData } = await (supabase as any).rpc("check_invite_code", { _code: inviteCode });
       if (!codeData) {
         toast.error("Invalid or already-used invite code");
         return;
