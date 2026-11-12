@@ -7,6 +7,8 @@ import { outstandingForDueMonth } from "@/lib/reminders";
 import { downloadStatement } from "@/lib/statement";
 import { FileText, Download, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { useCompanyAccess } from "@/hooks/useCompanyAccess";
+import { fetchManagedPropertyIds } from "@/lib/managedProperties";
 
 export const Route = createFileRoute("/_authenticated/statements")({
   component: StatementsPage,
@@ -76,6 +78,9 @@ function StatementsPage() {
   const [statement, setStatement] = useState<PropertyStatement[] | null>(null);
   const [landlordLabel, setLandlordLabel] = useState<string>("");
   const [generating, setGenerating] = useState(false);
+  const { data: access, isLoading: accessLoading } = useCompanyAccess();
+  // company staff (Senior Officers and Property Managers) pick from the company's landlord records
+  const companyMode = (access?.memberships ?? []).some((m) => m.company?.kind === "company" && m.company?.status === "active");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -114,13 +119,30 @@ function StatementsPage() {
     },
   });
 
+  const { data: companyLandlords } = useQuery({
+    queryKey: ["statement-company-landlords", companyMode],
+    enabled: companyMode,
+    queryFn: async () => {
+      const { data: ls, error } = await (supabase as any).from("landlords").select("id, full_name, phone").order("full_name");
+      if (error) throw error;
+      const { data: links } = await (supabase as any).from("property_owners").select("landlord_id, property_id");
+      const byLandlord: Record<string, string[]> = {};
+      (links ?? []).forEach((l: any) => { (byLandlord[l.landlord_id] ??= []).push(l.property_id); });
+      return (ls ?? []).map((l: any) => ({ id: l.id as string, full_name: l.full_name as string, email: l.phone as string | null, propertyIds: byLandlord[l.id] ?? [] }));
+    },
+  });
+
+  const options: Landlord[] = companyMode ? (companyLandlords ?? []) : (landlords ?? []);
+
   useEffect(() => {
-    if (isAgent === false && userId) {
+    if (companyMode) {
+      if (options.length && !options.some((o) => o.id === selectedLandlordId)) setSelectedLandlordId(options[0].id);
+    } else if (isAgent === false && userId) {
       setSelectedLandlordId(userId);
     } else if (isAgent === true && landlords?.length && !selectedLandlordId) {
       setSelectedLandlordId(landlords[0].id);
     }
-  }, [isAgent, userId, landlords]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAgent, userId, landlords, companyMode, companyLandlords]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const generate = async () => {
     if (!selectedLandlordId) {
@@ -129,12 +151,27 @@ function StatementsPage() {
     }
     setGenerating(true);
     try {
-      const { data: properties, error: propErr } = await (supabase as any)
-        .from("properties")
-        .select("id, name, location, user_id")
-        .eq("user_id", selectedLandlordId)
-        .order("name", { ascending: true });
-      if (propErr) throw propErr;
+      let properties: Property[] | null = null;
+      if (companyMode) {
+        // this landlord's properties, limited to the ones this person is allowed to manage
+        const owned = (companyLandlords ?? []).find((l: any) => l.id === selectedLandlordId)?.propertyIds ?? [];
+        const managed = new Set(await fetchManagedPropertyIds());
+        const ids = owned.filter((id: string) => managed.has(id));
+        if (ids.length) {
+          const { data, error: propErr } = await (supabase as any)
+            .from("properties").select("id, name, location, user_id").in("id", ids).order("name", { ascending: true });
+          if (propErr) throw propErr;
+          properties = data;
+        } else properties = [];
+      } else {
+        const { data, error: propErr } = await (supabase as any)
+          .from("properties")
+          .select("id, name, location, user_id")
+          .eq("user_id", selectedLandlordId)
+          .order("name", { ascending: true });
+        if (propErr) throw propErr;
+        properties = data;
+      }
 
       if (!properties?.length) {
         toast.error("This landlord has no properties yet");
@@ -221,8 +258,8 @@ function StatementsPage() {
       });
 
       setStatement(rows);
-      const landlord = landlords?.find((l) => l.id === selectedLandlordId);
-      setLandlordLabel(isAgent === false ? "Your Properties" : (landlord?.full_name || landlord?.email || "Landlord"));
+      const landlord = options.find((l) => l.id === selectedLandlordId);
+      setLandlordLabel(!companyMode && isAgent === false ? "Your Properties" : (landlord?.full_name || landlord?.email || "Landlord"));
       toast.success("Statement ready");
     } catch (e: any) {
       toast.error(e.message ?? "Failed to generate statement");
@@ -258,7 +295,7 @@ function StatementsPage() {
     });
   };
 
-  if (!profileLoaded) {
+  if (!profileLoaded || accessLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-sm text-muted-foreground">Loading...</div>
@@ -276,7 +313,7 @@ function StatementsPage() {
       </div>
 
       <div className="card-surface p-5 space-y-4">
-        {isAgent && (
+        {(isAgent || companyMode) && (
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground">Landlord</label>
             <select
@@ -284,8 +321,8 @@ function StatementsPage() {
               onChange={(e) => setSelectedLandlordId(e.target.value)}
               className="form-input"
             >
-              {!landlords?.length && <option value="">No linked landlords found</option>}
-              {landlords?.map((l) => (
+              {!options.length && <option value="">No landlords found</option>}
+              {options.map((l) => (
                 <option key={l.id} value={l.id}>{l.full_name || l.email || l.id}</option>
               ))}
             </select>
