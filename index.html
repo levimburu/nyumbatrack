@@ -13,7 +13,8 @@
       (function () {
         try {
           var p = localStorage.getItem("nyumbatrack-theme") || "system";
-          var d = p === "dark" || (p === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var d = p === "dark" || p === "black" || (p === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (p === "black") document.documentElement.classList.add("black");
           if (d) { document.documentElement.classList.add("dark"); document.documentElement.style.colorScheme = "dark"; }
         } catch (e) {}
       })();

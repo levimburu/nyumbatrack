@@ -1,10 +1,10 @@
-export type ThemePreference = "light" | "dark" | "system";
+export type ThemePreference = "light" | "dark" | "black" | "system";
 const KEY = "nyumbatrack-theme";
 
 export function getThemePreference(): ThemePreference {
   try {
     const v = localStorage.getItem(KEY);
-    if (v === "light" || v === "dark" || v === "system") return v;
+    if (v === "light" || v === "dark" || v === "black" || v === "system") return v;
   } catch {}
   return "system";
 }
@@ -14,12 +14,14 @@ function systemPrefersDark() {
 }
 
 export function applyTheme(pref: ThemePreference = getThemePreference()) {
-  const dark = pref === "dark" || (pref === "system" && systemPrefersDark());
+  const black = pref === "black";
+  const dark = black || pref === "dark" || (pref === "system" && systemPrefersDark());
   const root = document.documentElement;
   root.classList.toggle("dark", dark);
+  root.classList.toggle("black", black);
   root.style.colorScheme = dark ? "dark" : "light";
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute("content", dark ? "#101915" : "#166534");
+  if (meta) meta.setAttribute("content", black ? "#000000" : dark ? "#101915" : "#166534");
 }
 
 export function setThemePreference(pref: ThemePreference) {
