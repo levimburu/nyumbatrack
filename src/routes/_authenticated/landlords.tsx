@@ -122,7 +122,7 @@ function LandlordModal({ landlord, properties, onClose }: { landlord: Landlord; 
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
-      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 sm:max-w-lg sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-card p-5 sm:max-w-lg sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-start justify-between">
           <h2 className="font-display text-xl font-bold">{landlord.full_name}</h2>
           <button onClick={onClose} aria-label="Close"><X className="h-5 w-5" /></button>
@@ -162,7 +162,7 @@ function LandlordModal({ landlord, properties, onClose }: { landlord: Landlord; 
           {isOfficer && (
             <div className="flex items-center justify-between gap-2">
               <button onClick={remove} className="inline-flex items-center gap-1 text-sm font-medium text-red-600"><Trash2 className="h-4 w-4" /> Delete landlord</button>
-              <button onClick={save} disabled={busy} className="inline-flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "#166534" }}>
+              <button onClick={save} disabled={busy} className="inline-flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--k-166534)" }}>
                 {busy && <Loader2 className="h-4 w-4 animate-spin" />} Save
               </button>
             </div>

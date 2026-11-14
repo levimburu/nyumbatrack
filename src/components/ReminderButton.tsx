@@ -102,7 +102,7 @@ export function ReminderButton({
         aria-label={check.reason}
         onClick={(e) => e.stopPropagation()}
         className={`${base} cursor-not-allowed text-muted-foreground opacity-50 ${className}`}
-        style={variant === "button" ? { background: "#F5F5F0" } : undefined}
+        style={variant === "button" ? { background: "var(--k-F5F5F0)" } : undefined}
       >
         <MessageCircle className="h-4 w-4" />
         {variant === "button" && <span>Send reminder</span>}
@@ -121,10 +121,10 @@ export function ReminderButton({
       onClick={(e) => e.stopPropagation()}
       className={
         variant === "icon"
-          ? `${base} text-muted-foreground hover:bg-muted hover:text-[#166534] ${className}`
+          ? `${base} text-muted-foreground hover:bg-muted hover:text-[var(--k-166534)] ${className}`
           : `${base} text-white glow-primary ${className}`
       }
-      style={variant === "button" ? { background: "#166534" } : undefined}
+      style={variant === "button" ? { background: "var(--k-166534)" } : undefined}
     >
       <MessageCircle className="h-4 w-4" />
       {variant === "button" && <span>Send reminder</span>}

@@ -126,7 +126,7 @@ export function SensitiveDetails({ landlordId, companyId }: { landlordId: string
           {status?.status === "denied" && <div className="text-xs text-red-600">Your last request was declined.</div>}
           <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
             placeholder="Why do you need these details?" className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none" />
-          <button onClick={request} disabled={busy === "request"} className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "#166534" }}>
+          <button onClick={request} disabled={busy === "request"} className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--k-166534)" }}>
             {busy === "request" && <Loader2 className="h-4 w-4 animate-spin" />} Request access (valid 12 hours)
           </button>
         </div>

@@ -4,6 +4,9 @@ import { RouterProvider } from "@tanstack/react-router"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { getRouter } from "./router"
 import "./styles.css"
+import { initTheme } from "./lib/theme"
+
+initTheme()
 
 const queryClient = new QueryClient()
 const router = getRouter(queryClient)

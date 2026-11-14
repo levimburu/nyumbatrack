@@ -13,11 +13,11 @@ const Table = ({ head, rows }: { head: string[]; rows: string[][] }) => (
   <div className="overflow-x-auto my-3">
     <table className="w-full text-sm border-collapse">
       <thead>
-        <tr>{head.map((h) => <th key={h} className="text-left p-2 border" style={{ background: "#F3F4F6", borderColor: "#E5E7EB" }}>{h}</th>)}</tr>
+        <tr>{head.map((h) => <th key={h} className="text-left p-2 border" style={{ background: "var(--k-F3F4F6)", borderColor: "var(--k-E5E7EB)" }}>{h}</th>)}</tr>
       </thead>
       <tbody>
         {rows.map((r, i) => (
-          <tr key={i}>{r.map((c, j) => <td key={j} className="p-2 border align-top" style={{ borderColor: "#E5E7EB" }}>{c}</td>)}</tr>
+          <tr key={i}>{r.map((c, j) => <td key={j} className="p-2 border align-top" style={{ borderColor: "var(--k-E5E7EB)" }}>{c}</td>)}</tr>
         ))}
       </tbody>
     </table>
@@ -152,20 +152,20 @@ const sections: Section[] = [
 
 function PrivacyPage() {
   return (
-    <div className="min-h-screen" style={{ background: "#F9FAFB", color: "#111827" }}>
+    <div className="min-h-screen" style={{ background: "var(--k-F9FAFB)", color: "var(--kt-111827)" }}>
       <div className="mx-auto max-w-3xl px-5 py-10">
-        <a href="/auth" className="text-sm" style={{ color: "#166534" }}>← Back to NyumbaTrack</a>
+        <a href="/auth" className="text-sm" style={{ color: "var(--kt-166534)" }}>← Back to NyumbaTrack</a>
         <h1 className="font-display text-3xl font-bold mt-4 mb-1">Privacy Policy</h1>
-        <p className="text-sm mb-8" style={{ color: "#6B7280" }}>Last updated: {UPDATED}</p>
-        <div className="space-y-7 text-sm leading-relaxed" style={{ color: "#374151" }}>
+        <p className="text-sm mb-8" style={{ color: "var(--kt-6B7280)" }}>Last updated: {UPDATED}</p>
+        <div className="space-y-7 text-sm leading-relaxed" style={{ color: "var(--kt-374151)" }}>
           {sections.map((s) => (
             <section key={s.title} className="space-y-2">
-              <h2 className="text-base font-bold" style={{ color: "#111827" }}>{s.title}</h2>
+              <h2 className="text-base font-bold" style={{ color: "var(--kt-111827)" }}>{s.title}</h2>
               {s.body}
             </section>
           ))}
         </div>
-        <p className="text-xs mt-10" style={{ color: "#9CA3AF" }}>© 2026 NyumbaTrack Technologies Ltd</p>
+        <p className="text-xs mt-10" style={{ color: "var(--kt-9CA3AF)" }}>© 2026 NyumbaTrack Technologies Ltd</p>
       </div>
     </div>
   );

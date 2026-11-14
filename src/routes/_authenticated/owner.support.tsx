@@ -61,7 +61,7 @@ function OwnerSupport() {
       <div className="card-surface space-y-3 p-4">
         <div className="flex gap-2">
           <input value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") search(); }} placeholder="Their email address" className={input} />
-          <button onClick={search} disabled={busy || !email.trim()} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "#166534" }}>
+          <button onClick={search} disabled={busy || !email.trim()} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--k-166534)" }}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Find
           </button>
         </div>

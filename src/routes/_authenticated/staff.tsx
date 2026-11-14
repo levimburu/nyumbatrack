@@ -142,7 +142,7 @@ function StaffPage() {
                 const on = isAssigned(p.id, m.user_id);
                 return (
                   <button key={p.id} onClick={() => toggle(p.id, m.user_id)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium ${on ? "border-green-700 bg-green-700 text-white" : "border-border bg-white text-foreground"}`}>
+                    className={`rounded-full border px-3 py-1 text-xs font-medium ${on ? "border-green-700 bg-green-700 text-white" : "border-border bg-card text-foreground"}`}>
                     {p.name}
                   </button>
                 );

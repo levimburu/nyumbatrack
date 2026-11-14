@@ -97,7 +97,7 @@ export function CompanyProfileForm({ initial, mode, submitLabel, onSubmit }: {
       <p className="text-xs text-muted-foreground">Contact details are used only for running this account: sign-in help, billing and service notices.</p>
       <button
         onClick={submit} disabled={busy || (create && missing.length > 0)}
-        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "#166534" }}
+        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--k-166534)" }}
       >
         {busy && <Loader2 className="h-4 w-4 animate-spin" />} {submitLabel}
       </button>

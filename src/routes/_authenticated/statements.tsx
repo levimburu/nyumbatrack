@@ -342,11 +342,11 @@ function StatementsPage() {
           onClick={generate}
           disabled={generating}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary disabled:opacity-60"
-          style={{ background: "#166534" }}
+          style={{ background: "var(--k-166534)" }}
         >
           <FileText className="h-4 w-4" /> {generating ? "Generating…" : "Generate Statement"}
         </button>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
 
       {statement && totals && (
@@ -356,7 +356,7 @@ function StatementsPage() {
             <button
               onClick={handleDownload}
               className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all glow-primary"
-              style={{ background: "#166534" }}
+              style={{ background: "var(--k-166534)" }}
             >
               <Download className="h-4 w-4" /> Download PDF
             </button>
@@ -380,18 +380,18 @@ function StatementsPage() {
                         <Building2 className="h-3.5 w-3.5 text-muted-foreground" /> {r.propertyName}
                       </span>
                     </td>
-                    <td className="py-2 pr-3" style={{ color: "#16A34A" }}>{formatKES(r.collected)}</td>
-                    <td className="py-2 pr-3" style={{ color: "#DC2626" }}>{formatKES(r.maintenanceCost)}</td>
+                    <td className="py-2 pr-3" style={{ color: "var(--kt-16A34A)" }}>{formatKES(r.collected)}</td>
+                    <td className="py-2 pr-3" style={{ color: "var(--kt-DC2626)" }}>{formatKES(r.maintenanceCost)}</td>
                     <td className="py-2 pr-3 font-semibold">{formatKES(r.net)}</td>
-                    <td className="py-2" style={{ color: r.outstanding > 0 ? "#DC2626" : "#16A34A" }}>{formatKES(r.outstanding)}</td>
+                    <td className="py-2" style={{ color: r.outstanding > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }}>{formatKES(r.outstanding)}</td>
                   </tr>
                 ))}
                 <tr className="font-bold">
                   <td className="py-2 pr-3">Total</td>
-                  <td className="py-2 pr-3" style={{ color: "#16A34A" }}>{formatKES(totals.collected)}</td>
-                  <td className="py-2 pr-3" style={{ color: "#DC2626" }}>{formatKES(totals.maintenanceCost)}</td>
+                  <td className="py-2 pr-3" style={{ color: "var(--kt-16A34A)" }}>{formatKES(totals.collected)}</td>
+                  <td className="py-2 pr-3" style={{ color: "var(--kt-DC2626)" }}>{formatKES(totals.maintenanceCost)}</td>
                   <td className="py-2 pr-3">{formatKES(totals.net)}</td>
-                  <td className="py-2" style={{ color: totals.outstanding > 0 ? "#DC2626" : "#16A34A" }}>{formatKES(totals.outstanding)}</td>
+                  <td className="py-2" style={{ color: totals.outstanding > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }}>{formatKES(totals.outstanding)}</td>
                 </tr>
               </tbody>
             </table>

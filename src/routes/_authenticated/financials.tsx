@@ -286,7 +286,7 @@ function FinancialsPage() {
           onClick={() => setAddingExpense(true)}
           disabled={!properties?.length}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary disabled:opacity-60"
-          style={{ background: "#166534" }}
+          style={{ background: "var(--k-166534)" }}
         >
           <Plus className="h-4 w-4" /> Add Expense
         </button>
@@ -303,27 +303,27 @@ function FinancialsPage() {
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="form-input" />
           </div>
         </div>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div className="card-surface p-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-            <TrendingUp className="h-3.5 w-3.5" style={{ color: "#16A34A" }} /> Collected
+            <TrendingUp className="h-3.5 w-3.5" style={{ color: "var(--kt-16A34A)" }} /> Collected
           </div>
-          <div className="font-display text-lg font-bold leading-tight break-words" style={{ color: "#16A34A" }}>{formatKES(totals.collected)}</div>
+          <div className="font-display text-lg font-bold leading-tight break-words" style={{ color: "var(--kt-16A34A)" }}>{formatKES(totals.collected)}</div>
         </div>
         <div className="card-surface p-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-            <TrendingDown className="h-3.5 w-3.5" style={{ color: "#DC2626" }} /> Expenses
+            <TrendingDown className="h-3.5 w-3.5" style={{ color: "var(--kt-DC2626)" }} /> Expenses
           </div>
-          <div className="font-display text-lg font-bold leading-tight break-words" style={{ color: "#DC2626" }}>{formatKES(totals.expenses)}</div>
+          <div className="font-display text-lg font-bold leading-tight break-words" style={{ color: "var(--kt-DC2626)" }}>{formatKES(totals.expenses)}</div>
         </div>
         <div className="card-surface p-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-            <Landmark className="h-3.5 w-3.5" style={{ color: "#166534" }} /> Net
+            <Landmark className="h-3.5 w-3.5" style={{ color: "var(--kt-166534)" }} /> Net
           </div>
-          <div className="font-display text-lg font-bold leading-tight break-words" style={{ color: totals.net >= 0 ? "#166534" : "#DC2626" }}>{formatKES(totals.net)}</div>
+          <div className="font-display text-lg font-bold leading-tight break-words" style={{ color: totals.net >= 0 ? "var(--kt-166534)" : "var(--kt-DC2626)" }}>{formatKES(totals.net)}</div>
         </div>
       </div>
 
@@ -360,9 +360,9 @@ function FinancialsPage() {
                     <Building2 className="h-3.5 w-3.5 text-muted-foreground" /> {r.property.name}
                   </span>
                 </td>
-                <td className="py-2 pr-3" style={{ color: "#16A34A" }}>{formatKES(r.collected)}</td>
-                <td className="py-2 pr-3" style={{ color: "#DC2626" }}>{formatKES(r.expenses)}</td>
-                <td className="py-2 font-semibold" style={{ color: r.net >= 0 ? "#166534" : "#DC2626" }}>{formatKES(r.net)}</td>
+                <td className="py-2 pr-3" style={{ color: "var(--kt-16A34A)" }}>{formatKES(r.collected)}</td>
+                <td className="py-2 pr-3" style={{ color: "var(--kt-DC2626)" }}>{formatKES(r.expenses)}</td>
+                <td className="py-2 font-semibold" style={{ color: r.net >= 0 ? "var(--kt-166534)" : "var(--kt-DC2626)" }}>{formatKES(r.net)}</td>
               </tr>
             ))}
             {!rows.length && (
@@ -387,7 +387,7 @@ function FinancialsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className="font-semibold" style={{ color: "#DC2626" }}>{formatKES(e.amount)}</span>
+                  <span className="font-semibold" style={{ color: "var(--kt-DC2626)" }}>{formatKES(e.amount)}</span>
                   <button onClick={() => setEditingExpense(e)} className="text-muted-foreground hover:text-foreground" aria-label="Edit expense">
                     <Pencil className="h-4 w-4" />
                   </button>
@@ -477,12 +477,12 @@ function ExpenseForm({
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
+            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "var(--k-166534)" }}>
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>,
     document.body

@@ -116,7 +116,7 @@ function CompanyCard({ c, members, onChanged }: { c: CompanyStat; members: any[]
     <div className="card-surface space-y-3 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" style={{ color: "#166534" }} />
+          <Building2 className="h-5 w-5" style={{ color: "var(--kt-166534)" }} />
           <div className="font-display text-lg font-bold">{c.name}</div>
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${suspended ? "bg-red-100 text-red-700" : "bg-green-100 text-green-800"}`}>{suspended ? "Suspended" : "Active"}</span>
         </div>
@@ -156,7 +156,7 @@ function CompanyCard({ c, members, onChanged }: { c: CompanyStat; members: any[]
               <input className={input} type="date" value={paidUntil} onChange={(e) => setPaidUntil(e.target.value)} />
             </div>
             <input className={input} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes" />
-            <button onClick={saveBilling} disabled={busy} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "#166534" }}>
+            <button onClick={saveBilling} disabled={busy} className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--k-166534)" }}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />} Save
             </button>
           </div>

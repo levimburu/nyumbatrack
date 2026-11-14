@@ -1,5 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { fetchManagedProperties, fetchManagedPropertyIds } from "@/lib/managedProperties";
+import { AppearanceSelector } from "@/components/AppearanceSelector";
 import { LayoutDashboard, Users, Receipt, BarChart3, Building2, Menu, X, Home, Wallet, Bell, Info, LogOut, Trash2, UserX, Lock, ChevronRight, Grid3x3, Wrench, PieChart, ShieldCheck, Hammer, MessageSquare, FileText, Search, AlertCircle, Clock, Landmark, TrendingUp, DoorOpen } from "lucide-react";
 import { GlobalSearch } from "./GlobalSearch";
 import { useState, useEffect, type ReactNode } from "react";
@@ -387,17 +388,17 @@ export function AppLayout({ children, role, email, displayName }: {
     profileRole === "agent" ? "Property Manager" : companyAccess?.officerCompanies.length ? "Senior Officer" : "Landlord";
 
   const notifTypeColor = (type: string): string => {
-    if (type === "payment") return "#16A34A";
-    if (type === "overdue") return "#DC2626";
-    if (type === "warning") return "#D97706";
-    return "#2563EB";
+    if (type === "payment") return "var(--k-16A34A)";
+    if (type === "overdue") return "var(--k-DC2626)";
+    if (type === "warning") return "var(--k-D97706)";
+    return "var(--k-2563EB)";
   };
 
   const notifTypeBg = (type: string): string => {
-    if (type === "payment") return "#DCFCE7";
-    if (type === "overdue") return "#FEE2E2";
-    if (type === "warning") return "#FEF9C3";
-    return "#EFF6FF";
+    if (type === "payment") return "var(--k-DCFCE7)";
+    if (type === "overdue") return "var(--k-FEE2E2)";
+    if (type === "warning") return "var(--k-FEF9C3)";
+    return "var(--k-EFF6FF)";
   };
 
   const timeAgo = (date: string): string => {
@@ -411,26 +412,26 @@ export function AppLayout({ children, role, email, displayName }: {
   };
 
   const Sidebar = (
-    <aside className="flex h-full w-64 flex-col" style={{ background: "#0d2818" }}>
+    <aside className="flex h-full w-64 flex-col" style={{ background: "var(--k-0D2818)" }}>
       <button
         onClick={handleBackToProperties}
         className="flex items-center gap-3 px-5 py-5 hover:opacity-80 transition-opacity w-full text-left"
       >
-        <div className="grid h-9 w-9 place-items-center rounded-xl shadow-md" style={{ background: "#F59E0B" }}>
+        <div className="grid h-9 w-9 place-items-center rounded-xl shadow-md" style={{ background: "var(--k-F59E0B)" }}>
           <Building2 className="h-5 w-5 text-white" />
         </div>
         <span className="font-display text-lg font-bold text-white">NyumbaTrack</span>
       </button>
 
       {selectedProperty && role === "admin" && (
-        <div className="mx-4 mb-3 rounded-xl px-3 py-2.5" style={{ background: "#1a3a28" }}>
-          <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: "#6B9E7A" }}>Current Property</div>
+        <div className="mx-4 mb-3 rounded-xl px-3 py-2.5" style={{ background: "var(--k-1A3A28)" }}>
+          <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: "var(--kt-6B9E7A)" }}>Current Property</div>
           <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" style={{ color: "#F59E0B" }} />
+            <Building2 className="h-4 w-4" style={{ color: "var(--kt-F59E0B)" }} />
             <span className="text-sm font-semibold text-white truncate">{selectedProperty.name}</span>
           </div>
           {selectedProperty.location && (
-            <div className="text-xs mt-0.5 truncate" style={{ color: "#6B9E7A" }}>{selectedProperty.location}</div>
+            <div className="text-xs mt-0.5 truncate" style={{ color: "var(--kt-6B9E7A)" }}>{selectedProperty.location}</div>
           )}
         </div>
       )}
@@ -456,7 +457,7 @@ export function AppLayout({ children, role, email, displayName }: {
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
                   active ? "text-white font-semibold" : "hover:text-white"
                 )}
-                style={active ? { background: "#166534", color: "#FFFFFF" } : { color: "#9CA3AF" }}
+                style={active ? { background: "var(--k-166534)", color: "var(--kt-FFFFFF)" } : { color: "var(--kt-9CA3AF)" }}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 {it.label}
@@ -464,7 +465,7 @@ export function AppLayout({ children, role, email, displayName }: {
               </Link>
 
               {showSubNav && (
-                <div className="ml-4 mt-0.5 space-y-0.5 border-l pl-3" style={{ borderColor: "#1a3a28" }}>
+                <div className="ml-4 mt-0.5 space-y-0.5 border-l pl-3" style={{ borderColor: "var(--k-1A3A28)" }}>
                   {propertySubNav.map((sub) => {
                     const subActive = pathname === sub.to;
                     const SubIcon = sub.icon;
@@ -477,7 +478,7 @@ export function AppLayout({ children, role, email, displayName }: {
                           "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
                           subActive ? "text-white font-semibold" : "hover:text-white"
                         )}
-                        style={subActive ? { background: "#166534", color: "#FFFFFF" } : { color: "#8CA396" }}
+                        style={subActive ? { background: "var(--k-166534)", color: "var(--kt-FFFFFF)" } : { color: "var(--kt-8CA396)" }}
                       >
                         <SubIcon className="h-3.5 w-3.5 flex-shrink-0" />
                         {sub.label}
@@ -492,28 +493,28 @@ export function AppLayout({ children, role, email, displayName }: {
         })}
       </nav>
 
-      <div className="p-3 mt-2" style={{ borderTop: "1px solid #1a3a28" }}>
+      <div className="p-3 mt-2" style={{ borderTop: "1px solid var(--k-1A3A28)" }}>
         <button
           onClick={() => setProfileOpen(true)}
           className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 hover:opacity-80 transition-opacity"
-          style={{ background: "#1a3a28" }}
+          style={{ background: "var(--k-1A3A28)" }}
         >
           <div
             className="grid h-8 w-8 place-items-center rounded-full text-sm font-bold text-white flex-shrink-0"
-            style={{ background: "#F59E0B" }}
+            style={{ background: "var(--k-F59E0B)" }}
           >
             {initials}
           </div>
           <div className="min-w-0 flex-1 text-left">
             <div className="truncate text-xs font-medium text-white">{displayName || email || "User"}</div>
-            <div className="text-[10px] uppercase tracking-wider" style={{ color: "#6B9E7A" }}>{roleLabel}</div>
+            <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--kt-6B9E7A)" }}>{roleLabel}</div>
           </div>
-          <Info className="h-4 w-4 flex-shrink-0" style={{ color: "#6B9E7A" }} />
+          <Info className="h-4 w-4 flex-shrink-0" style={{ color: "var(--kt-6B9E7A)" }} />
         </button>
 
         <div className="mt-3 px-1">
-          <div className="text-[9px] leading-relaxed" style={{ color: "#4a7a5a" }}>
-            <div className="font-semibold" style={{ color: "#6B9E7A" }}>NyumbaTrack Technologies Ltd</div>
+          <div className="text-[9px] leading-relaxed" style={{ color: "var(--kt-4A7A5A)" }}>
+            <div className="font-semibold" style={{ color: "var(--kt-6B9E7A)" }}>NyumbaTrack Technologies Ltd</div>
             <div>© 2026 All rights reserved</div>
             <div>Built for Kenyan landlords</div>
           </div>
@@ -563,7 +564,7 @@ export function AppLayout({ children, role, email, displayName }: {
 
       <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
         {/* Desktop top bar */}
-        <header className="hidden md:flex items-center justify-between border-b border-border bg-white px-6 py-3">
+        <header className="hidden md:flex items-center justify-between border-b border-border bg-card px-6 py-3">
           <div className="flex-shrink-0">
             <p className="text-sm font-semibold text-foreground">{getGreeting()}, {(displayName || "there").split(" ")[0]}</p>
             <p className="text-xs text-muted-foreground">{getTodayDate()}</p>
@@ -577,14 +578,14 @@ export function AppLayout({ children, role, email, displayName }: {
             <button
               onClick={() => setNotifOpen(true)}
               className="relative grid h-9 w-9 flex-shrink-0 place-items-center rounded-full hover:opacity-80 transition-opacity"
-              style={{ background: "#F59E0B" }}
+              style={{ background: "var(--k-F59E0B)" }}
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4 text-white" />
               {unreadCount > 0 && (
                 <span
                   className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white"
-                  style={{ background: "#DC2626" }}
+                  style={{ background: "var(--k-DC2626)" }}
                 >
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
@@ -593,12 +594,12 @@ export function AppLayout({ children, role, email, displayName }: {
           </div>
         </header>
 
-        <header className="flex items-center justify-between border-b border-border bg-white px-4 py-3 md:hidden">
+        <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 md:hidden">
           <button onClick={() => setMobileOpen(true)} aria-label="Open menu">
             <Menu className="h-5 w-5 text-foreground" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="grid h-7 w-7 place-items-center rounded-lg" style={{ background: "#F59E0B" }}>
+            <div className="grid h-7 w-7 place-items-center rounded-lg" style={{ background: "var(--k-F59E0B)" }}>
               <Building2 className="h-4 w-4 text-white" />
             </div>
             <span className="font-display font-bold text-foreground">
@@ -618,14 +619,14 @@ export function AppLayout({ children, role, email, displayName }: {
             <button
               onClick={() => setNotifOpen(true)}
               className="relative grid h-8 w-8 place-items-center rounded-full"
-              style={{ background: "#F59E0B" }}
+              style={{ background: "var(--k-F59E0B)" }}
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4 text-white" />
               {unreadCount > 0 && (
                 <span
                   className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold text-white"
-                  style={{ background: "#DC2626" }}
+                  style={{ background: "var(--k-DC2626)" }}
                 >
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
@@ -645,7 +646,7 @@ export function AppLayout({ children, role, email, displayName }: {
 
         <main className="flex-1 overflow-y-auto p-4 md:px-8 md:py-5 animate-fade-in">
           {isSuspended ? (
-            <div className="mx-auto mt-16 max-w-md rounded-2xl border border-border bg-white p-6 text-center">
+            <div className="mx-auto mt-16 max-w-md rounded-2xl border border-border bg-card p-6 text-center">
               <h2 className="font-display text-xl font-bold">Account suspended</h2>
               <p className="mt-2 text-sm text-muted-foreground">Your company's NyumbaTrack account is suspended. Your data is safe. Please contact NyumbaTrack to restore access.</p>
             </div>
@@ -656,7 +657,7 @@ export function AppLayout({ children, role, email, displayName }: {
       {/* MOBILE SEARCH OVERLAY — full-screen since the mobile header has no
           room for an inline search bar the way the desktop one does. */}
       {mobileSearchOpen && createPortal(
-        <div className="fixed inset-0 z-50 bg-white flex flex-col md:hidden">
+        <div className="fixed inset-0 z-50 bg-card flex flex-col md:hidden">
           <div className="flex items-center gap-3 border-b border-border px-4 py-3">
             <div className="flex-1">
               <GlobalSearch isAgent={profileRole === "agent"} autoFocus onNavigate={() => setMobileSearchOpen(false)} onAction={handleSearchAction} />
@@ -676,7 +677,7 @@ export function AppLayout({ children, role, email, displayName }: {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setNotifOpen(false)}
           />
-          <div className="relative w-full max-w-sm h-full bg-white flex flex-col shadow-2xl">
+          <div className="relative w-full max-w-sm h-full bg-card flex flex-col shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
                 <h2 className="font-display text-lg font-bold text-foreground">Notifications</h2>
@@ -689,7 +690,7 @@ export function AppLayout({ children, role, email, displayName }: {
                   <button
                     onClick={markAllRead}
                     className="text-xs font-medium px-2.5 py-1 rounded-lg"
-                    style={{ background: "#DCFCE7", color: "#166534" }}
+                    style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}
                   >
                     Mark all read
                   </button>
@@ -705,7 +706,7 @@ export function AppLayout({ children, role, email, displayName }: {
               {quickSummaryLoading ? (
                 <div className="px-5 py-4 border-b border-border text-xs text-muted-foreground">Loading summary…</div>
               ) : quickSummary && (quickSummary.paymentsToday > 0 || quickSummary.openTickets > 0 || quickSummary.complianceExpiring > 0) ? (
-                <div className="px-5 py-4 border-b border-border" style={{ background: "#F5F5F0" }}>
+                <div className="px-5 py-4 border-b border-border" style={{ background: "var(--k-F5F5F0)" }}>
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Quick Summary</div>
                   <ul className="space-y-1 text-sm text-foreground">
                     {quickSummary.paymentsToday > 0 && (
@@ -725,7 +726,7 @@ export function AppLayout({ children, role, email, displayName }: {
                 <div className="flex flex-col items-center justify-center h-full text-center px-6">
                   <div
                     className="grid h-16 w-16 place-items-center rounded-2xl mb-4"
-                    style={{ background: "#F5F5F0" }}
+                    style={{ background: "var(--k-F5F5F0)" }}
                   >
                     <Bell className="h-8 w-8 text-muted-foreground" />
                   </div>
@@ -740,7 +741,7 @@ export function AppLayout({ children, role, email, displayName }: {
                     key={n.id}
                     onClick={() => markRead(n.id)}
                     className="flex items-start gap-3 px-5 py-4 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors"
-                    style={{ background: n.read ? "transparent" : "#F0FDF4" }}
+                    style={{ background: n.read ? "transparent" : "var(--k-F0FDF4)" }}
                   >
                     <div
                       className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0 mt-0.5"
@@ -754,7 +755,7 @@ export function AppLayout({ children, role, email, displayName }: {
                         {!n.read && (
                           <div
                             className="h-2 w-2 rounded-full flex-shrink-0 mt-1.5"
-                            style={{ background: "#166534" }}
+                            style={{ background: "var(--k-166534)" }}
                           />
                         )}
                       </div>
@@ -776,7 +777,7 @@ export function AppLayout({ children, role, email, displayName }: {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setProfileOpen(false)}
           />
-          <div className="relative w-full max-w-sm h-full bg-white flex flex-col shadow-2xl overflow-y-auto">
+          <div className="relative w-full max-w-sm h-full bg-card flex flex-col shadow-2xl overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="font-display text-lg font-bold text-foreground">Profile & Settings</h2>
               <button onClick={() => setProfileOpen(false)}>
@@ -789,7 +790,7 @@ export function AppLayout({ children, role, email, displayName }: {
               <div className="flex items-center gap-4">
                 <div
                   className="grid h-14 w-14 place-items-center rounded-2xl text-xl font-bold text-white flex-shrink-0"
-                  style={{ background: "#F59E0B" }}
+                  style={{ background: "var(--k-F59E0B)" }}
                 >
                   {initials}
                 </div>
@@ -798,7 +799,7 @@ export function AppLayout({ children, role, email, displayName }: {
                   <div className="text-sm text-muted-foreground">{email}</div>
                   <div
                     className="mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                    style={{ background: "#DCFCE7", color: "#166534" }}
+                    style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}
                   >
                     {roleLabel}
                   </div>
@@ -813,8 +814,8 @@ export function AppLayout({ children, role, email, displayName }: {
                 className="w-full flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEF9C3" }}>
-                    <Lock className="h-4 w-4" style={{ color: "#D97706" }} />
+                  <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-FEF9C3)" }}>
+                    <Lock className="h-4 w-4" style={{ color: "var(--kt-D97706)" }} />
                   </div>
                   <span className="text-sm font-medium text-foreground">Change Password</span>
                 </div>
@@ -831,7 +832,7 @@ export function AppLayout({ children, role, email, displayName }: {
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="New password"
                     className="w-full rounded-xl border border-border px-4 py-2.5 text-sm outline-none"
-                    style={{ borderColor: "#E5E7EB" }}
+                    style={{ borderColor: "var(--k-E5E7EB)" }}
                   />
                   <input
                     type="password"
@@ -839,12 +840,12 @@ export function AppLayout({ children, role, email, displayName }: {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm new password"
                     className="w-full rounded-xl border border-border px-4 py-2.5 text-sm outline-none"
-                    style={{ borderColor: "#E5E7EB" }}
+                    style={{ borderColor: "var(--k-E5E7EB)" }}
                   />
                   <button
                     onClick={handleChangePassword}
                     className="w-full rounded-xl py-2.5 text-sm font-semibold text-white"
-                    style={{ background: "#166534" }}
+                    style={{ background: "var(--k-166534)" }}
                   >
                     Save Password
                   </button>
@@ -856,7 +857,7 @@ export function AppLayout({ children, role, email, displayName }: {
             {profileRole === "landlord" && (
               <div className="px-5 py-4 border-b border-border">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#F5F5F0" }}>
+                  <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-F5F5F0)" }}>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <span className="text-sm font-medium text-foreground">Connected Property Managers</span>
@@ -885,10 +886,16 @@ export function AppLayout({ children, role, email, displayName }: {
               </div>
             )}
 
+            {/* Appearance */}
+            <div className="px-5 py-4 border-b border-border">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Appearance</p>
+              <AppearanceSelector />
+            </div>
+
             {/* Privacy Policy */}
             <div className="px-5 py-4 border-b border-border">
               <a href="/privacy" target="_blank" rel="noreferrer" className="w-full flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#F5F5F0" }}>
+                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-F5F5F0)" }}>
                   <ShieldCheck className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">Privacy Policy</span>
@@ -898,7 +905,7 @@ export function AppLayout({ children, role, email, displayName }: {
             {/* Sign out all devices */}
             <div className="px-5 py-4 border-b border-border">
               <button onClick={handleSignOutAllDevices} className="w-full flex items-center gap-3">
-                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#F5F5F0" }}>
+                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-F5F5F0)" }}>
                   <LogOut className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <span className="text-sm font-medium text-foreground">Sign out of all devices</span>
@@ -920,10 +927,10 @@ export function AppLayout({ children, role, email, displayName }: {
               <button
                 onClick={handleDeleteAccount}
                 className="w-full flex items-center gap-3 rounded-xl px-4 py-3"
-                style={{ background: "#FEE2E2" }}
+                style={{ background: "var(--k-FEE2E2)" }}
               >
-                <Trash2 className="h-4 w-4" style={{ color: "#DC2626" }} />
-                <span className="text-sm font-medium" style={{ color: "#DC2626" }}>
+                <Trash2 className="h-4 w-4" style={{ color: "var(--kt-DC2626)" }} />
+                <span className="text-sm font-medium" style={{ color: "var(--kt-DC2626)" }}>
                   Delete Account
                 </span>
               </button>

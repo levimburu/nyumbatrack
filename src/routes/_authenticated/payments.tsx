@@ -47,10 +47,10 @@ function getMonthOptions() {
 
 function MethodBadge({ method }: { method: string }) {
   const styles: Record<string, { bg: string; color: string; label: string }> = {
-    mpesa: { bg: "#DCFCE7", color: "#166534", label: "M-Pesa" },
-    bank: { bg: "#EFF6FF", color: "#2563EB", label: "Bank Transfer" },
-    cash: { bg: "#F5F5F0", color: "#6B7280", label: "Cash" },
-    advance: { bg: "#EDE9FE", color: "#6D28D9", label: "Advance" },
+    mpesa: { bg: "var(--k-DCFCE7)", color: "var(--kt-166534)", label: "M-Pesa" },
+    bank: { bg: "var(--k-EFF6FF)", color: "var(--kt-2563EB)", label: "Bank Transfer" },
+    cash: { bg: "var(--k-F5F5F0)", color: "var(--kt-6B7280)", label: "Cash" },
+    advance: { bg: "var(--k-EDE9FE)", color: "var(--kt-6D28D9)", label: "Advance" },
   };
   const s = styles[method] ?? styles.cash;
   return (
@@ -88,9 +88,9 @@ function currentMonthLabelFn(): string {
 
 function StatusPill({ status }: { status: "paid" | "partial" | "unpaid" }) {
   const styles = {
-    paid: { background: "#DCFCE7", color: "#166534" },
-    partial: { background: "#FEF9C3", color: "#854D0E" },
-    unpaid: { background: "#FEE2E2", color: "#991B1B" },
+    paid: { background: "var(--k-DCFCE7)", color: "var(--kt-166534)" },
+    partial: { background: "var(--k-FEF9C3)", color: "var(--kt-854D0E)" },
+    unpaid: { background: "var(--k-FEE2E2)", color: "var(--kt-991B1B)" },
   };
   const labels = { paid: "Paid", partial: "Partial", unpaid: "Unpaid" };
   return (
@@ -180,7 +180,7 @@ function PaymentsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by tenant name or unit..."
-          className="w-full rounded-xl border border-border bg-white pl-10 pr-4 py-2.5 text-sm outline-none focus:border-primary transition-colors"
+          className="w-full rounded-xl border border-border bg-card pl-10 pr-4 py-2.5 text-sm outline-none focus:border-primary transition-colors"
         />
       </div>
 
@@ -204,13 +204,13 @@ function PaymentsPage() {
                   setOpenTenant(t);
                 }
               }}
-              className="card-surface p-4 text-left hover:shadow-md transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534] focus-visible:ring-offset-2"
+              className="card-surface p-4 text-left hover:shadow-md transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--k-166534)] focus-visible:ring-offset-2"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div
                     className="grid h-10 w-10 place-items-center rounded-full text-sm font-bold text-white flex-shrink-0"
-                    style={{ background: "#166534" }}
+                    style={{ background: "var(--k-166534)" }}
                   >
                     {initials}
                   </div>
@@ -228,7 +228,7 @@ function PaymentsPage() {
               {status !== "paid" && (
                 <div className="flex items-center justify-between text-xs mt-1">
                   <span className="text-muted-foreground">Owing · {label}</span>
-                  <span className="font-semibold" style={{ color: status === "partial" ? "#854D0E" : "#DC2626" }}>
+                  <span className="font-semibold" style={{ color: status === "partial" ? "var(--k-854D0E)" : "var(--k-DC2626)" }}>
                     {formatKES(due)}
                   </span>
                 </div>
@@ -426,9 +426,9 @@ export function TenantPaymentView({ tenant, onClose }: {
   return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md h-full bg-white flex flex-col shadow-2xl">
+      <div className="relative w-full max-w-md h-full bg-card flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4" style={{ background: "#166534" }}>
+        <div className="flex items-center gap-3 px-5 py-4" style={{ background: "var(--k-166534)" }}>
           <div
             className="grid h-11 w-11 place-items-center rounded-full text-base font-bold text-white flex-shrink-0"
             style={{ background: "rgba(255,255,255,0.2)" }}
@@ -454,7 +454,7 @@ export function TenantPaymentView({ tenant, onClose }: {
           <button
             onClick={() => setAdding(true)}
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white glow-primary"
-            style={{ background: "#166534" }}
+            style={{ background: "var(--k-166534)" }}
           >
             <Plus className="h-4 w-4" /> Record Payment
           </button>
@@ -468,11 +468,11 @@ export function TenantPaymentView({ tenant, onClose }: {
 
         {/* Summary */}
         <div className="px-5 py-4 border-b border-border grid grid-cols-2 gap-3">
-          <div className="rounded-xl p-3" style={{ background: "#F0FDF4" }}>
+          <div className="rounded-xl p-3" style={{ background: "var(--k-F0FDF4)" }}>
             <div className="text-xs text-muted-foreground mb-0.5">Months fully paid</div>
-            <div className="font-display text-lg font-bold" style={{ color: "#166534" }}>{fullyPaidMonths}</div>
+            <div className="font-display text-lg font-bold" style={{ color: "var(--kt-166534)" }}>{fullyPaidMonths}</div>
           </div>
-          <div className="rounded-xl p-3" style={{ background: "#F5F5F0" }}>
+          <div className="rounded-xl p-3" style={{ background: "var(--k-F5F5F0)" }}>
             <div className="text-xs text-muted-foreground mb-0.5">Total paid</div>
             <div className="font-display text-lg font-bold text-foreground">{formatKES(totalPaidAllTime)}</div>
           </div>
@@ -482,7 +482,7 @@ export function TenantPaymentView({ tenant, onClose }: {
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           {monthKeys.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-6">
-              <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#F5F5F0" }}>
+              <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "var(--k-F5F5F0)" }}>
                 <Receipt className="h-8 w-8 text-muted-foreground" />
               </div>
               <p className="font-medium text-foreground mb-1">No payments yet</p>
@@ -498,12 +498,12 @@ export function TenantPaymentView({ tenant, onClose }: {
                 const monthPayments = (tenantPayments ?? []).filter((p) => (p.payment_month ?? "Unknown") === month);
                 return (
                   <div key={month} className="rounded-xl border border-border overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "#F9FAFB" }}>
+                    <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "var(--k-F9FAFB)" }}>
                       <span className="text-sm font-semibold text-foreground">{month}</span>
                       {isFull ? (
                         <StatusPill status="paid" />
                       ) : isPartial ? (
-                        <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#FEF9C3", color: "#854D0E" }}>
+                        <span className="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "var(--k-FEF9C3)", color: "var(--kt-854D0E)" }}>
                           Partial · {formatKES(shortfall)} short
                         </span>
                       ) : (
@@ -531,7 +531,7 @@ export function TenantPaymentView({ tenant, onClose }: {
                         return (
                           <div key={p.id} className="px-3 py-2.5">
                             <div className="flex items-center justify-between mb-1">
-                              <span className="font-display font-bold text-sm" style={{ color: "#16A34A" }}>
+                              <span className="font-display font-bold text-sm" style={{ color: "var(--kt-16A34A)" }}>
                                 +{formatKES(p.amount)}
                               </span>
                               <MethodBadge method={p.method} />
@@ -551,7 +551,7 @@ export function TenantPaymentView({ tenant, onClose }: {
                                   <button
                                     onClick={() => setCancelTarget(p)}
                                     className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium border transition-colors"
-                                    style={{ borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }}
+                                    style={{ borderColor: "var(--k-FCA5A5)", color: "var(--kt-DC2626)", background: "var(--k-FEF2F2)" }}
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </button>
@@ -611,8 +611,8 @@ function CancelPaymentModal({ payment, onConfirm, onClose, cancelling }: {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#FEE2E2" }}>
-          <Trash2 className="h-7 w-7" style={{ color: "#DC2626" }} />
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "var(--k-FEE2E2)" }}>
+          <Trash2 className="h-7 w-7" style={{ color: "var(--kt-DC2626)" }} />
         </div>
         <h2 className="font-display text-xl font-semibold mb-1">Cancel Payment</h2>
         <p className="text-sm text-muted-foreground mb-6">
@@ -623,7 +623,7 @@ function CancelPaymentModal({ payment, onConfirm, onClose, cancelling }: {
             onClick={onConfirm}
             disabled={cancelling}
             className="w-full rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-colors"
-            style={{ background: "#DC2626" }}
+            style={{ background: "var(--k-DC2626)" }}
           >
             {cancelling ? "Cancelling…" : "Yes, cancel this payment"}
           </button>
@@ -644,15 +644,15 @@ function ReceiptPreview({ data, onClose }: { data: ReceiptData; onClose: () => v
           <div className="flex items-center gap-2">
             <button onClick={() => downloadReceipt(data)}
               className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors"
-              style={{ background: "#166534" }}>
+              style={{ background: "var(--k-166534)" }}>
               <Download className="h-4 w-4" /> Download PDF
             </button>
-            <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 text-white hover:bg-white/20 transition-colors">
+            <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl bg-card/10 text-white hover:bg-card/20 transition-colors">
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
-        <div className="flex-1 rounded-xl overflow-hidden bg-white shadow-2xl">
+        <div className="flex-1 rounded-xl overflow-hidden bg-card shadow-2xl">
           <iframe src={dataUrl} className="w-full h-full" title="Receipt Preview" style={{ minHeight: "500px" }} />
         </div>
       </div>
@@ -773,8 +773,8 @@ function PaymentForm({
     borderRadius: "10px",
     border: "none",
     cursor: "pointer",
-    background: active ? "#166534" : "transparent",
-    color: active ? "#fff" : "#6B7280",
+    background: active ? "var(--k-166534)" : "transparent",
+    color: active ? "#fff" : "var(--kt-6B7280)",
     transition: "all 0.15s",
   });
 
@@ -786,7 +786,7 @@ function PaymentForm({
           <button onClick={onClose}><X className="h-5 w-5 text-muted-foreground" /></button>
         </div>
 
-        <div className="flex gap-1 rounded-xl p-1 mb-5" style={{ background: "#F5F5F0" }}>
+        <div className="flex gap-1 rounded-xl p-1 mb-5" style={{ background: "var(--k-F5F5F0)" }}>
           <button type="button" style={tabStyle(paymentType === "full")} onClick={() => handleTypeChange("full")}>Full Payment</button>
           <button type="button" style={tabStyle(paymentType === "partial")} onClick={() => handleTypeChange("partial")}>Partial</button>
           {showTopup && (
@@ -828,8 +828,8 @@ function PaymentForm({
                       onClick={() => handleTenantChange(t.id)}
                       className="w-full rounded-xl border-2 p-3 text-left transition-all"
                       style={{
-                        borderColor: tenantId === t.id ? "#166534" : "#E5E7EB",
-                        background: tenantId === t.id ? "#F0FDF4" : "#fff",
+                        borderColor: tenantId === t.id ? "var(--k-166534)" : "var(--k-E5E7EB)",
+                        background: tenantId === t.id ? "var(--k-F0FDF4)" : "#fff",
                       }}
                     >
                       <div className="flex items-center justify-between">
@@ -839,7 +839,7 @@ function PaymentForm({
                         </div>
                         <div className="text-right">
                           <div className="text-xs text-muted-foreground">Paid: <span className="font-semibold text-foreground">{formatKES(t.alreadyPaid)}</span></div>
-                          <div className="text-xs" style={{ color: "#DC2626" }}>Remaining: <span className="font-semibold">{formatKES(t.remaining)}</span></div>
+                          <div className="text-xs" style={{ color: "var(--kt-DC2626)" }}>Remaining: <span className="font-semibold">{formatKES(t.remaining)}</span></div>
                         </div>
                       </div>
                     </button>
@@ -894,8 +894,8 @@ function PaymentForm({
           </div>
 
           {paymentType !== "topup" && monthAlreadyFullyPaid && (
-            <div className="flex items-start gap-2 rounded-xl p-3" style={{ background: "#FEF9C3", border: "1px solid #FDE68A" }}>
-              <div className="text-xs" style={{ color: "#854D0E" }}>
+            <div className="flex items-start gap-2 rounded-xl p-3" style={{ background: "var(--k-FEF9C3)", border: "1px solid var(--k-FDE68A)" }}>
+              <div className="text-xs" style={{ color: "var(--kt-854D0E)" }}>
                 <span className="font-semibold">{selectedTenant?.full_name}</span> has already fully paid rent for <span className="font-semibold">{paymentMonth}</span>. Choose a different month to record this payment.
               </div>
             </div>
@@ -907,13 +907,13 @@ function PaymentForm({
               type="submit"
               disabled={saving || (paymentType === "topup" && partialTenants.length === 0) || (paymentType !== "topup" && monthAlreadyFullyPaid)}
               className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary"
-              style={{ background: "#166534" }}
+              style={{ background: "var(--k-166534)" }}
             >
               {saving ? "Saving…" : "Record Payment"}
             </button>
           </div>
         </form>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>
   );

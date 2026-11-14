@@ -188,8 +188,8 @@ function VacanciesPage() {
         onClick={() => setTypeFilter(value)}
         className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
         style={active
-          ? { background: "#166534", color: "#fff" }
-          : { background: "#F0F0EB", color: "#374151" }}
+          ? { background: "var(--k-166534)", color: "#fff" }
+          : { background: "var(--k-F0F0EB)", color: "var(--kt-374151)" }}
       >
         {label}{count !== undefined ? ` · ${count}` : ""}
       </button>
@@ -213,7 +213,7 @@ function VacanciesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by area or property, e.g. Ruaka, Kilimani, Amani…"
-            className="w-full rounded-xl border border-border bg-white py-2.5 pl-9 pr-9 text-sm outline-none focus:border-[#166534]"
+            className="w-full rounded-xl border border-border bg-card py-2.5 pl-9 pr-9 text-sm outline-none focus:border-[var(--k-166534)]"
           />
           {search && (
             <button onClick={() => setSearch("")} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -231,18 +231,18 @@ function VacanciesPage() {
           <input
             id="vacancy-min-rent" type="number" min={0} inputMode="numeric" value={minRent}
             onChange={(e) => setMinRent(e.target.value)} placeholder="Min"
-            className="w-28 rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-[#166534]"
+            className="w-28 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[var(--k-166534)]"
           />
           <span className="text-xs text-muted-foreground">to</span>
           <input
             id="vacancy-max-rent" type="number" min={0} inputMode="numeric" value={maxRent}
             onChange={(e) => setMaxRent(e.target.value)} placeholder="Max"
-            className="w-28 rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-[#166534]"
+            className="w-28 rounded-lg border border-border bg-card px-3 py-2 text-sm outline-none focus:border-[var(--k-166534)]"
           />
           {hasFilters && (
             <button
               onClick={() => { setSearch(""); setTypeFilter("all"); setMinRent(""); setMaxRent(""); }}
-              className="ml-auto text-xs font-medium" style={{ color: "#166534" }}
+              className="ml-auto text-xs font-medium" style={{ color: "var(--kt-166534)" }}
             >
               Clear all filters
             </button>
@@ -251,9 +251,9 @@ function VacanciesPage() {
       </div>
 
       {error && (
-        <div className="card-surface p-4 border-l-4" style={{ borderLeftColor: "#DC2626", background: "#FEF2F2" }}>
-          <p className="text-sm font-semibold" style={{ color: "#991B1B" }}>Couldn't load vacancies</p>
-          <p className="text-xs mt-1" style={{ color: "#991B1B" }}>{(error as any)?.message ?? String(error)}</p>
+        <div className="card-surface p-4 border-l-4" style={{ borderLeftColor: "var(--k-DC2626)", background: "var(--k-FEF2F2)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--kt-991B1B)" }}>Couldn't load vacancies</p>
+          <p className="text-xs mt-1" style={{ color: "var(--kt-991B1B)" }}>{(error as any)?.message ?? String(error)}</p>
         </div>
       )}
 
@@ -281,14 +281,14 @@ function VacanciesPage() {
               <div key={v.id} role="button" tabIndex={0} onClick={() => setOpenVacancy(v)} onKeyDown={(e) => { if (e.key === "Enter") setOpenVacancy(v); }} className="card-surface overflow-hidden flex flex-col cursor-pointer transition-shadow hover:shadow-md">
                 <div
                   className="relative h-28 grid place-items-center overflow-hidden"
-                  style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}
+                  style={{ background: "linear-gradient(135deg, var(--k-166534) 0%, var(--k-15803D) 100%)" }}
                 >
                   {v.property.photo_url
                     ? <img src={v.property.photo_url} alt={v.property.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
                     : <Building2 className="h-10 w-10 opacity-20 text-white" />}
                   <div
                     className="absolute bottom-3 left-3 rounded-full px-2.5 py-1 text-xs font-semibold"
-                    style={{ background: "#F59E0B", color: "#fff" }}
+                    style={{ background: "var(--k-F59E0B)", color: "#fff" }}
                   >
                     {unitTypeLabel(v.unit_type) ?? "Type not set"}
                   </div>
@@ -312,7 +312,7 @@ function VacanciesPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-muted-foreground">Rent per month</div>
-                      <div className="font-display font-bold text-base" style={{ color: "#16A34A" }}>
+                      <div className="font-display font-bold text-base" style={{ color: "var(--kt-16A34A)" }}>
                         {formatKES(Number(v.rent_price))}
                       </div>
                     </div>

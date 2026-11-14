@@ -9,6 +9,15 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="NyumbaTrack" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <script>
+      (function () {
+        try {
+          var p = localStorage.getItem("nyumbatrack-theme") || "system";
+          var d = p === "dark" || (p === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (d) { document.documentElement.classList.add("dark"); document.documentElement.style.colorScheme = "dark"; }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/png" href="/icon-512.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -217,7 +217,7 @@ function RegisterPropertyPage() {
       </Section>
 
       <button onClick={submit} disabled={saving || uploading}
-        className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50" style={{ background: "#166534" }}>
+        className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white disabled:opacity-50" style={{ background: "var(--k-166534)" }}>
         {saving && <Loader2 className="h-4 w-4 animate-spin" />} Register property
       </button>
     </div>

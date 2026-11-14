@@ -141,8 +141,8 @@ function ActivityPage() {
   if (!properties?.length) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-          <CheckCircle2 className="h-10 w-10" style={{ color: "#166534" }} />
+        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "var(--k-DCFCE7)" }}>
+          <CheckCircle2 className="h-10 w-10" style={{ color: "var(--kt-166534)" }} />
         </div>
         <h1 className="font-display text-2xl font-bold text-foreground">Nothing to show yet</h1>
         <p className="mt-2 text-sm text-muted-foreground max-w-xs">
@@ -167,14 +167,14 @@ function ActivityPage() {
         ) : (
           <div className="space-y-3">
             {activityFeed.map((a) => (
-              <div key={a.key} className="flex items-start gap-3 pb-3 last:pb-0 border-b last:border-b-0" style={{ borderColor: "#F0F0EB" }}>
+              <div key={a.key} className="flex items-start gap-3 pb-3 last:pb-0 border-b last:border-b-0" style={{ borderColor: "var(--k-F0F0EB)" }}>
                 <div
                   className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full"
-                  style={{ background: a.icon === "ticket" ? "#FEF3C7" : "#DCFCE7" }}
+                  style={{ background: a.icon === "ticket" ? "var(--k-FEF3C7)" : "var(--k-DCFCE7)" }}
                 >
-                  {a.icon === "payment" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
-                  {a.icon === "ticket" && <Wrench className="h-4 w-4" style={{ color: "#D97706" }} />}
-                  {a.icon === "done" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
+                  {a.icon === "payment" && <CheckCircle2 className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />}
+                  {a.icon === "ticket" && <Wrench className="h-4 w-4" style={{ color: "var(--kt-D97706)" }} />}
+                  {a.icon === "done" && <CheckCircle2 className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-foreground">{a.title}</div>

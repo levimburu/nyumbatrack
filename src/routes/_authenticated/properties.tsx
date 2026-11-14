@@ -254,8 +254,8 @@ function PropertiesPage() {
       return (
         <div className="flex min-h-[80vh] flex-col items-center justify-center px-4 text-center">
           <div className="mb-6">
-            <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-              <Building2 className="h-10 w-10" style={{ color: "#166534" }} />
+            <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "var(--k-DCFCE7)" }}>
+              <Building2 className="h-10 w-10" style={{ color: "var(--kt-166534)" }} />
             </div>
             <h1 className="font-display text-2xl font-bold text-foreground">
               {isAgent ? "No properties assigned yet" : "Welcome to NyumbaTrack!"}
@@ -271,7 +271,7 @@ function PropertiesPage() {
             <button
               onClick={() => (isCompanyOfficer ? navigate({ to: "/register-property" }) : setAdding(true))}
               className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all glow-primary"
-              style={{ background: "#166534" }}
+              style={{ background: "var(--k-166534)" }}
             >
               <Plus className="h-5 w-5" /> Add your first property
             </button>
@@ -294,14 +294,14 @@ function PropertiesPage() {
                   {properties.length} {properties.length === 1 ? "property" : "properties"} managed
                 </p>
               </div>
-              <img src="/icon-512.png" alt="NyumbaTrack" className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl" style={{ background: "#0d2818" }} />
+              <img src="/icon-512.png" alt="NyumbaTrack" className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl" style={{ background: "var(--k-0D2818)" }} />
             </div>
             {!isAgent && (
               <div className="flex gap-2">
                 <button
                   onClick={() => (isCompanyOfficer ? navigate({ to: "/register-property" }) : setAdding(true))}
                   className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
-                  style={{ background: "#166534" }}
+                  style={{ background: "var(--k-166534)" }}
                 >
                   <Plus className="h-4 w-4" /> Add Property
                 </button>
@@ -318,7 +318,7 @@ function PropertiesPage() {
                 className="card-surface card-hover overflow-hidden cursor-pointer"
                 onClick={() => openProperty(p)}
               >
-                <div className="relative h-28 flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}>
+                <div className="relative h-28 flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg, var(--k-166534) 0%, var(--k-15803D) 100%)" }}>
                   {p.photo_url && (
                     <>
                       <img src={p.photo_url} alt={p.name} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
@@ -331,7 +331,7 @@ function PropertiesPage() {
                     </div>
                   )}
                   {stats.totalUnits > 0 && (
-                    <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#F59E0B", color: "#FFFFFF" }}>
+                    <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "var(--k-F59E0B)", color: "var(--kt-FFFFFF)" }}>
                       <Users className="h-3 w-3" />
                       {stats.totalUnits} units
                     </div>
@@ -355,36 +355,36 @@ function PropertiesPage() {
                   {stats.totalUnits > 0 && (
                     <>
                       <div className="mt-3 space-y-2">
-                        <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
+                        <div className="rounded-lg p-2.5" style={{ background: "var(--k-F5F5F0)" }}>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                             <TrendingUp className="h-3 w-3" /> Collected
                           </div>
-                          <div className="font-display font-bold text-base" style={{ color: "#16A34A" }}>{formatKES(stats.collectedThisMonth)}</div>
+                          <div className="font-display font-bold text-base" style={{ color: "var(--kt-16A34A)" }}>{formatKES(stats.collectedThisMonth)}</div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
+                          <div className="rounded-lg p-2.5" style={{ background: "var(--k-F5F5F0)" }}>
                             <div className="text-xs text-muted-foreground mb-1">Occupied</div>
                             <div className="font-display font-bold text-sm text-foreground">{stats.occupied} / {stats.totalUnits}</div>
                           </div>
-                          <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}>
+                          <div className="rounded-lg p-2.5" style={{ background: "var(--k-F5F5F0)" }}>
                             <div className="text-xs text-muted-foreground mb-1">Vacant</div>
-                            <div className="font-display font-bold text-sm" style={{ color: stats.vacant > 0 ? "#DC2626" : "#16A34A" }}>{stats.vacant}</div>
+                            <div className="font-display font-bold text-sm" style={{ color: stats.vacant > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }}>{stats.vacant}</div>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-3">
                         {stats.paid > 0 && (
-                          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "#DCFCE7", color: "#166534" }}>
+                          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}>
                             {stats.paid} paid
                           </span>
                         )}
                         {stats.partial > 0 && (
-                          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "#FEF9C3", color: "#854D0E" }}>
+                          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "var(--k-FEF9C3)", color: "var(--kt-854D0E)" }}>
                             {stats.partial} partial
                           </span>
                         )}
                         {stats.unpaid > 0 && (
-                          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "#FEE2E2", color: "#991B1B" }}>
+                          <span className="rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "var(--k-FEE2E2)", color: "var(--kt-991B1B)" }}>
                             {stats.unpaid} unpaid
                           </span>
                         )}
@@ -392,7 +392,7 @@ function PropertiesPage() {
                     </>
                   )}
                   {!isAgent && !p.payment_method && (
-                    <div className="mt-3 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium" style={{ background: "#FFF7ED", color: "#9A3412" }}>
+                    <div className="mt-3 flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium" style={{ background: "var(--k-FFF7ED)", color: "var(--kt-9A3412)" }}>
                       <Wallet className="h-3 w-3" /> No payment details — rent reminders are off
                     </div>
                   )}
@@ -411,7 +411,7 @@ function PropertiesPage() {
                         <Pencil className="h-3 w-3" /> Edit
                       </button>
                     )}
-                    <span className="text-xs font-medium ml-auto" style={{ color: "#166534" }}>
+                    <span className="text-xs font-medium ml-auto" style={{ color: "var(--kt-166534)" }}>
                       View Dashboard →
                     </span>
                   </div>
@@ -424,9 +424,9 @@ function PropertiesPage() {
             <button
               onClick={() => (isCompanyOfficer ? navigate({ to: "/register-property" }) : setAdding(true))}
               className="card-surface flex flex-col items-center justify-center p-8 border-2 border-dashed hover:border-primary transition-colors min-h-[200px]"
-              style={{ borderColor: "#D1D5DB" }}
+              style={{ borderColor: "var(--k-D1D5DB)" }}
             >
-              <div className="grid h-12 w-12 place-items-center rounded-xl mb-3" style={{ background: "#F0F0EB" }}>
+              <div className="grid h-12 w-12 place-items-center rounded-xl mb-3" style={{ background: "var(--k-F0F0EB)" }}>
                 <Plus className="h-6 w-6 text-muted-foreground" />
               </div>
               <div className="font-medium text-sm text-foreground">Add New Property</div>
@@ -570,7 +570,7 @@ function PropertyForm({
             <label className="mb-1.5 block text-xs font-medium text-foreground">Property photo</label>
             <div
               className="relative h-36 w-full overflow-hidden rounded-xl grid place-items-center"
-              style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}
+              style={{ background: "linear-gradient(135deg, var(--k-166534) 0%, var(--k-15803D) 100%)" }}
             >
               {photoUrl ? (
                 <img src={photoUrl} alt="Property" className="absolute inset-0 h-full w-full object-cover" />
@@ -618,9 +618,9 @@ function PropertyForm({
               properties query is scoped to the signed-in user's own rows).
               The database trigger enforces this same rule server-side, so
               this section is a convenience, not the actual security boundary. */}
-          <div className="rounded-xl border border-border p-4" style={{ background: "#F9FAFB" }}>
+          <div className="rounded-xl border border-border p-4" style={{ background: "var(--k-F9FAFB)" }}>
             <div className="flex items-center gap-2 mb-1">
-              <Wallet className="h-4 w-4" style={{ color: "#166534" }} />
+              <Wallet className="h-4 w-4" style={{ color: "var(--kt-166534)" }} />
               <span className="text-sm font-semibold text-foreground">Payment details</span>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
@@ -674,13 +674,13 @@ function PropertyForm({
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={saving || uploading} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
+            <button type="submit" disabled={saving || uploading} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "var(--k-166534)" }}>
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
         {cropSrc && <PhotoCropper src={cropSrc} onCancel={closeCropper} onApply={uploadCropped} />}
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>,
     document.body

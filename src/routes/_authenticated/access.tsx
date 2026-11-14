@@ -88,7 +88,7 @@ function AccessPage() {
             {r.reason && <div className="mt-1 text-sm text-muted-foreground">“{r.reason}”</div>}
             <div className="mt-1 text-xs text-muted-foreground">{when(r.created_at)}</div>
             <div className="mt-2 flex gap-2">
-              <button onClick={() => decide(r.id, true)} className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-bold text-white" style={{ background: "#166534" }}><Check className="h-4 w-4" /> Approve</button>
+              <button onClick={() => decide(r.id, true)} className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-bold text-white" style={{ background: "var(--k-166534)" }}><Check className="h-4 w-4" /> Approve</button>
               <button onClick={() => decide(r.id, false)} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-sm font-medium"><X className="h-4 w-4" /> Decline</button>
             </div>
           </div>

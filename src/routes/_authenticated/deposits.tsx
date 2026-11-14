@@ -147,7 +147,7 @@ function DepositsPage() {
             setEditing({});
           }}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white glow-primary"
-          style={{ background: "#166534" }}
+          style={{ background: "var(--k-166534)" }}
         >
           + Add Deposit
         </button>
@@ -157,7 +157,7 @@ function DepositsPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="card-surface p-4">
           <div className="text-xs text-muted-foreground mb-1">Total Held</div>
-          <div className="font-display text-xl font-bold" style={{ color: "#166534" }}>{formatKES(totalHeld)}</div>
+          <div className="font-display text-xl font-bold" style={{ color: "var(--kt-166534)" }}>{formatKES(totalHeld)}</div>
           <div className="text-xs text-muted-foreground mt-0.5">{heldCount} tenants</div>
         </div>
         <div className="card-surface p-4">
@@ -218,7 +218,7 @@ function DepositsPage() {
                       <button
                         onClick={() => setRefundTarget(d)}
                         className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border transition-colors"
-                        style={{ borderColor: "#166534", color: "#166534", background: "#F0FDF4" }}
+                        style={{ borderColor: "var(--k-166534)", color: "var(--kt-166534)", background: "var(--k-F0FDF4)" }}
                       >
                         <CheckCircle2 className="h-3.5 w-3.5" /> Refund
                       </button>
@@ -268,7 +268,7 @@ function DepositsPage() {
                 <button
                   onClick={() => setRefundTarget(d)}
                   className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium border transition-colors"
-                  style={{ borderColor: "#166534", color: "#166534", background: "#F0FDF4" }}
+                  style={{ borderColor: "var(--k-166534)", color: "var(--kt-166534)", background: "var(--k-F0FDF4)" }}
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" /> Refund
                 </button>
@@ -297,8 +297,8 @@ function DepositsPage() {
       {refundTarget && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
           <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
-            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-              <CheckCircle2 className="h-7 w-7" style={{ color: "#166534" }} />
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "var(--k-DCFCE7)" }}>
+              <CheckCircle2 className="h-7 w-7" style={{ color: "var(--kt-166534)" }} />
             </div>
             <h2 className="font-display text-xl font-semibold mb-1">Refund Deposit</h2>
             <p className="text-sm text-muted-foreground mb-6">
@@ -316,7 +316,7 @@ function DepositsPage() {
                 onClick={() => refund.mutate(refundTarget)}
                 disabled={refund.isPending}
                 className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-                style={{ background: "#166534" }}
+                style={{ background: "var(--k-166534)" }}
               >
                 {refund.isPending ? "Refunding…" : "Confirm Refund"}
               </button>
@@ -331,13 +331,13 @@ function DepositsPage() {
 function StatusBadge({ status }: { status: string }) {
   if (status === "refunded") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: "#F0F0EB", color: "#6B7280" }}>
+      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: "var(--k-F0F0EB)", color: "var(--kt-6B7280)" }}>
         <CheckCircle2 className="h-3 w-3" /> Refunded
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: "#DCFCE7", color: "#166534" }}>
+    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium" style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}>
       <Clock className="h-3 w-3" /> Held
     </span>
   );
@@ -433,13 +433,13 @@ function DepositForm({ initial, tenants, onSave, onClose, saving }: {
               onClick={() => onSave(form)}
               disabled={saving || !form.tenant_id && !initial.id}
               className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary"
-              style={{ background: "#166534" }}
+              style={{ background: "var(--k-166534)" }}
             >
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </div>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>
   );

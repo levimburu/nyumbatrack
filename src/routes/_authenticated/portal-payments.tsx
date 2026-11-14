@@ -48,9 +48,9 @@ function TenantPayments() {
             type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by month, reference or method…"
             className="w-full rounded-xl border pl-10 pr-4 py-2.5 text-sm outline-none transition-colors"
-            style={{ borderColor: "#E5E7EB" }}
-            onFocus={(e) => (e.target.style.borderColor = "#166534")}
-            onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+            style={{ borderColor: "var(--k-E5E7EB)" }}
+            onFocus={(e) => (e.target.style.borderColor = "var(--k-166534)")}
+            onBlur={(e) => (e.target.style.borderColor = "var(--k-E5E7EB)")}
           />
         </div>
         {q && (
@@ -62,12 +62,12 @@ function TenantPayments() {
 
       {!!payments?.length && (
         <div className="card-surface p-5 flex items-center gap-3">
-          <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
-            <TrendingUp className="h-5 w-5" style={{ color: "#16A34A" }} />
+          <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-DCFCE7)" }}>
+            <TrendingUp className="h-5 w-5" style={{ color: "var(--kt-16A34A)" }} />
           </div>
           <div>
             <div className="text-xs text-muted-foreground">Total Paid ({payments.length} {payments.length === 1 ? "payment" : "payments"})</div>
-            <div className="font-display text-lg font-bold" style={{ color: "#16A34A" }}>
+            <div className="font-display text-lg font-bold" style={{ color: "var(--kt-16A34A)" }}>
               {formatKES(payments.reduce((s, p) => s + Number(p.amount), 0))}
             </div>
           </div>
@@ -92,8 +92,8 @@ function TenantPayments() {
               <div key={p.id} className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full" style={{ background: "#DCFCE7" }}>
-                      <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />
+                    <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full" style={{ background: "var(--k-DCFCE7)" }}>
+                      <CheckCircle2 className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />
                     </div>
                     <div>
                       <div className="text-sm font-semibold">
@@ -102,7 +102,7 @@ function TenantPayments() {
                       <div className="text-xs text-muted-foreground">{formatDate(p.paid_on)}</div>
                     </div>
                   </div>
-                  <div className="font-display font-bold" style={{ color: "#16A34A" }}>
+                  <div className="font-display font-bold" style={{ color: "var(--kt-16A34A)" }}>
                     +{formatKES(p.amount)}
                   </div>
                 </div>
@@ -110,10 +110,10 @@ function TenantPayments() {
                   <span
                     className="rounded-full px-2.5 py-0.5 text-xs font-medium"
                     style={p.method === "mpesa"
-                      ? { background: "#DCFCE7", color: "#166534" }
+                      ? { background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }
                       : p.method === "bank"
-                      ? { background: "#EFF6FF", color: "#2563EB" }
-                      : { background: "#F5F5F0", color: "#6B7280" }
+                      ? { background: "var(--k-EFF6FF)", color: "var(--kt-2563EB)" }
+                      : { background: "var(--k-F5F5F0)", color: "var(--kt-6B7280)" }
                     }
                   >
                     {p.method === "mpesa" ? "M-Pesa" : p.method === "bank" ? "Bank Transfer" : "Cash"}
@@ -173,7 +173,7 @@ function TenantPayments() {
                   <td className="py-3">
                     <span
                       className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                      style={{ background: "#DCFCE7", color: "#166534" }}
+                      style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}
                     >
                       {p.payment_month ?? "—"}
                     </span>
@@ -182,17 +182,17 @@ function TenantPayments() {
                     <span
                       className="rounded-full px-2.5 py-0.5 text-xs font-medium"
                       style={p.method === "mpesa"
-                        ? { background: "#DCFCE7", color: "#166534" }
+                        ? { background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }
                         : p.method === "bank"
-                        ? { background: "#EFF6FF", color: "#2563EB" }
-                        : { background: "#F5F5F0", color: "#6B7280" }
+                        ? { background: "var(--k-EFF6FF)", color: "var(--kt-2563EB)" }
+                        : { background: "var(--k-F5F5F0)", color: "var(--kt-6B7280)" }
                       }
                     >
                       {p.method === "mpesa" ? "M-Pesa" : p.method === "bank" ? "Bank Transfer" : "Cash"}
                     </span>
                   </td>
                   <td className="py-3 text-muted-foreground font-mono text-xs">{p.reference ?? "—"}</td>
-                  <td className="py-3 font-display font-bold" style={{ color: "#16A34A" }}>
+                  <td className="py-3 font-display font-bold" style={{ color: "var(--kt-16A34A)" }}>
                     +{formatKES(p.amount)}
                   </td>
                   <td className="py-3 pr-5 text-right">
@@ -235,19 +235,19 @@ function TenantPayments() {
                 <button
                   onClick={() => downloadReceipt(previewReceipt)}
                   className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white"
-                  style={{ background: "#166534" }}
+                  style={{ background: "var(--k-166534)" }}
                 >
                   <Download className="h-4 w-4" /> Download
                 </button>
                 <button
                   onClick={() => setPreviewReceipt(null)}
-                  className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 text-white hover:bg-white/20"
+                  className="grid h-9 w-9 place-items-center rounded-xl bg-card/10 text-white hover:bg-card/20"
                 >
                   ✕
                 </button>
               </div>
             </div>
-            <div className="flex-1 rounded-xl overflow-hidden bg-white shadow-2xl">
+            <div className="flex-1 rounded-xl overflow-hidden bg-card shadow-2xl">
               <iframe
                 src={getReceiptDataUrl(previewReceipt)}
                 className="w-full h-full"

@@ -8,7 +8,7 @@ export const Route = createFileRoute("/_authenticated/owner")({
 });
 
 const tab = "rounded-lg px-3 py-1.5 text-sm font-medium text-white/70 hover:text-white";
-const tabActive = { className: "rounded-lg px-3 py-1.5 text-sm font-semibold bg-white/15 text-white" };
+const tabActive = { className: "rounded-lg px-3 py-1.5 text-sm font-semibold bg-card/15 text-white" };
 
 function OwnerLayout() {
   const navigate = useNavigate();
@@ -27,11 +27,11 @@ function OwnerLayout() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "#F5F5F0" }}>
-      <header style={{ background: "#0d2818" }}>
+    <div className="min-h-screen" style={{ background: "var(--k-F5F5F0)" }}>
+      <header style={{ background: "var(--k-0D2818)" }}>
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div className="flex items-center gap-4">
-            <div className="font-display text-lg font-bold text-white">NyumbaTrack <span style={{ color: "#F59E0B" }}>Owner</span></div>
+            <div className="font-display text-lg font-bold text-white">NyumbaTrack <span style={{ color: "var(--kt-F59E0B)" }}>Owner</span></div>
             <nav className="flex gap-1">
               <Link to="/owner" activeOptions={{ exact: true }} activeProps={tabActive} className={tab}>Overview</Link>
               <Link to="/owner/companies" activeProps={tabActive} className={tab}>Companies</Link>

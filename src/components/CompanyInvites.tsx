@@ -72,7 +72,7 @@ export function CompanyInvites({ companyId, role, label }: {
         />
         <button onClick={create} disabled={busy}
           className="flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-          style={{ background: "#166534" }}>
+          style={{ background: "var(--k-166534)" }}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" />} Create code
         </button>
       </div>

@@ -166,7 +166,7 @@ function UnitsPage() {
         <button
           onClick={() => setAdding(true)}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white glow-primary"
-          style={{ background: "#166534" }}
+          style={{ background: "var(--k-166534)" }}
         >
           <Plus className="h-4 w-4" /> Add Vacant Unit
         </button>
@@ -191,13 +191,13 @@ function UnitsPage() {
                     <span className="text-xs text-muted-foreground">{s.occupiedCount === 1 ? "tenant" : "tenants"}</span>
                   </div>
                   {s.vacantCount > 0 && (
-                    <div className="text-xs mb-2" style={{ color: "#DC2626" }}>{s.vacantCount} vacant</div>
+                    <div className="text-xs mb-2" style={{ color: "var(--kt-DC2626)" }}>{s.vacantCount} vacant</div>
                   )}
                   <div className="text-xs text-muted-foreground mb-1">
                     {formatKES(s.monthlyRent)}<span className="font-normal">/mo</span>
                   </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#F5F5F0" }}>
-                    <div className="h-full rounded-full" style={{ width: `${share}%`, background: "#166534" }} />
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--k-F5F5F0)" }}>
+                    <div className="h-full rounded-full" style={{ width: `${share}%`, background: "var(--k-166534)" }} />
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-1">{share}% of rent</div>
                 </div>
@@ -216,17 +216,17 @@ function UnitsPage() {
           const typeLabel = unitTypeLabel(t.unit_type);
           return (
             <div key={t.id} className="card-surface overflow-hidden">
-              <div className="px-4 py-3 flex items-center justify-between" style={{ background: "#F0FDF4" }}>
+              <div className="px-4 py-3 flex items-center justify-between" style={{ background: "var(--k-F0FDF4)" }}>
                 <div className="flex items-center gap-2">
-                  <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#DCFCE7" }}>
-                    <DoorOpen className="h-4 w-4" style={{ color: "#16A34A" }} />
+                  <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "var(--k-DCFCE7)" }}>
+                    <DoorOpen className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />
                   </div>
                   <div>
                     <div className="font-display font-bold text-sm text-foreground">Unit {t.unit}</div>
-                    <div className="text-xs" style={{ color: "#16A34A" }}>Occupied</div>
+                    <div className="text-xs" style={{ color: "var(--kt-16A34A)" }}>Occupied</div>
                   </div>
                 </div>
-                <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ background: isPaid ? "#DCFCE7" : "#FEE2E2", color: isPaid ? "#166534" : "#991B1B" }}>
+                <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold" style={{ background: isPaid ? "var(--k-DCFCE7)" : "var(--k-FEE2E2)", color: isPaid ? "var(--kt-166534)" : "var(--kt-991B1B)" }}>
                   {isPaid ? "Paid" : "Unpaid"}
                 </span>
               </div>
@@ -234,12 +234,12 @@ function UnitsPage() {
                 <button
                   onClick={() => setEditingTenantType(t)}
                   className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium mb-1 hover:opacity-80 transition-opacity"
-                  style={{ background: "#F5F5F0", color: typeLabel ? "#374151" : "#9CA3AF" }}
+                  style={{ background: "var(--k-F5F5F0)", color: typeLabel ? "var(--kt-374151)" : "var(--kt-9CA3AF)" }}
                 >
                   {typeLabel ?? "Add unit type"} <Pencil className="h-2.5 w-2.5" />
                 </button>
                 <div className="flex items-center gap-2">
-                  <div className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0" style={{ background: "#166534" }}>
+                  <div className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0" style={{ background: "var(--k-166534)" }}>
                     {initials}
                   </div>
                   <span className="font-semibold text-sm">{t.full_name}</span>
@@ -270,14 +270,14 @@ function UnitsPage() {
           const typeLabel = unitTypeLabel(u.unit_type);
           return (
             <div key={u.id} className="card-surface overflow-hidden">
-              <div className="px-4 py-3 flex items-center justify-between" style={{ background: "#FFF7ED" }}>
+              <div className="px-4 py-3 flex items-center justify-between" style={{ background: "var(--k-FFF7ED)" }}>
                 <div className="flex items-center gap-2">
-                  <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#FEE2E2" }}>
-                    <DoorClosed className="h-4 w-4" style={{ color: "#DC2626" }} />
+                  <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "var(--k-FEE2E2)" }}>
+                    <DoorClosed className="h-4 w-4" style={{ color: "var(--kt-DC2626)" }} />
                   </div>
                   <div>
                     <div className="font-display font-bold text-sm text-foreground">Unit {u.unit_name}</div>
-                    <div className="text-xs" style={{ color: "#DC2626" }}>Vacant</div>
+                    <div className="text-xs" style={{ color: "var(--kt-DC2626)" }}>Vacant</div>
                   </div>
                 </div>
                 <button
@@ -289,7 +289,7 @@ function UnitsPage() {
               </div>
               <div className="p-4">
                 {typeLabel && (
-                  <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium mb-2" style={{ background: "#F5F5F0", color: "#374151" }}>
+                  <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium mb-2" style={{ background: "var(--k-F5F5F0)", color: "var(--kt-374151)" }}>
                     {typeLabel}
                   </span>
                 )}
@@ -364,12 +364,12 @@ function TenantUnitTypeForm({
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary" style={{ background: "#166534" }}>
+            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary" style={{ background: "var(--k-166534)" }}>
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>,
     document.body
@@ -419,12 +419,12 @@ function UnitForm({
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary" style={{ background: "#166534" }}>
+            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary" style={{ background: "var(--k-166534)" }}>
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>,
     document.body

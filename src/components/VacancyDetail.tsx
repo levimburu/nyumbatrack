@@ -35,8 +35,8 @@ export function VacancyDetail({ vacancy, onClose, onCopy }: { vacancy: VacancyFo
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center" onClick={onClose}>
-      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white sm:max-w-md sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="relative grid h-36 place-items-center overflow-hidden" style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)" }}>
+      <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-card sm:max-w-md sm:rounded-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="relative grid h-36 place-items-center overflow-hidden" style={{ background: "linear-gradient(135deg, var(--k-166534) 0%, var(--k-15803D) 100%)" }}>
           {vacancy.property.photo_url
             ? <img src={vacancy.property.photo_url} alt={vacancy.property.name} className="absolute inset-0 h-full w-full object-cover" />
             : <Building2 className="h-12 w-12 text-white opacity-20" />}
@@ -50,9 +50,9 @@ export function VacancyDetail({ vacancy, onClose, onCopy }: { vacancy: VacancyFo
             )}
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}><div className="text-xs text-muted-foreground">Unit</div><div className="font-display text-sm font-bold">{vacancy.unit_name}</div></div>
-            <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}><div className="text-xs text-muted-foreground">Type</div><div className="font-display text-sm font-bold">{type ?? "Not set"}</div></div>
-            <div className="rounded-lg p-2.5" style={{ background: "#F5F5F0" }}><div className="text-xs text-muted-foreground">Rent / month</div><div className="font-display text-sm font-bold" style={{ color: "#16A34A" }}>{formatKES(Number(vacancy.rent_price))}</div></div>
+            <div className="rounded-lg p-2.5" style={{ background: "var(--k-F5F5F0)" }}><div className="text-xs text-muted-foreground">Unit</div><div className="font-display text-sm font-bold">{vacancy.unit_name}</div></div>
+            <div className="rounded-lg p-2.5" style={{ background: "var(--k-F5F5F0)" }}><div className="text-xs text-muted-foreground">Type</div><div className="font-display text-sm font-bold">{type ?? "Not set"}</div></div>
+            <div className="rounded-lg p-2.5" style={{ background: "var(--k-F5F5F0)" }}><div className="text-xs text-muted-foreground">Rent / month</div><div className="font-display text-sm font-bold" style={{ color: "var(--kt-16A34A)" }}>{formatKES(Number(vacancy.rent_price))}</div></div>
           </div>
 
           <div>
@@ -61,7 +61,7 @@ export function VacancyDetail({ vacancy, onClose, onCopy }: { vacancy: VacancyFo
             {(caretakers ?? []).map((c) => (
               <div key={c.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
                 <div className="flex items-center gap-2 text-sm"><User className="h-4 w-4 text-muted-foreground" />{c.full_name}</div>
-                <a href={telHref(c.phone)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold text-white" style={{ background: "#166534" }}>
+                <a href={telHref(c.phone)} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold text-white" style={{ background: "var(--k-166534)" }}>
                   <Phone className="h-3.5 w-3.5" /> {c.phone}
                 </a>
               </div>

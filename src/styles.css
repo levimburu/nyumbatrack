@@ -94,6 +94,247 @@
   --sidebar-border: #1a3a28;
 }
 
+
+/* ───────── Theme: light (default) and "Midnight Forest" dark ─────────
+   --k-* / --kt-* hold the colours that used to be hard-coded in components.
+   Light values are identical to the old hex values, so light mode is unchanged.
+   -k = backgrounds/borders, -kt = text/icon colour. */
+:root {
+  color-scheme: light;
+  --k-166534: #166534;
+  --kt-166534: #166534;
+  --k-16A34A: #16A34A;
+  --kt-16A34A: #16A34A;
+  --k-15803D: #15803D;
+  --kt-15803D: #15803D;
+  --k-E5E7EB: #E5E7EB;
+  --kt-E5E7EB: #E5E7EB;
+  --k-DC2626: #DC2626;
+  --kt-DC2626: #DC2626;
+  --k-6B7280: #6B7280;
+  --kt-6B7280: #6B7280;
+  --k-9CA3AF: #9CA3AF;
+  --kt-9CA3AF: #9CA3AF;
+  --k-DCFCE7: #DCFCE7;
+  --kt-DCFCE7: #DCFCE7;
+  --k-111827: #111827;
+  --kt-111827: #111827;
+  --k-F5F5F0: #F5F5F0;
+  --kt-F5F5F0: #F5F5F0;
+  --k-F59E0B: #F59E0B;
+  --kt-F59E0B: #F59E0B;
+  --k-FEE2E2: #FEE2E2;
+  --kt-FEE2E2: #FEE2E2;
+  --k-D97706: #D97706;
+  --kt-D97706: #D97706;
+  --k-EFF6FF: #EFF6FF;
+  --kt-EFF6FF: #EFF6FF;
+  --k-991B1B: #991B1B;
+  --kt-991B1B: #991B1B;
+  --k-2563EB: #2563EB;
+  --kt-2563EB: #2563EB;
+  --k-FEF9C3: #FEF9C3;
+  --kt-FEF9C3: #FEF9C3;
+  --k-F0FDF4: #F0FDF4;
+  --kt-F0FDF4: #F0FDF4;
+  --k-F9FAFB: #F9FAFB;
+  --kt-F9FAFB: #F9FAFB;
+  --k-854D0E: #854D0E;
+  --kt-854D0E: #854D0E;
+  --k-0D2818: #0D2818;
+  --kt-0D2818: #0D2818;
+  --k-FEF3C7: #FEF3C7;
+  --kt-FEF3C7: #FEF3C7;
+  --k-F0F0EB: #F0F0EB;
+  --kt-F0F0EB: #F0F0EB;
+  --k-1A3A28: #1A3A28;
+  --kt-1A3A28: #1A3A28;
+  --k-EDE9FE: #EDE9FE;
+  --kt-EDE9FE: #EDE9FE;
+  --k-6D28D9: #6D28D9;
+  --kt-6D28D9: #6D28D9;
+  --k-6B9E7A: #6B9E7A;
+  --kt-6B9E7A: #6B9E7A;
+  --k-FEF2F2: #FEF2F2;
+  --kt-FEF2F2: #FEF2F2;
+  --k-D1D5DB: #D1D5DB;
+  --kt-D1D5DB: #D1D5DB;
+  --k-374151: #374151;
+  --kt-374151: #374151;
+  --k-FFF7ED: #FFF7ED;
+  --kt-FFF7ED: #FFF7ED;
+  --k-FCA5A5: #FCA5A5;
+  --kt-FCA5A5: #FCA5A5;
+  --k-F5F0FF: #F5F0FF;
+  --kt-F5F0FF: #F5F0FF;
+  --k-7C3AED: #7C3AED;
+  --kt-7C3AED: #7C3AED;
+  --k-FDE68A: #FDE68A;
+  --kt-FDE68A: #FDE68A;
+  --k-FAFAFA: #FAFAFA;
+  --kt-FAFAFA: #FAFAFA;
+  --k-F3F4F6: #F3F4F6;
+  --kt-F3F4F6: #F3F4F6;
+  --k-DBEAFE: #DBEAFE;
+  --kt-DBEAFE: #DBEAFE;
+  --k-BBF7D0: #BBF7D0;
+  --kt-BBF7D0: #BBF7D0;
+  --k-9A3412: #9A3412;
+  --kt-9A3412: #9A3412;
+  --k-92400E: #92400E;
+  --kt-92400E: #92400E;
+  --k-78350F: #78350F;
+  --kt-78350F: #78350F;
+  --k-4B5563: #4B5563;
+  --kt-4B5563: #4B5563;
+  --k-4A7A5A: #4A7A5A;
+  --kt-4A7A5A: #4A7A5A;
+  --k-8CA396: #8CA396;
+  --kt-8CA396: #8CA396;
+  --k-0A1F10: #0A1F10;
+  --kt-0A1F10: #0A1F10;
+  --k-FFFFFF: #FFFFFF;
+  --kt-FFFFFF: #FFFFFF;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #101915;
+  --foreground: #F1F5F2;
+  --card: #19251F;
+  --card-foreground: #F1F5F2;
+  --popover: #202E26;
+  --popover-foreground: #F1F5F2;
+  --primary: #22C55E;
+  --primary-foreground: #08180F;
+  --primary-glow: #16A34A;
+  --secondary: #202E26;
+  --secondary-foreground: #D1D5DB;
+  --muted: #202E26;
+  --muted-foreground: #A5B2AA;
+  --accent: #1B4A2D;
+  --accent-foreground: #22C55E;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --destructive: #EF4444;
+  --border: #2D4035;
+  --input: #34443A;
+  --ring: #22C55E;
+  --sidebar: #0B2117;
+  --sidebar-foreground: #A5B2AA;
+  --sidebar-accent: #17663B;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #1B3024;
+  --k-166534: #1E7B47;
+  --kt-166534: #22C55E;
+  --k-16A34A: #22C55E;
+  --kt-16A34A: #22C55E;
+  --k-15803D: #1E7B47;
+  --kt-15803D: #22C55E;
+  --k-E5E7EB: #2D4035;
+  --kt-E5E7EB: #2D4035;
+  --k-DC2626: #EF4444;
+  --kt-DC2626: #EF4444;
+  --k-6B7280: #A5B2AA;
+  --kt-6B7280: #A5B2AA;
+  --k-9CA3AF: #8FA096;
+  --kt-9CA3AF: #8FA096;
+  --k-DCFCE7: #163A26;
+  --kt-DCFCE7: #163A26;
+  --k-111827: #F1F5F2;
+  --kt-111827: #F1F5F2;
+  --k-F5F5F0: #101915;
+  --kt-F5F5F0: #101915;
+  --k-F59E0B: #F59E0B;
+  --kt-F59E0B: #F59E0B;
+  --k-FEE2E2: #3A1A1A;
+  --kt-FEE2E2: #3A1A1A;
+  --k-D97706: #F59E0B;
+  --kt-D97706: #F59E0B;
+  --k-EFF6FF: #14233A;
+  --kt-EFF6FF: #14233A;
+  --k-991B1B: #FCA5A5;
+  --kt-991B1B: #FCA5A5;
+  --k-2563EB: #60A5FA;
+  --kt-2563EB: #60A5FA;
+  --k-FEF9C3: #3A3210;
+  --kt-FEF9C3: #3A3210;
+  --k-F0FDF4: #18301F;
+  --kt-F0FDF4: #18301F;
+  --k-F9FAFB: #1E2B24;
+  --kt-F9FAFB: #1E2B24;
+  --k-854D0E: #FCD34D;
+  --kt-854D0E: #FCD34D;
+  --k-0D2818: #0B2117;
+  --kt-0D2818: #F1F5F2;
+  --k-FEF3C7: #3A2A0C;
+  --kt-FEF3C7: #3A2A0C;
+  --k-F0F0EB: #202E26;
+  --kt-F0F0EB: #202E26;
+  --k-1A3A28: #1B3024;
+  --kt-1A3A28: #1B3024;
+  --k-EDE9FE: #2A1F44;
+  --kt-EDE9FE: #2A1F44;
+  --k-6D28D9: #C4B5FD;
+  --kt-6D28D9: #C4B5FD;
+  --k-6B9E7A: #6B9E7A;
+  --kt-6B9E7A: #6B9E7A;
+  --k-FEF2F2: #331818;
+  --kt-FEF2F2: #331818;
+  --k-D1D5DB: #34443A;
+  --kt-D1D5DB: #A5B2AA;
+  --k-374151: #34443A;
+  --kt-374151: #D1D5DB;
+  --k-FFF7ED: #33220F;
+  --kt-FFF7ED: #33220F;
+  --k-FCA5A5: #FCA5A5;
+  --kt-FCA5A5: #FCA5A5;
+  --k-F5F0FF: #251C3A;
+  --kt-F5F0FF: #251C3A;
+  --k-7C3AED: #A78BFA;
+  --kt-7C3AED: #A78BFA;
+  --k-FDE68A: #FDE68A;
+  --kt-FDE68A: #FDE68A;
+  --k-FAFAFA: #19251F;
+  --kt-FAFAFA: #19251F;
+  --k-F3F4F6: #202E26;
+  --kt-F3F4F6: #202E26;
+  --k-DBEAFE: #172B4D;
+  --kt-DBEAFE: #172B4D;
+  --k-BBF7D0: #1B4A2D;
+  --kt-BBF7D0: #1B4A2D;
+  --k-9A3412: #FDBA74;
+  --kt-9A3412: #FDBA74;
+  --k-92400E: #FCD34D;
+  --kt-92400E: #FCD34D;
+  --k-78350F: #FCD34D;
+  --kt-78350F: #FCD34D;
+  --k-4B5563: #A5B2AA;
+  --kt-4B5563: #A5B2AA;
+  --k-4A7A5A: #4A7A5A;
+  --kt-4A7A5A: #4A7A5A;
+  --k-8CA396: #8CA396;
+  --kt-8CA396: #8CA396;
+  --k-0A1F10: #07140B;
+  --kt-0A1F10: #07140B;
+  --k-FFFFFF: #19251F;
+  --kt-FFFFFF: #FFFFFF;
+}
+
+/* Tailwind colour classes used around the app */
+.dark .text-red-600, .dark .text-red-700 { color: #EF4444; }
+.dark .text-red-800 { color: #FCA5A5; }
+.dark .text-green-700, .dark .text-green-800 { color: #22C55E; }
+.dark .text-amber-700 { color: #F59E0B; }
+.dark .bg-green-50, .dark .bg-green-100 { background-color: #163A26; }
+.dark .bg-red-50, .dark .bg-red-100 { background-color: #3A1A1A; }
+.dark .bg-amber-50 { background-color: #3A2A0C; }
+.dark .border-red-300 { border-color: #7F1D1D; }
+.dark .card-surface { box-shadow: none; }
+.dark ::selection { background: #17663B; color: #fff; }
+.dark input, .dark textarea, .dark select { color-scheme: dark; }
+.dark input::placeholder, .dark textarea::placeholder { color: #7D8C82; }
+
 @layer base {
   * {
     border-color: var(--color-border);

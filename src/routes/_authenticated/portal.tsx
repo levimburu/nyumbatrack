@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { formatKES } from "@/lib/format";
 import { outstandingForDueMonth } from "@/lib/reminders";
+import { AppearanceSelector } from "@/components/AppearanceSelector";
 import { Home, Calendar, Building2, Phone, Mail, CheckCircle2, AlertCircle, Shield, Camera, Loader2, ChevronDown, ChevronRight, ArrowRight, Receipt, Wrench, MessageCircle, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useMyTenant } from "@/hooks/use-my-tenant";
@@ -22,7 +23,7 @@ interface TicketMin {
 }
 
 const ticketStatusLabel: Record<string, string> = { open: "Open", in_progress: "In Progress", done: "Done" };
-const ticketStatusColor: Record<string, string> = { open: "#DC2626", in_progress: "#D97706", done: "#16A34A" };
+const ticketStatusColor: Record<string, string> = { open: "var(--k-DC2626)", in_progress: "var(--k-D97706)", done: "var(--k-16A34A)" };
 
 function TenantHome() {
   const navigate = useNavigate();
@@ -71,8 +72,8 @@ function TenantHome() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  const balanceColor = status === "paid" ? "#16A34A" : isOverdue ? "#DC2626" : "#F59E0B";
-  const dueBadge = status === "paid" ? null : isOverdue ? { label: "Overdue", bg: "#FEE2E2", fg: "#DC2626" } : { label: "Due Soon", bg: "#F59E0B", fg: "#78350F" };
+  const balanceColor = status === "paid" ? "var(--k-16A34A)" : isOverdue ? "var(--k-DC2626)" : "var(--k-F59E0B)";
+  const dueBadge = status === "paid" ? null : isOverdue ? { label: "Overdue", bg: "var(--k-FEE2E2)", fg: "var(--k-DC2626)" } : { label: "Due Soon", bg: "var(--k-F59E0B)", fg: "var(--k-78350F)" };
 
   // Recent Activity — payments and maintenance requests merged into one
   // feed, newest first, capped to the 4 most recent items total.
@@ -89,7 +90,7 @@ function TenantHome() {
       date: t.created_at,
       title: t.title,
       subtitle: ticketStatusLabel[t.status] ?? t.status,
-      statusColor: ticketStatusColor[t.status] ?? "#6B7280",
+      statusColor: ticketStatusColor[t.status] ?? "var(--k-6B7280)",
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4);
 
@@ -139,7 +140,7 @@ function TenantHome() {
               onClick={() => setAvatarMenuOpen((v) => !v)}
               disabled={uploadingAvatar}
               className="relative grid h-12 w-12 place-items-center rounded-2xl text-sm font-bold text-white flex-shrink-0 overflow-hidden"
-              style={{ background: avatarUrl ? "transparent" : "#F59E0B" }}
+              style={{ background: avatarUrl ? "transparent" : "var(--k-F59E0B)" }}
               aria-label="Account menu"
             >
               {avatarUrl ? <img src={avatarUrl} alt="Your photo" className="h-full w-full object-cover" /> : initials}
@@ -150,13 +151,17 @@ function TenantHome() {
             {avatarMenuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setAvatarMenuOpen(false)} />
-                <div className="absolute left-0 top-full mt-2 w-48 rounded-xl border border-border bg-white py-1.5 shadow-lg z-40">
+                <div className="absolute left-0 top-full mt-2 w-60 rounded-xl border border-border bg-card py-1.5 shadow-lg z-40">
                   <button
                     onClick={() => { setAvatarMenuOpen(false); handleAvatarClick(); }}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-foreground hover:bg-muted text-left"
                   >
                     <Camera className="h-4 w-4 text-muted-foreground" /> Change Photo
                   </button>
+                  <div className="px-3 py-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Appearance</p>
+                    <AppearanceSelector />
+                  </div>
                   <a
                     href="/privacy" target="_blank" rel="noreferrer"
                     onClick={() => setAvatarMenuOpen(false)}
@@ -194,8 +199,8 @@ function TenantHome() {
 
       {/* Payment Overview — dark card, matching the amber/green brand
           palette used across the rest of the app. */}
-      <div className="rounded-2xl p-5 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2818 0%, #166534 100%)" }}>
-        <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
+      <div className="rounded-2xl p-5 relative overflow-hidden" style={{ background: "linear-gradient(135deg, var(--k-0D2818) 0%, var(--k-166534) 100%)" }}>
+        <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10 pointer-events-none" style={{ background: "var(--k-F59E0B)", transform: "translate(30%, -30%)" }} />
         <div className="relative flex items-center justify-between mb-4">
           <h2 className="font-display font-bold text-white">Payment Overview</h2>
           {dueBadge && (
@@ -206,7 +211,7 @@ function TenantHome() {
         </div>
         <div className="relative mb-4">
           <div className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>Rent Balance</div>
-          <div className="font-display text-3xl font-bold mt-1" style={{ color: status === "paid" ? "#FFFFFF" : balanceColor }}>
+          <div className="font-display text-3xl font-bold mt-1" style={{ color: status === "paid" ? "var(--k-FFFFFF)" : balanceColor }}>
             {status === "paid" ? "Cleared ✓" : formatKES(due)}
           </div>
         </div>
@@ -230,7 +235,7 @@ function TenantHome() {
       <button
         onClick={() => toast.info("Online payments aren't set up yet — please pay your landlord directly for now.")}
         className="w-full rounded-2xl py-4 text-base font-bold text-white flex items-center justify-center gap-2.5 transition-transform active:scale-[0.98]"
-        style={{ background: "linear-gradient(135deg, #166534 0%, #15803d 100%)", boxShadow: "0 8px 20px -6px rgba(22,101,52,0.4)" }}
+        style={{ background: "linear-gradient(135deg, var(--k-166534) 0%, var(--k-15803D) 100%)", boxShadow: "0 8px 20px -6px rgba(22,101,52,0.4)" }}
       >
         Pay Rent <ArrowRight className="h-5 w-5" />
       </button>
@@ -240,7 +245,7 @@ function TenantHome() {
       <div className="card-surface p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-display font-bold text-foreground">Recent Activity</h2>
-          <button onClick={() => navigate({ to: "/portal-payments" })} className="text-xs font-semibold" style={{ color: "#166534" }}>
+          <button onClick={() => navigate({ to: "/portal-payments" })} className="text-xs font-semibold" style={{ color: "var(--kt-166534)" }}>
             See all
           </button>
         </div>
@@ -250,19 +255,19 @@ function TenantHome() {
           <div className="divide-y divide-border">
             {activity.map((item, i) => (
               <div key={i} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full" style={{ background: item.kind === "payment" ? "#DCFCE7" : "#FEF3C7" }}>
-                  {item.kind === "payment" ? <Receipt className="h-4 w-4" style={{ color: "#16A34A" }} /> : <Wrench className="h-4 w-4" style={{ color: "#D97706" }} />}
+                <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full" style={{ background: item.kind === "payment" ? "var(--k-DCFCE7)" : "var(--k-FEF3C7)" }}>
+                  {item.kind === "payment" ? <Receipt className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} /> : <Wrench className="h-4 w-4" style={{ color: "var(--kt-D97706)" }} />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold text-foreground truncate">{item.title}</div>
-                  <div className="text-xs mt-0.5" style={item.kind === "ticket" ? { color: item.statusColor } : { color: "#9CA3AF" }}>
+                  <div className="text-xs mt-0.5" style={item.kind === "ticket" ? { color: item.statusColor } : { color: "var(--kt-9CA3AF)" }}>
                     {item.subtitle}
                   </div>
                 </div>
                 {item.kind === "payment" ? (
                   <div className="text-right flex-shrink-0">
                     <div className="text-sm font-semibold text-foreground">{formatKES(item.amount)}</div>
-                    <div className="text-xs" style={{ color: "#16A34A" }}>Paid</div>
+                    <div className="text-xs" style={{ color: "var(--kt-16A34A)" }}>Paid</div>
                   </div>
                 ) : (
                   <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -283,7 +288,7 @@ function TenantHome() {
           <div className="text-sm font-bold text-foreground">Need help?</div>
           <div className="text-xs text-muted-foreground mt-0.5">Message your property manager</div>
         </div>
-        <span className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold flex-shrink-0" style={{ background: "#DCFCE7", color: "#166534" }}>
+        <span className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold flex-shrink-0" style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}>
           <MessageCircle className="h-3.5 w-3.5" /> Message
         </span>
       </button>
@@ -292,9 +297,9 @@ function TenantHome() {
           activity-first layout above rather than removed. */}
       <div className="card-surface overflow-hidden">
         {tenant.properties && (
-          <div className="px-6 py-4 border-b border-border bg-white flex items-start gap-3">
-            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#FEF3C7" }}>
-              <Building2 className="h-5 w-5" style={{ color: "#D97706" }} />
+          <div className="px-6 py-4 border-b border-border bg-card flex items-start gap-3">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-FEF3C7)" }}>
+              <Building2 className="h-5 w-5" style={{ color: "var(--kt-D97706)" }} />
             </div>
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground">Your Property</div>
@@ -310,10 +315,10 @@ function TenantHome() {
           {tenant.email && (
             <button
               onClick={() => toast.info(tenant.email!, { duration: 5000 })}
-              className="p-4 bg-white flex items-start gap-3 text-left hover:bg-muted/40 transition-colors"
+              className="p-4 bg-card flex items-start gap-3 text-left hover:bg-muted/40 transition-colors"
             >
-              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
-                <Mail className="h-4 w-4" style={{ color: "#2563EB" }} />
+              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-EFF6FF)" }}>
+                <Mail className="h-4 w-4" style={{ color: "var(--kt-2563EB)" }} />
               </div>
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">Email</div>
@@ -324,10 +329,10 @@ function TenantHome() {
           {tenant.phone && (
             <button
               onClick={() => toast.info(tenant.phone!, { duration: 5000 })}
-              className="p-4 bg-white flex items-start gap-3 text-left hover:bg-muted/40 transition-colors"
+              className="p-4 bg-card flex items-start gap-3 text-left hover:bg-muted/40 transition-colors"
             >
-              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
-                <Phone className="h-4 w-4" style={{ color: "#16A34A" }} />
+              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-DCFCE7)" }}>
+                <Phone className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />
               </div>
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">Phone</div>
@@ -336,9 +341,9 @@ function TenantHome() {
             </button>
           )}
           {tenant.move_in_date && (
-            <div className="p-4 bg-white flex items-start gap-3">
-              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
-                <Calendar className="h-4 w-4" style={{ color: "#6D28D9" }} />
+            <div className="p-4 bg-card flex items-start gap-3">
+              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-EDE9FE)" }}>
+                <Calendar className="h-4 w-4" style={{ color: "var(--kt-6D28D9)" }} />
               </div>
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">Move-in Date</div>
@@ -346,9 +351,9 @@ function TenantHome() {
               </div>
             </div>
           )}
-          <div className="p-4 bg-white flex items-start gap-3">
-            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#FEF3C7" }}>
-              <Home className="h-4 w-4" style={{ color: "#D97706" }} />
+          <div className="p-4 bg-card flex items-start gap-3">
+            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-FEF3C7)" }}>
+              <Home className="h-4 w-4" style={{ color: "var(--kt-D97706)" }} />
             </div>
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground">Monthly Rent</div>
@@ -368,8 +373,8 @@ function TenantHome() {
         {leaseFundsOpen && (
           <div className="px-5 pb-5 pt-0 border-t border-border">
             <div className="flex items-center gap-3 pt-4">
-              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
-                <Shield className="h-4 w-4" style={{ color: "#6D28D9" }} />
+              <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-EDE9FE)" }}>
+                <Shield className="h-4 w-4" style={{ color: "var(--kt-6D28D9)" }} />
               </div>
               <div className="flex-1 flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">Deposit Held</div>

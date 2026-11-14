@@ -181,8 +181,8 @@ function CommunicationsPage() {
   if (!properties?.length) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-          <MessageSquare className="h-10 w-10" style={{ color: "#166534" }} />
+        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "var(--k-DCFCE7)" }}>
+          <MessageSquare className="h-10 w-10" style={{ color: "var(--kt-166534)" }} />
         </div>
         <h1 className="font-display text-2xl font-bold text-foreground">Nothing to show yet</h1>
         <p className="mt-2 text-sm text-muted-foreground max-w-xs">
@@ -205,7 +205,7 @@ function CommunicationsPage() {
           onClick={() => setAdding(true)}
           disabled={!tenants?.length}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary disabled:opacity-50"
-          style={{ background: "#166534" }}
+          style={{ background: "var(--k-166534)" }}
         >
           <Plus className="h-4 w-4" /> Log Communication
         </button>
@@ -239,7 +239,7 @@ function CommunicationsPage() {
                   <h3 className="font-display font-bold text-foreground truncate">{e.tenant_name}</h3>
                   <span
                     className="rounded-full px-2 py-0.5 text-xs font-medium flex-shrink-0"
-                    style={{ background: "#EFF6FF", color: "#2563EB" }}
+                    style={{ background: "var(--k-EFF6FF)", color: "var(--kt-2563EB)" }}
                   >
                     {e.type}
                   </span>
@@ -381,12 +381,12 @@ function CommunicationForm({
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
+            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "var(--k-166534)" }}>
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>,
     document.body
@@ -446,12 +446,12 @@ function EditNoteForm({
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
+            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "var(--k-166534)" }}>
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>,
     document.body

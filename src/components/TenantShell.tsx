@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { AppearanceSelector } from "@/components/AppearanceSelector";
 import { Home, CreditCard, MessageSquare, LogOut, Building2, Bell, ShieldCheck } from "lucide-react";
 import { useMyTenant } from "@/hooks/use-my-tenant";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,7 +24,7 @@ function VerticalNav({ pathname }: { pathname: string }) {
             key={tab.to}
             to={tab.to}
             className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150"
-            style={isActive ? { background: "#166534", color: "#FFFFFF" } : { color: "#9CA3AF" }}
+            style={isActive ? { background: "var(--k-166534)", color: "var(--kt-FFFFFF)" } : { color: "var(--kt-9CA3AF)" }}
           >
             <Icon className="h-4 w-4 flex-shrink-0" />
             {tab.label}
@@ -46,9 +47,9 @@ function BottomNav({ pathname }: { pathname: string }) {
             key={tab.to}
             to={tab.to}
             className="relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5"
-            style={{ color: isActive ? "#166534" : "#9CA3AF" }}
+            style={{ color: isActive ? "var(--kt-166534)" : "var(--kt-9CA3AF)" }}
           >
-            {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full" style={{ background: "#166534" }} />}
+            {isActive && <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full" style={{ background: "var(--k-166534)" }} />}
             <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
             <span className="text-[11px] font-medium">{tab.label}</span>
           </Link>
@@ -80,9 +81,9 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
   if (!tenant) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-white">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-card">
           <div className="flex items-center gap-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#F59E0B" }}>
+            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "var(--k-F59E0B)" }}>
               <Building2 className="h-4 w-4 text-white" />
             </div>
             <span className="font-display text-sm font-semibold">NyumbaTrack</span>
@@ -92,8 +93,8 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
           </button>
         </div>
         <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 text-center">
-          <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-            <Home className="h-10 w-10" style={{ color: "#166534" }} />
+          <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "var(--k-DCFCE7)" }}>
+            <Home className="h-10 w-10" style={{ color: "var(--kt-166534)" }} />
           </div>
           <h1 className="font-display text-2xl font-bold text-foreground">Welcome!</h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
@@ -119,9 +120,9 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Desktop side nav */}
-      <aside className="hidden md:flex h-full w-64 flex-col flex-shrink-0" style={{ background: "#0d2818" }}>
+      <aside className="hidden md:flex h-full w-64 flex-col flex-shrink-0" style={{ background: "var(--k-0D2818)" }}>
         <div className="flex items-center gap-3 px-5 py-5">
-          <div className="grid h-9 w-9 place-items-center rounded-xl shadow-md" style={{ background: "#F59E0B" }}>
+          <div className="grid h-9 w-9 place-items-center rounded-xl shadow-md" style={{ background: "var(--k-F59E0B)" }}>
             <Building2 className="h-5 w-5 text-white" />
           </div>
           <span className="font-display text-lg font-bold text-white">NyumbaTrack</span>
@@ -129,11 +130,12 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
         <nav className="flex-1 min-h-0 space-y-0.5 px-3">
           <VerticalNav pathname={location.pathname} />
         </nav>
-        <div className="p-3 mt-2" style={{ borderTop: "1px solid #1a3a28" }}>
+        <div className="p-3 mt-2" style={{ borderTop: "1px solid var(--k-1A3A28)" }}>
+          <div className="px-1 pb-2"><AppearanceSelector /></div>
           <a
             href="/privacy" target="_blank" rel="noreferrer"
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 hover:text-white"
-            style={{ color: "#9CA3AF" }}
+            style={{ color: "var(--kt-9CA3AF)" }}
           >
             <ShieldCheck className="h-4 w-4 flex-shrink-0" />
             Privacy Policy
@@ -141,7 +143,7 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
           <button
             onClick={() => setConfirmingSignOut(true)}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 hover:text-white"
-            style={{ color: "#9CA3AF" }}
+            style={{ color: "var(--kt-9CA3AF)" }}
           >
             <LogOut className="h-4 w-4 flex-shrink-0" />
             Sign Out
@@ -151,9 +153,9 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
 
       <div className="flex min-w-0 flex-1 flex-col h-full overflow-hidden">
         {/* Mobile top bar */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-white flex-shrink-0 md:hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-card flex-shrink-0 md:hidden">
           <div className="flex items-center gap-2.5">
-            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#F59E0B" }}>
+            <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-F59E0B)" }}>
               <Home className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -172,7 +174,7 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
 
         {/* Bottom tab bar — mobile only */}
         <div
-          className="fixed bottom-0 left-0 right-0 bg-white flex items-stretch z-40 md:hidden"
+          className="fixed bottom-0 left-0 right-0 bg-card flex items-stretch z-40 md:hidden"
           style={{ paddingBottom: "env(safe-area-inset-bottom)", boxShadow: "0 -4px 20px rgba(0,0,0,0.06)" }}
         >
           <BottomNav pathname={location.pathname} />

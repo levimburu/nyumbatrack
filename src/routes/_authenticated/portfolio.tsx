@@ -387,8 +387,8 @@ function PortfolioDashboard() {
   if (!properties?.length) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-          <LayoutGrid className="h-10 w-10" style={{ color: "#166534" }} />
+        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "var(--k-DCFCE7)" }}>
+          <LayoutGrid className="h-10 w-10" style={{ color: "var(--kt-166534)" }} />
         </div>
         <h1 className="font-display text-2xl font-bold text-foreground">Nothing to show yet</h1>
         <p className="mt-2 text-sm text-muted-foreground max-w-xs">
@@ -397,7 +397,7 @@ function PortfolioDashboard() {
         <button
           onClick={() => navigate({ to: "/properties" })}
           className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white glow-primary"
-          style={{ background: "#166534" }}
+          style={{ background: "var(--k-166534)" }}
         >
           Go to Properties
         </button>
@@ -431,12 +431,12 @@ function PortfolioDashboard() {
             <div className="text-xs text-muted-foreground mb-0.5">Total Properties</div>
             <div className="font-display text-lg font-bold text-foreground">{properties.length}</div>
             {propertiesAddedThisMonth > 0 && (
-              <div className="text-[11px] mt-0.5" style={{ color: "#16A34A" }}>+{propertiesAddedThisMonth} this month</div>
+              <div className="text-[11px] mt-0.5" style={{ color: "var(--kt-16A34A)" }}>+{propertiesAddedThisMonth} this month</div>
             )}
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EDE9FE" }}>
-              <Building2 className="h-4 w-4" style={{ color: "#6D28D9" }} />
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-EDE9FE)" }}>
+              <Building2 className="h-4 w-4" style={{ color: "var(--kt-6D28D9)" }} />
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -447,8 +447,8 @@ function PortfolioDashboard() {
             <div className="text-xs text-muted-foreground mb-0.5">Total Tenants</div>
             <div className="font-display text-lg font-bold text-foreground">{totalTenants}</div>
           </div>
-          <div className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0" style={{ background: "#EFF6FF" }}>
-            <Users className="h-4 w-4" style={{ color: "#2563EB" }} />
+          <div className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0" style={{ background: "var(--k-EFF6FF)" }}>
+            <Users className="h-4 w-4" style={{ color: "var(--kt-2563EB)" }} />
           </div>
         </div>
 
@@ -457,18 +457,18 @@ function PortfolioDashboard() {
             <div className="text-xs text-muted-foreground mb-0.5">Occupied Units</div>
             <div className="font-display text-lg font-bold text-foreground">{occupiedUnits} <span className="text-sm text-muted-foreground font-normal">/ {totalUnits}</span></div>
           </div>
-          <div className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0" style={{ background: "#DCFCE7" }}>
-            <DoorOpen className="h-4 w-4" style={{ color: "#16A34A" }} />
+          <div className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0" style={{ background: "var(--k-DCFCE7)" }}>
+            <DoorOpen className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />
           </div>
         </div>
 
         <div className="card-surface p-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-xs text-muted-foreground mb-0.5">Vacant Units</div>
-            <div className="font-display text-lg font-bold" style={{ color: vacantUnits > 0 ? "#DC2626" : "#16A34A" }}>{vacantUnits}</div>
+            <div className="font-display text-lg font-bold" style={{ color: vacantUnits > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }}>{vacantUnits}</div>
           </div>
-          <div className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0" style={{ background: "#FEE2E2" }}>
-            <DoorClosed className="h-4 w-4" style={{ color: "#DC2626" }} />
+          <div className="grid h-9 w-9 place-items-center rounded-xl flex-shrink-0" style={{ background: "var(--k-FEE2E2)" }}>
+            <DoorClosed className="h-4 w-4" style={{ color: "var(--kt-DC2626)" }} />
           </div>
         </div>
       </div>
@@ -484,33 +484,33 @@ function PortfolioDashboard() {
           </div>
           <div className="space-y-2 mb-1">
             <div>
-              <div className="font-display text-2xl font-bold leading-tight break-words" style={{ color: "#16A34A" }}>{formatKES(collected)}</div>
+              <div className="font-display text-2xl font-bold leading-tight break-words" style={{ color: "var(--kt-16A34A)" }}>{formatKES(collected)}</div>
               <div className="text-[11px] text-muted-foreground">Collected</div>
             </div>
             <div>
-              <div className="font-display text-2xl font-bold leading-tight break-words" style={{ color: outstanding > 0 ? "#DC2626" : "#16A34A" }}>{formatKES(outstanding)}</div>
+              <div className="font-display text-2xl font-bold leading-tight break-words" style={{ color: outstanding > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }}>{formatKES(outstanding)}</div>
               <div className="text-[11px] text-muted-foreground">Outstanding Balance</div>
             </div>
           </div>
-          <div className="mt-3 h-2 rounded-full overflow-hidden" style={{ background: "#F5F5F0" }}>
-            <div className="h-full rounded-full" style={{ width: `${collectionRate}%`, background: "#16A34A" }} />
+          <div className="mt-3 h-2 rounded-full overflow-hidden" style={{ background: "var(--k-F5F5F0)" }}>
+            <div className="h-full rounded-full" style={{ width: `${collectionRate}%`, background: "var(--k-16A34A)" }} />
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground mt-1.5">
             <span>Collected {formatKES(collected)} ({collectionRate}%)</span>
             <span>Target {formatKES(expected)}</span>
           </div>
-          <div className="mt-4 space-y-2 pt-3" style={{ borderTop: "1px solid #F0F0EB" }}>
+          <div className="mt-4 space-y-2 pt-3" style={{ borderTop: "1px solid var(--k-F0F0EB)" }}>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Paid</span>
-              <span className="font-semibold" style={{ color: "#16A34A" }}>{formatKES(collected)}</span>
+              <span className="font-semibold" style={{ color: "var(--kt-16A34A)" }}>{formatKES(collected)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Pending</span>
-              <span className="font-semibold" style={{ color: "#D97706" }}>{formatKES(pendingAmount)}</span>
+              <span className="font-semibold" style={{ color: "var(--kt-D97706)" }}>{formatKES(pendingAmount)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Overdue</span>
-              <span className="font-semibold" style={{ color: "#DC2626" }}>{formatKES(overdueAmount)}</span>
+              <span className="font-semibold" style={{ color: "var(--kt-DC2626)" }}>{formatKES(overdueAmount)}</span>
             </div>
           </div>
           <a href="/collections" className="mt-4 block w-full rounded-xl border border-border py-2 text-center text-xs font-semibold text-foreground hover:bg-muted transition-colors">
@@ -543,9 +543,9 @@ function PortfolioDashboard() {
                     endAngle={-270}
                     stroke="none"
                   >
-                    <Cell fill="#DC2626" />
-                    <Cell fill="#D97706" />
-                    <Cell fill="#16A34A" />
+                    <Cell fill="var(--kt-DC2626)" />
+                    <Cell fill="var(--kt-D97706)" />
+                    <Cell fill="var(--kt-16A34A)" />
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
@@ -557,15 +557,15 @@ function PortfolioDashboard() {
           )}
           <div className="mt-2 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-muted-foreground"><Circle className="h-2.5 w-2.5" fill="#DC2626" stroke="none" /> Open</span>
+              <span className="flex items-center gap-1.5 text-muted-foreground"><Circle className="h-2.5 w-2.5" fill="var(--kt-DC2626)" stroke="none" /> Open</span>
               <span className="font-medium text-foreground">{openTickets}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-2.5 w-2.5" style={{ color: "#D97706" }} /> In Progress</span>
+              <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-2.5 w-2.5" style={{ color: "var(--kt-D97706)" }} /> In Progress</span>
               <span className="font-medium text-foreground">{inProgressTickets}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-muted-foreground"><CheckCircle2 className="h-2.5 w-2.5" style={{ color: "#16A34A" }} /> Completed</span>
+              <span className="flex items-center gap-1.5 text-muted-foreground"><CheckCircle2 className="h-2.5 w-2.5" style={{ color: "var(--kt-16A34A)" }} /> Completed</span>
               <span className="font-medium text-foreground">{doneTickets}</span>
             </div>
           </div>
@@ -598,28 +598,28 @@ function PortfolioDashboard() {
                     endAngle={-270}
                     stroke="none"
                   >
-                    <Cell fill="#16A34A" />
-                    <Cell fill="#E5E7EB" />
+                    <Cell fill="var(--kt-16A34A)" />
+                    <Cell fill="var(--kt-E5E7EB)" />
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <div className="font-display text-xl font-bold" style={{ color: "#16A34A" }}>{compliancePercent}%</div>
+                <div className="font-display text-xl font-bold" style={{ color: "var(--kt-16A34A)" }}>{compliancePercent}%</div>
                 <div className="text-[10px] text-muted-foreground">Compliant</div>
               </div>
             </div>
           )}
           <div className="mt-2 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-muted-foreground"><CheckCircle2 className="h-2.5 w-2.5" style={{ color: "#16A34A" }} /> Valid</span>
+              <span className="flex items-center gap-1.5 text-muted-foreground"><CheckCircle2 className="h-2.5 w-2.5" style={{ color: "var(--kt-16A34A)" }} /> Valid</span>
               <span className="font-medium text-foreground">{validCompliance}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-2.5 w-2.5" style={{ color: "#D97706" }} /> Expiring Soon</span>
+              <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-2.5 w-2.5" style={{ color: "var(--kt-D97706)" }} /> Expiring Soon</span>
               <span className="font-medium text-foreground">{expiringCompliance}</span>
             </div>
             <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5 text-muted-foreground"><AlertCircle className="h-2.5 w-2.5" style={{ color: "#DC2626" }} /> Expired</span>
+              <span className="flex items-center gap-1.5 text-muted-foreground"><AlertCircle className="h-2.5 w-2.5" style={{ color: "var(--kt-DC2626)" }} /> Expired</span>
               <span className="font-medium text-foreground">{expiredCompliance}</span>
             </div>
           </div>
@@ -644,12 +644,12 @@ function PortfolioDashboard() {
                   <div
                     className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full"
                     style={{
-                      background: a.icon === "done" ? "#DCFCE7" : a.icon === "ticket" ? "#FEF3C7" : "#DCFCE7",
+                      background: a.icon === "done" ? "var(--k-DCFCE7)" : a.icon === "ticket" ? "var(--k-FEF3C7)" : "var(--k-DCFCE7)",
                     }}
                   >
-                    {a.icon === "payment" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
-                    {a.icon === "ticket" && <Wrench className="h-4 w-4" style={{ color: "#D97706" }} />}
-                    {a.icon === "done" && <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />}
+                    {a.icon === "payment" && <CheckCircle2 className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />}
+                    {a.icon === "ticket" && <Wrench className="h-4 w-4" style={{ color: "var(--kt-D97706)" }} />}
+                    {a.icon === "done" && <CheckCircle2 className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium text-foreground truncate">{a.title}</div>
@@ -674,11 +674,11 @@ function PortfolioDashboard() {
           </div>
           <div className="flex items-baseline gap-4 mb-3">
             <div>
-              <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{formatKES(mpesaCollectedThisMonth)}</div>
+              <div className="font-display text-2xl font-bold" style={{ color: "var(--kt-16A34A)" }}>{formatKES(mpesaCollectedThisMonth)}</div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 Collected via M-Pesa
                 {mpesaMonthOverMonth !== null && (
-                  <span className="ml-1.5 font-medium" style={{ color: mpesaMonthOverMonth >= 0 ? "#16A34A" : "#DC2626" }}>
+                  <span className="ml-1.5 font-medium" style={{ color: mpesaMonthOverMonth >= 0 ? "var(--kt-16A34A)" : "var(--kt-DC2626)" }}>
                     {mpesaMonthOverMonth >= 0 ? "+" : ""}{mpesaMonthOverMonth}% from last month
                   </span>
                 )}
@@ -697,23 +697,23 @@ function PortfolioDashboard() {
                 <ComposedChart data={mpesaTrendData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="mpesaFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#16A34A" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#16A34A" stopOpacity={0} />
+                      <stop offset="0%" stopColor="var(--k-16A34A)" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="var(--k-16A34A)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#6B7280" }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--kt-6B7280)" }} axisLine={false} tickLine={false} />
                   <YAxis hide />
                   <Tooltip
                     formatter={(v: any) => [formatKES(Number(v)), "Collected via M-Pesa"]}
-                    contentStyle={{ borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 13 }}
+                    contentStyle={{ borderRadius: 12, border: "1px solid var(--k-E5E7EB)", fontSize: 13 }}
                   />
                   <Area
                     type="monotone"
                     dataKey="collected"
-                    stroke="#16A34A"
+                    stroke="var(--kt-16A34A)"
                     strokeWidth={2.5}
                     fill="url(#mpesaFill)"
-                    dot={{ r: 3, fill: "#16A34A" }}
+                    dot={{ r: 3, fill: "var(--kt-16A34A)" }}
                   />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -729,10 +729,10 @@ function PortfolioDashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <div className="card-surface p-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEF3C7" }}>
-              <TrendingUp className="h-4 w-4" style={{ color: "#D97706" }} />
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-FEF3C7)" }}>
+              <TrendingUp className="h-4 w-4" style={{ color: "var(--kt-D97706)" }} />
             </div>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "#FEF3C7", color: "#92400E" }}>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--k-FEF3C7)", color: "var(--kt-92400E)" }}>
               {occupancyRate}%
             </span>
           </div>
@@ -742,8 +742,8 @@ function PortfolioDashboard() {
 
         <div className="card-surface p-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
-              <Wallet className="h-4 w-4" style={{ color: "#2563EB" }} />
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-EFF6FF)" }}>
+              <Wallet className="h-4 w-4" style={{ color: "var(--kt-2563EB)" }} />
             </div>
           </div>
           <div className="text-xs text-muted-foreground mb-0.5">Avg Rent / Unit</div>
@@ -752,12 +752,12 @@ function PortfolioDashboard() {
 
         <div className="card-surface p-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: tenantsInArrears > 0 ? "#FEE2E2" : "#DCFCE7" }}>
-              <AlertCircle className="h-4 w-4" style={{ color: tenantsInArrears > 0 ? "#DC2626" : "#16A34A" }} />
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: tenantsInArrears > 0 ? "var(--k-FEE2E2)" : "var(--k-DCFCE7)" }}>
+              <AlertCircle className="h-4 w-4" style={{ color: tenantsInArrears > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }} />
             </div>
           </div>
           <div className="text-xs text-muted-foreground mb-0.5">Tenants in Arrears</div>
-          <div className="font-display text-lg font-bold" style={{ color: tenantsInArrears > 0 ? "#DC2626" : "#16A34A" }}>
+          <div className="font-display text-lg font-bold" style={{ color: tenantsInArrears > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }}>
             {tenantsInArrears}
           </div>
         </div>
@@ -776,14 +776,14 @@ function PortfolioDashboard() {
             <ComposedChart data={trendData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="collectedFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#166534" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#166534" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--k-166534)" stopOpacity={0.35} />
+                  <stop offset="100%" stopColor="var(--k-166534)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F0F0EB" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#6B7280" }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--kt-F0F0EB)" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "var(--kt-6B7280)" }} axisLine={false} tickLine={false} />
               <YAxis
-                tick={{ fontSize: 12, fill: "#6B7280" }}
+                tick={{ fontSize: 12, fill: "var(--kt-6B7280)" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : `${v}`)}
@@ -791,7 +791,7 @@ function PortfolioDashboard() {
               />
               <Tooltip
                 formatter={(v: any, name: any) => [formatKES(Number(v)), name === "collected" ? "Collected" : "Expected"]}
-                contentStyle={{ borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 13 }}
+                contentStyle={{ borderRadius: 12, border: "1px solid var(--k-E5E7EB)", fontSize: 13 }}
               />
               <Legend
                 verticalAlign="top"
@@ -804,7 +804,7 @@ function PortfolioDashboard() {
               <Line
                 type="monotone"
                 dataKey="expected"
-                stroke="#D97706"
+                stroke="var(--kt-D97706)"
                 strokeWidth={1.5}
                 strokeDasharray="5 5"
                 dot={false}
@@ -813,10 +813,10 @@ function PortfolioDashboard() {
               <Area
                 type="monotone"
                 dataKey="collected"
-                stroke="#166534"
+                stroke="var(--kt-166534)"
                 strokeWidth={2.5}
                 fill="url(#collectedFill)"
-                dot={{ r: 4, fill: "#166534" }}
+                dot={{ r: 4, fill: "var(--kt-166534)" }}
                 activeDot={{ r: 6 }}
               />
             </ComposedChart>
@@ -848,17 +848,17 @@ function PortfolioDashboard() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-display font-bold text-foreground truncate">{p.name}</h3>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ml-2" style={{ background: "#DCFCE7", color: "#166534" }}>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ml-2" style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}>
                     {pRate}%
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground mb-3">{pTenants.length} {pTenants.length === 1 ? "tenant" : "tenants"}</div>
                 <div className="flex items-baseline justify-between">
-                  <span className="font-display font-bold text-sm" style={{ color: "#16A34A" }}>{formatKES(pCollected)}</span>
+                  <span className="font-display font-bold text-sm" style={{ color: "var(--kt-16A34A)" }}>{formatKES(pCollected)}</span>
                   <span className="text-xs text-muted-foreground">of {formatKES(pExpected)}</span>
                 </div>
-                <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "#F5F5F0" }}>
-                  <div className="h-full rounded-full" style={{ width: `${pRate}%`, background: "#166534" }} />
+                <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--k-F5F5F0)" }}>
+                  <div className="h-full rounded-full" style={{ width: `${pRate}%`, background: "var(--k-166534)" }} />
                 </div>
               </button>
             );

@@ -15,9 +15,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 export function StatusPill({ status }: { status: "paid" | "partial" | "unpaid" }) {
   const styles = {
-    paid: { background: "#DCFCE7", color: "#166534" },
-    partial: { background: "#FEF9C3", color: "#854D0E" },
-    unpaid: { background: "#FEE2E2", color: "#991B1B" },
+    paid: { background: "var(--k-DCFCE7)", color: "var(--kt-166534)" },
+    partial: { background: "var(--k-FEF9C3)", color: "var(--kt-854D0E)" },
+    unpaid: { background: "var(--k-FEE2E2)", color: "var(--kt-991B1B)" },
   };
   const labels = { paid: "Paid", partial: "Partial", unpaid: "Unpaid" };
   return (
@@ -245,7 +245,7 @@ function Dashboard() {
     <div className="mx-auto max-w-7xl space-y-6">
 
       {/* Hero header */}
-      <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0d2818 0%, #166534 100%)" }}>
+      <div className="rounded-2xl p-6 text-white relative overflow-hidden" style={{ background: "linear-gradient(135deg, var(--k-0D2818) 0%, var(--k-166534) 100%)" }}>
         {propertyData?.photo_url ? (
           <div
             className="absolute inset-y-0 right-0 w-full sm:w-3/5 pointer-events-none"
@@ -260,8 +260,8 @@ function Dashboard() {
           />
         ) : (
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 right-0 w-64 h-64 rounded-full" style={{ background: "#F59E0B", transform: "translate(30%, -30%)" }} />
-            <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full" style={{ background: "#16A34A", transform: "translate(-30%, 30%)" }} />
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full" style={{ background: "var(--k-F59E0B)", transform: "translate(30%, -30%)" }} />
+            <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full" style={{ background: "var(--k-16A34A)", transform: "translate(-30%, 30%)" }} />
           </div>
         )}
         <div className="relative">
@@ -289,7 +289,7 @@ function Dashboard() {
             </div>
           </div>
           <div className="mt-4 flex items-center gap-3">
-            <div className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "#F59E0B", color: "#fff" }}>
+            <div className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "var(--k-F59E0B)", color: "#fff" }}>
               {occupancyRate}% Occupied
             </div>
             <div className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: "rgba(255,255,255,0.15)", color: "#fff" }}>
@@ -306,10 +306,10 @@ function Dashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="card-surface p-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#EFF6FF" }}>
-              <Users className="h-4 w-4" style={{ color: "#2563EB" }} />
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-EFF6FF)" }}>
+              <Users className="h-4 w-4" style={{ color: "var(--kt-2563EB)" }} />
             </div>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "#EFF6FF", color: "#2563EB" }}>
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--k-EFF6FF)", color: "var(--kt-2563EB)" }}>
               {totalTenants}
             </span>
           </div>
@@ -319,8 +319,8 @@ function Dashboard() {
 
         <button onClick={() => setBreakdown("expected")} className="card-surface p-4 text-left hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEF9C3" }}>
-              <Wallet className="h-4 w-4" style={{ color: "#D97706" }} />
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-FEF9C3)" }}>
+              <Wallet className="h-4 w-4" style={{ color: "var(--kt-D97706)" }} />
             </div>
           </div>
           <div className="text-xs text-muted-foreground mb-0.5">Expected Rent</div>
@@ -329,27 +329,27 @@ function Dashboard() {
 
         <button onClick={() => setBreakdown("collected")} className="card-surface p-4 text-left hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#DCFCE7" }}>
-              <TrendingUp className="h-4 w-4" style={{ color: "#16A34A" }} />
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-DCFCE7)" }}>
+              <TrendingUp className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />
             </div>
             {collected > 0 && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "#DCFCE7", color: "#166534" }}>
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}>
                 {collectionRate}%
               </span>
             )}
           </div>
           <div className="text-xs text-muted-foreground mb-0.5">Collected</div>
-          <div className="font-display text-lg font-bold" style={{ color: "#16A34A" }}>{formatKES(collected)}</div>
+          <div className="font-display text-lg font-bold" style={{ color: "var(--kt-16A34A)" }}>{formatKES(collected)}</div>
         </button>
 
         <button onClick={() => setBreakdown("outstanding")} className="card-surface p-4 text-left hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-3">
-            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#FEE2E2" }}>
-              <AlertCircle className="h-4 w-4" style={{ color: "#DC2626" }} />
+            <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "var(--k-FEE2E2)" }}>
+              <AlertCircle className="h-4 w-4" style={{ color: "var(--kt-DC2626)" }} />
             </div>
           </div>
           <div className="text-xs text-muted-foreground mb-0.5">Outstanding</div>
-          <div className="font-display text-lg font-bold" style={{ color: outstanding > 0 ? "#DC2626" : "#16A34A" }}>
+          <div className="font-display text-lg font-bold" style={{ color: outstanding > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }}>
             {formatKES(outstanding)}
           </div>
         </button>
@@ -359,30 +359,30 @@ function Dashboard() {
       <div className="card-surface p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-base font-semibold">Occupancy Overview</h2>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: occupancyRate >= 75 ? "#DCFCE7" : occupancyRate >= 50 ? "#FEF9C3" : "#FEE2E2", color: occupancyRate >= 75 ? "#166534" : occupancyRate >= 50 ? "#854D0E" : "#991B1B" }}>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: occupancyRate >= 75 ? "var(--k-DCFCE7)" : occupancyRate >= 50 ? "var(--k-FEF9C3)" : "var(--k-FEE2E2)", color: occupancyRate >= 75 ? "var(--kt-166534)" : occupancyRate >= 50 ? "var(--kt-854D0E)" : "var(--kt-991B1B)" }}>
             {occupancyRate}% full
           </span>
         </div>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="rounded-xl p-3 text-center" style={{ background: "#EFF6FF" }}>
-            <div className="grid h-9 w-9 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#DBEAFE" }}>
-              <Building2 className="h-4 w-4" style={{ color: "#2563EB" }} />
+          <div className="rounded-xl p-3 text-center" style={{ background: "var(--k-EFF6FF)" }}>
+            <div className="grid h-9 w-9 place-items-center rounded-xl mx-auto mb-2" style={{ background: "var(--k-DBEAFE)" }}>
+              <Building2 className="h-4 w-4" style={{ color: "var(--kt-2563EB)" }} />
             </div>
             <div className="font-display text-2xl font-bold text-foreground">{totalUnits}</div>
             <div className="text-xs text-muted-foreground mt-0.5">Total</div>
           </div>
-          <div className="rounded-xl p-3 text-center" style={{ background: "#F0FDF4" }}>
-            <div className="grid h-9 w-9 place-items-center rounded-xl mx-auto mb-2" style={{ background: "#DCFCE7" }}>
-              <DoorOpen className="h-4 w-4" style={{ color: "#16A34A" }} />
+          <div className="rounded-xl p-3 text-center" style={{ background: "var(--k-F0FDF4)" }}>
+            <div className="grid h-9 w-9 place-items-center rounded-xl mx-auto mb-2" style={{ background: "var(--k-DCFCE7)" }}>
+              <DoorOpen className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />
             </div>
-            <div className="font-display text-2xl font-bold" style={{ color: "#16A34A" }}>{occupied}</div>
+            <div className="font-display text-2xl font-bold" style={{ color: "var(--kt-16A34A)" }}>{occupied}</div>
             <div className="text-xs text-muted-foreground mt-0.5">Occupied</div>
           </div>
-          <div className="rounded-xl p-3 text-center" style={{ background: vacant > 0 ? "#FFF7ED" : "#F0FDF4" }}>
-            <div className="grid h-9 w-9 place-items-center rounded-xl mx-auto mb-2" style={{ background: vacant > 0 ? "#FEE2E2" : "#DCFCE7" }}>
-              <DoorClosed className="h-4 w-4" style={{ color: vacant > 0 ? "#DC2626" : "#16A34A" }} />
+          <div className="rounded-xl p-3 text-center" style={{ background: vacant > 0 ? "var(--k-FFF7ED)" : "var(--k-F0FDF4)" }}>
+            <div className="grid h-9 w-9 place-items-center rounded-xl mx-auto mb-2" style={{ background: vacant > 0 ? "var(--k-FEE2E2)" : "var(--k-DCFCE7)" }}>
+              <DoorClosed className="h-4 w-4" style={{ color: vacant > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }} />
             </div>
-            <div className="font-display text-2xl font-bold" style={{ color: vacant > 0 ? "#DC2626" : "#16A34A" }}>{vacant}</div>
+            <div className="font-display text-2xl font-bold" style={{ color: vacant > 0 ? "var(--kt-DC2626)" : "var(--kt-16A34A)" }}>{vacant}</div>
             <div className="text-xs text-muted-foreground mt-0.5">Vacant</div>
           </div>
         </div>
@@ -390,10 +390,10 @@ function Dashboard() {
           <span>Occupancy Rate</span>
           <span className="font-semibold text-foreground">{occupancyRate}%</span>
         </div>
-        <div className="h-3 rounded-full w-full overflow-hidden" style={{ background: "#E5E7EB" }}>
+        <div className="h-3 rounded-full w-full overflow-hidden" style={{ background: "var(--k-E5E7EB)" }}>
           <div
             className="h-full rounded-full transition-all duration-700"
-            style={{ width: `${occupancyRate}%`, background: occupancyRate >= 75 ? "#166534" : occupancyRate >= 50 ? "#F59E0B" : "#DC2626" }}
+            style={{ width: `${occupancyRate}%`, background: occupancyRate >= 75 ? "var(--k-166534)" : occupancyRate >= 50 ? "var(--k-F59E0B)" : "var(--k-DC2626)" }}
           />
         </div>
       </div>
@@ -404,14 +404,14 @@ function Dashboard() {
         <div className="card-surface lg:col-span-2 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
             <h2 className="font-display text-base font-semibold">Tenant Overview</h2>
-            <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: "#DCFCE7", color: "#166534" }}>
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}>
               {collectionRate}% collected
             </span>
           </div>
           <div style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", minWidth: "680px", fontSize: "0.875rem", borderCollapse: "collapse" }}>
               <thead>
-                <tr className="border-b border-border" style={{ background: "#F9FAFB" }}>
+                <tr className="border-b border-border" style={{ background: "var(--k-F9FAFB)" }}>
                   <th className="px-5 py-3 text-left text-xs font-medium text-muted-foreground">Tenant</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Unit</th>
                   <th className="py-3 text-left text-xs font-medium text-muted-foreground">Rent</th>
@@ -435,7 +435,7 @@ function Dashboard() {
                         <div className="flex items-center gap-3">
                           <div
                             className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0"
-                            style={{ background: "#166534" }}
+                            style={{ background: "var(--k-166534)" }}
                           >
                             {initials}
                           </div>
@@ -449,7 +449,7 @@ function Dashboard() {
                         {t.next_due_date ? (
                           <span
                             className="text-xs font-medium"
-                            style={{ color: t.next_due_date < today && status !== "paid" ? "#DC2626" : "#6B7280" }}
+                            style={{ color: t.next_due_date < today && status !== "paid" ? "var(--kt-DC2626)" : "var(--kt-6B7280)" }}
                           >
                             {formatDate(t.next_due_date)}
                           </span>
@@ -459,7 +459,7 @@ function Dashboard() {
                       </td>
                       <td className="py-3">
                         {monthsBehind > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "#FEE2E2", color: "#991B1B" }}>
+                          <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold" style={{ background: "var(--k-FEE2E2)", color: "var(--kt-991B1B)" }}>
                             {monthsBehind} {monthsBehind === 1 ? "month" : "months"} behind
                           </span>
                         ) : (
@@ -491,9 +491,9 @@ function Dashboard() {
               <li key={p.id} className="flex items-center gap-3 px-5 py-3">
                 <div
                   className="grid h-8 w-8 place-items-center rounded-full flex-shrink-0"
-                  style={{ background: "#DCFCE7" }}
+                  style={{ background: "var(--k-DCFCE7)" }}
                 >
-                  <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />
+                  <CheckCircle2 className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{p.tenants?.full_name ?? "—"}</div>
@@ -501,7 +501,7 @@ function Dashboard() {
                     {p.payment_month ?? formatDate(p.paid_on)}
                   </div>
                 </div>
-                <div className="font-display text-sm font-bold" style={{ color: "#16A34A" }}>
+                <div className="font-display text-sm font-bold" style={{ color: "var(--kt-16A34A)" }}>
                   +{formatKES(p.amount)}
                 </div>
               </li>
@@ -514,16 +514,16 @@ function Dashboard() {
     {showInviteModal && generatedCode && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
           <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
-            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-              <Key className="h-7 w-7" style={{ color: "#166534" }} />
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "var(--k-DCFCE7)" }}>
+              <Key className="h-7 w-7" style={{ color: "var(--kt-166534)" }} />
             </div>
             <h2 className="font-display text-xl font-semibold mb-2">Property Manager Invite Code</h2>
             <p className="text-sm text-muted-foreground mb-2">
               Share this code with your agent for <span className="font-semibold text-foreground">{selectedProperty.name}</span>.
             </p>
             <p className="text-xs text-muted-foreground mb-6">They'll only have access to this property.</p>
-            <div className="flex items-center justify-between rounded-xl border-2 px-4 py-3 mb-4" style={{ borderColor: "#166534", background: "#F0FDF4" }}>
-              <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: "#166534" }}>{generatedCode}</span>
+            <div className="flex items-center justify-between rounded-xl border-2 px-4 py-3 mb-4" style={{ borderColor: "var(--k-166534)", background: "var(--k-F0FDF4)" }}>
+              <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: "var(--kt-166534)" }}>{generatedCode}</span>
               <button
                 onClick={() => { navigator.clipboard.writeText(generatedCode); toast.success("Code copied!"); }}
                 className="text-muted-foreground hover:text-primary transition-colors"
@@ -535,7 +535,7 @@ function Dashboard() {
             <button
               onClick={() => { setShowInviteModal(false); setGeneratedCode(null); }}
               className="w-full rounded-xl py-3 text-sm font-semibold text-white"
-              style={{ background: "#166534" }}
+              style={{ background: "var(--k-166534)" }}
             >
               Done
             </button>
@@ -547,14 +547,14 @@ function Dashboard() {
       {breakdown && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setBreakdown(null)} />
-          <div className="relative w-full max-w-md h-full bg-white flex flex-col shadow-2xl">
+          <div className="relative w-full max-w-md h-full bg-card flex flex-col shadow-2xl">
             {/* Header */}
             <div
               className="flex items-center justify-between px-5 py-4"
               style={{
                 background:
-                  breakdown === "collected" ? "#166534" :
-                  breakdown === "outstanding" ? "#991B1B" : "#0d2818",
+                  breakdown === "collected" ? "var(--k-166534)" :
+                  breakdown === "outstanding" ? "var(--k-991B1B)" : "var(--k-0D2818)",
               }}
             >
               <div>
@@ -579,7 +579,7 @@ function Dashboard() {
               {breakdown === "collected" && (
                 collectedList.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                    <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#F5F5F0" }}>
+                    <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "var(--k-F5F5F0)" }}>
                       <Receipt className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <p className="font-medium text-foreground mb-1">No payments yet this month</p>
@@ -596,16 +596,16 @@ function Dashboard() {
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-3">
-                          <div className="font-display font-bold text-sm" style={{ color: "#16A34A" }}>
+                          <div className="font-display font-bold text-sm" style={{ color: "var(--kt-16A34A)" }}>
                             +{formatKES(p.amount)}
                           </div>
                           <span
                             className="inline-block rounded-md px-2 py-0.5 text-xs font-medium mt-0.5"
                             style={
-                              p.advance ? { background: "#EDE9FE", color: "#6D28D9" } :
-                              p.method === "mpesa" ? { background: "#DCFCE7", color: "#166534" } :
-                              p.method === "bank" ? { background: "#EFF6FF", color: "#2563EB" } :
-                              { background: "#F5F5F0", color: "#6B7280" }
+                              p.advance ? { background: "var(--k-EDE9FE)", color: "var(--kt-6D28D9)" } :
+                              p.method === "mpesa" ? { background: "var(--k-DCFCE7)", color: "var(--kt-166534)" } :
+                              p.method === "bank" ? { background: "var(--k-EFF6FF)", color: "var(--kt-2563EB)" } :
+                              { background: "var(--k-F5F5F0)", color: "var(--kt-6B7280)" }
                             }
                           >
                             {p.advance ? "Advance" : p.method === "mpesa" ? "M-Pesa" : p.method === "bank" ? "Bank Transfer" : "Cash"}
@@ -621,8 +621,8 @@ function Dashboard() {
               {breakdown === "outstanding" && (
                 outstandingList.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                    <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#DCFCE7" }}>
-                      <CheckCircle2 className="h-8 w-8" style={{ color: "#16A34A" }} />
+                    <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "var(--k-DCFCE7)" }}>
+                      <CheckCircle2 className="h-8 w-8" style={{ color: "var(--kt-16A34A)" }} />
                     </div>
                     <p className="font-medium text-foreground mb-1">Everyone's paid up!</p>
                     <p className="text-sm text-muted-foreground">No outstanding rent for {currentMonthLabel}.</p>
@@ -639,15 +639,15 @@ function Dashboard() {
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-3">
-                          <div className="font-display font-bold text-sm" style={{ color: "#DC2626" }}>
+                          <div className="font-display font-bold text-sm" style={{ color: "var(--kt-DC2626)" }}>
                             {formatKES(t.owed)}
                           </div>
                           <span
                             className="inline-block rounded-md px-2 py-0.5 text-xs font-medium mt-0.5"
                             style={
                               t.status === "partial"
-                                ? { background: "#FEF9C3", color: "#854D0E" }
-                                : { background: "#FEE2E2", color: "#991B1B" }
+                                ? { background: "var(--k-FEF9C3)", color: "var(--kt-854D0E)" }
+                                : { background: "var(--k-FEE2E2)", color: "var(--kt-991B1B)" }
                             }
                           >
                             {t.status === "partial" ? "Partial" : "Unpaid"}
@@ -663,7 +663,7 @@ function Dashboard() {
               {breakdown === "expected" && (
                 expectedList.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                    <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "#F5F5F0" }}>
+                    <div className="grid h-16 w-16 place-items-center rounded-2xl mb-4" style={{ background: "var(--k-F5F5F0)" }}>
                       <Wallet className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <p className="font-medium text-foreground mb-1">No tenants yet</p>
@@ -684,7 +684,7 @@ function Dashboard() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between px-5 py-4 border-t-2 border-border" style={{ background: "#F9FAFB" }}>
+                    <div className="flex items-center justify-between px-5 py-4 border-t-2 border-border" style={{ background: "var(--k-F9FAFB)" }}>
                       <span className="text-sm font-semibold text-foreground">Total Expected</span>
                       <span className="font-display font-bold text-foreground">{formatKES(expected)}</span>
                     </div>

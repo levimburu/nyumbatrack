@@ -21,9 +21,9 @@ export function ListSearchInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full rounded-xl border px-4 py-2.5 pl-10 pr-9 text-sm outline-none"
-        style={{ borderColor: "#E5E7EB", color: "#111827" }}
-        onFocus={(e) => (e.target.style.borderColor = "#166534")}
-        onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
+        style={{ borderColor: "var(--k-E5E7EB)", color: "var(--kt-111827)" }}
+        onFocus={(e) => (e.target.style.borderColor = "var(--k-166534)")}
+        onBlur={(e) => (e.target.style.borderColor = "var(--k-E5E7EB)")}
       />
       {value && (
         <button

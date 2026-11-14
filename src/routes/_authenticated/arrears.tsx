@@ -185,8 +185,8 @@ function ArrearsPage() {
   if (!properties?.length) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#FEE2E2" }}>
-          <AlertCircle className="h-10 w-10" style={{ color: "#DC2626" }} />
+        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "var(--k-FEE2E2)" }}>
+          <AlertCircle className="h-10 w-10" style={{ color: "var(--kt-DC2626)" }} />
         </div>
         <h1 className="font-display text-2xl font-bold text-foreground">Nothing to show yet</h1>
         <p className="mt-2 text-sm text-muted-foreground max-w-xs">
@@ -207,21 +207,21 @@ function ArrearsPage() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="card-surface p-4 flex items-center gap-3">
-          <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#FEE2E2" }}>
-            <AlertCircle className="h-5 w-5" style={{ color: "#DC2626" }} />
+          <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-FEE2E2)" }}>
+            <AlertCircle className="h-5 w-5" style={{ color: "var(--kt-DC2626)" }} />
           </div>
           <div>
             <div className="text-xs text-muted-foreground mb-0.5">Tenants Behind</div>
-            <div className="font-display text-lg font-bold" style={{ color: "#DC2626" }}>{rows.length}</div>
+            <div className="font-display text-lg font-bold" style={{ color: "var(--kt-DC2626)" }}>{rows.length}</div>
           </div>
         </div>
         <div className="card-surface p-4 flex items-center gap-3">
-          <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "#FEE2E2" }}>
-            <AlertCircle className="h-5 w-5" style={{ color: "#DC2626" }} />
+          <div className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-xl" style={{ background: "var(--k-FEE2E2)" }}>
+            <AlertCircle className="h-5 w-5" style={{ color: "var(--kt-DC2626)" }} />
           </div>
           <div>
             <div className="text-xs text-muted-foreground mb-0.5">Total Owed</div>
-            <div className="font-display text-lg font-bold" style={{ color: "#DC2626" }}>{formatKES(totalOwed)}</div>
+            <div className="font-display text-lg font-bold" style={{ color: "var(--kt-DC2626)" }}>{formatKES(totalOwed)}</div>
           </div>
         </div>
       </div>
@@ -255,15 +255,15 @@ function ArrearsPage() {
                 )}
               </div>
               <div className="text-right flex-shrink-0">
-                <div className="font-display text-lg font-bold" style={{ color: "#DC2626" }}>{formatKES(r.due)}</div>
+                <div className="font-display text-lg font-bold" style={{ color: "var(--kt-DC2626)" }}>{formatKES(r.due)}</div>
                 <div className="text-xs text-muted-foreground mt-0.5">{r.daysOverdue} {r.daysOverdue === 1 ? "day" : "days"} overdue</div>
               </div>
             </div>
-            <div className="flex items-center justify-between mt-3 pt-3 gap-2" style={{ borderTop: "1px solid #F0F0EB" }}>
+            <div className="flex items-center justify-between mt-3 pt-3 gap-2" style={{ borderTop: "1px solid var(--k-F0F0EB)" }}>
               <button
                 onClick={() => goToTenant(r.property_id)}
                 className="text-xs font-semibold flex-shrink-0"
-                style={{ color: "#166534" }}
+                style={{ color: "var(--kt-166534)" }}
               >
                 View tenant →
               </button>
@@ -271,7 +271,7 @@ function ArrearsPage() {
                 <button
                   onClick={() => setPayingRow(r)}
                   className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white"
-                  style={{ background: "#166534" }}
+                  style={{ background: "var(--k-166534)" }}
                 >
                   <Wallet className="h-3.5 w-3.5" /> Record Payment
                 </button>
@@ -395,8 +395,8 @@ function RecordPaymentModal({
   // background scrolled. Same pattern every other modal in the app uses.
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-white">
+      <form onSubmit={handleSubmit} className="w-full sm:max-w-md bg-card rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-card">
           <div>
             <h2 className="font-display text-lg font-bold text-foreground">Record Payment</h2>
             <p className="text-xs text-muted-foreground mt-0.5">{row.full_name} · Unit {row.unit} · {row.dueLabel}</p>
@@ -417,8 +417,8 @@ function RecordPaymentModal({
                   onClick={() => handleTypeChange(t)}
                   className="rounded-lg border py-2 text-xs font-semibold capitalize"
                   style={paymentType === t
-                    ? { borderColor: "#166534", background: "#F0FDF4", color: "#166534" }
-                    : { borderColor: "#E5E7EB", color: "#6B7280" }}
+                    ? { borderColor: "var(--k-166534)", background: "var(--k-F0FDF4)", color: "var(--kt-166534)" }
+                    : { borderColor: "var(--k-E5E7EB)", color: "var(--kt-6B7280)" }}
                 >
                   {t === "topup" ? "Top Up (rest owed)" : t === "full" ? "Full Amount" : "Partial"}
                 </button>
@@ -433,7 +433,7 @@ function RecordPaymentModal({
               onChange={(e) => setAmount(Number(e.target.value))}
               disabled={paymentType !== "partial"}
               className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none disabled:opacity-60"
-              style={{ borderColor: "#E5E7EB" }}
+              style={{ borderColor: "var(--k-E5E7EB)" }}
             />
             {paymentType !== "partial" && (
               <p className="text-xs text-muted-foreground mt-1">Full amount owed for {row.dueLabel}.</p>
@@ -443,11 +443,11 @@ function RecordPaymentModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">Date Paid</label>
-              <input type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none" style={{ borderColor: "#E5E7EB" }} />
+              <input type="date" value={paidOn} onChange={(e) => setPaidOn(e.target.value)} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none" style={{ borderColor: "var(--k-E5E7EB)" }} />
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">Method</label>
-              <select value={method} onChange={(e) => setMethod(e.target.value)} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none" style={{ borderColor: "#E5E7EB" }}>
+              <select value={method} onChange={(e) => setMethod(e.target.value)} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none" style={{ borderColor: "var(--k-E5E7EB)" }}>
                 <option value="mpesa">M-Pesa</option>
                 <option value="bank">Bank Transfer</option>
                 <option value="cash">Cash</option>
@@ -457,20 +457,20 @@ function RecordPaymentModal({
 
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">Reference (optional)</label>
-            <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="M-Pesa code, etc." className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none" style={{ borderColor: "#E5E7EB" }} />
+            <input type="text" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="M-Pesa code, etc." className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none" style={{ borderColor: "var(--k-E5E7EB)" }} />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1.5">Note (optional)</label>
-            <input type="text" value={note} onChange={(e) => setNote(e.target.value)} className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none" style={{ borderColor: "#E5E7EB" }} />
+            <input type="text" value={note} onChange={(e) => setNote(e.target.value)} className="w-full rounded-xl border px-4 py-2.5 text-sm outline-none" style={{ borderColor: "var(--k-E5E7EB)" }} />
           </div>
         </div>
 
-        <div className="flex gap-3 px-5 py-4 border-t border-border sticky bottom-0 bg-white">
+        <div className="flex gap-3 px-5 py-4 border-t border-border sticky bottom-0 bg-card">
           <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium text-foreground hover:bg-muted">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
+          <button type="submit" disabled={saving} className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-white disabled:opacity-60 flex items-center justify-center gap-2" style={{ background: "var(--k-166534)" }}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Save Payment
           </button>
         </div>

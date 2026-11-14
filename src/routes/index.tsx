@@ -37,8 +37,8 @@ function IndexPage() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F0]">
-      <Loader2 className="h-8 w-8 animate-spin text-[#166534]" />
+    <div className="min-h-screen flex items-center justify-center bg-[var(--k-F5F5F0)]">
+      <Loader2 className="h-8 w-8 animate-spin text-[var(--k-166534)]" />
     </div>
   );
 }

@@ -52,9 +52,9 @@ function statusLabel(s: ComplianceStatus) {
 }
 
 function statusColor(s: ComplianceStatus) {
-  if (s === "valid") return { bg: "#DCFCE7", text: "#16A34A" };
-  if (s === "expiring_soon") return { bg: "#FEF3C7", text: "#D97706" };
-  return { bg: "#FEE2E2", text: "#DC2626" };
+  if (s === "valid") return { bg: "var(--k-DCFCE7)", text: "var(--k-16A34A)" };
+  if (s === "expiring_soon") return { bg: "var(--k-FEF3C7)", text: "var(--k-D97706)" };
+  return { bg: "var(--k-FEE2E2)", text: "var(--k-DC2626)" };
 }
 
 function StatusBadge({ status }: { status: ComplianceStatus }) {
@@ -213,8 +213,8 @@ function CompliancePage() {
   if (!properties?.length) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
-        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-          <ShieldCheck className="h-10 w-10" style={{ color: "#166534" }} />
+        <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl" style={{ background: "var(--k-DCFCE7)" }}>
+          <ShieldCheck className="h-10 w-10" style={{ color: "var(--kt-166534)" }} />
         </div>
         <h1 className="font-display text-2xl font-bold text-foreground">Nothing to show yet</h1>
         <p className="mt-2 text-sm text-muted-foreground max-w-xs">
@@ -236,7 +236,7 @@ function CompliancePage() {
         <button
           onClick={() => setAdding(true)}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all glow-primary"
-          style={{ background: "#166534" }}
+          style={{ background: "var(--k-166534)" }}
         >
           <Plus className="h-4 w-4" /> Add Record
         </button>
@@ -247,43 +247,43 @@ function CompliancePage() {
         <button
           onClick={() => setStatusFilter(statusFilter === "valid" ? "all" : "valid")}
           className="card-surface p-4 text-left transition-all"
-          style={{ boxShadow: statusFilter === "valid" ? "0 0 0 2px #16A34A" : undefined }}
+          style={{ boxShadow: statusFilter === "valid" ? "0 0 0 2px var(--k-16A34A)" : undefined }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#DCFCE7" }}>
-              <CheckCircle2 className="h-4 w-4" style={{ color: "#16A34A" }} />
+            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "var(--k-DCFCE7)" }}>
+              <CheckCircle2 className="h-4 w-4" style={{ color: "var(--kt-16A34A)" }} />
             </div>
             <span className="text-xs text-muted-foreground">Valid</span>
           </div>
-          <div className="font-display text-xl font-bold" style={{ color: "#16A34A" }}>{counts.valid}</div>
+          <div className="font-display text-xl font-bold" style={{ color: "var(--kt-16A34A)" }}>{counts.valid}</div>
         </button>
 
         <button
           onClick={() => setStatusFilter(statusFilter === "expiring_soon" ? "all" : "expiring_soon")}
           className="card-surface p-4 text-left transition-all"
-          style={{ boxShadow: statusFilter === "expiring_soon" ? "0 0 0 2px #D97706" : undefined }}
+          style={{ boxShadow: statusFilter === "expiring_soon" ? "0 0 0 2px var(--k-D97706)" : undefined }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#FEF3C7" }}>
-              <AlertTriangle className="h-4 w-4" style={{ color: "#D97706" }} />
+            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "var(--k-FEF3C7)" }}>
+              <AlertTriangle className="h-4 w-4" style={{ color: "var(--kt-D97706)" }} />
             </div>
             <span className="text-xs text-muted-foreground">Expiring Soon</span>
           </div>
-          <div className="font-display text-xl font-bold" style={{ color: "#D97706" }}>{counts.expiring_soon}</div>
+          <div className="font-display text-xl font-bold" style={{ color: "var(--kt-D97706)" }}>{counts.expiring_soon}</div>
         </button>
 
         <button
           onClick={() => setStatusFilter(statusFilter === "expired" ? "all" : "expired")}
           className="card-surface p-4 text-left transition-all"
-          style={{ boxShadow: statusFilter === "expired" ? "0 0 0 2px #DC2626" : undefined }}
+          style={{ boxShadow: statusFilter === "expired" ? "0 0 0 2px var(--k-DC2626)" : undefined }}
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "#FEE2E2" }}>
-              <AlertTriangle className="h-4 w-4" style={{ color: "#DC2626" }} />
+            <div className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: "var(--k-FEE2E2)" }}>
+              <AlertTriangle className="h-4 w-4" style={{ color: "var(--kt-DC2626)" }} />
             </div>
             <span className="text-xs text-muted-foreground">Expired</span>
           </div>
-          <div className="font-display text-xl font-bold" style={{ color: "#DC2626" }}>{counts.expired}</div>
+          <div className="font-display text-xl font-bold" style={{ color: "var(--kt-DC2626)" }}>{counts.expired}</div>
         </button>
       </div>
 
@@ -459,12 +459,12 @@ function ComplianceForm({
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "#166534" }}>
+            <button type="submit" disabled={saving} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 transition-all glow-primary" style={{ background: "var(--k-166534)" }}>
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s,box-shadow .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>,
     document.body

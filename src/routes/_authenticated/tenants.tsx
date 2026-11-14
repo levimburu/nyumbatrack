@@ -342,7 +342,7 @@ function TenantsPage() {
         <button
           onClick={() => setEditing({})}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white glow-primary"
-          style={{ background: "#166534" }}
+          style={{ background: "var(--k-166534)" }}
         >
           <Plus className="h-4 w-4" /> Add Tenant
         </button>
@@ -355,7 +355,7 @@ function TenantsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or unit..."
-          className="w-full rounded-xl border border-border bg-white pl-10 pr-4 py-2.5 text-sm outline-none focus:border-primary transition-colors"
+          className="w-full rounded-xl border border-border bg-card pl-10 pr-4 py-2.5 text-sm outline-none focus:border-primary transition-colors"
         />
       </div>
 
@@ -395,7 +395,7 @@ function TenantsPage() {
                     <div className="flex items-center gap-3">
                       <div
                         className="grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white flex-shrink-0"
-                        style={{ background: "#166534" }}
+                        style={{ background: "var(--k-166534)" }}
                       >
                         {initials}
                       </div>
@@ -443,12 +443,12 @@ function TenantsPage() {
               }}
               tabIndex={0}
               role="button"
-              className="card-surface p-4 flex items-center justify-between gap-3 cursor-pointer hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#166534]"
+              className="card-surface p-4 flex items-center justify-between gap-3 cursor-pointer hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--k-166534)]"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div
                   className="grid h-10 w-10 place-items-center rounded-full text-sm font-bold text-white flex-shrink-0"
-                  style={{ background: "#166534" }}
+                  style={{ background: "var(--k-166534)" }}
                 >
                   {initials}
                 </div>
@@ -505,15 +505,15 @@ function TenantsPage() {
       {tenantCode && createPortal(
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
           <div className="card-surface w-full max-w-sm p-6 animate-slide-up text-center">
-            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "#DCFCE7" }}>
-              <Key className="h-7 w-7" style={{ color: "#166534" }} />
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl" style={{ background: "var(--k-DCFCE7)" }}>
+              <Key className="h-7 w-7" style={{ color: "var(--kt-166534)" }} />
             </div>
             <h2 className="font-display text-xl font-semibold mb-1">Tenant Invite Code</h2>
             <p className="text-sm text-muted-foreground mb-6">
               Share this code with <span className="font-medium text-foreground">{tenantCode.name}</span> so they can access their portal.
             </p>
-            <div className="flex items-center justify-between rounded-xl border-2 px-4 py-3 mb-4" style={{ borderColor: "#166534", background: "#F0FDF4" }}>
-              <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: "#166534" }}>{tenantCode.code}</span>
+            <div className="flex items-center justify-between rounded-xl border-2 px-4 py-3 mb-4" style={{ borderColor: "var(--k-166534)", background: "var(--k-F0FDF4)" }}>
+              <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: "var(--kt-166534)" }}>{tenantCode.code}</span>
               <button
                 onClick={() => { navigator.clipboard.writeText(tenantCode.code); toast.success("Code copied!"); }}
                 className="text-muted-foreground hover:text-primary transition-colors"
@@ -525,7 +525,7 @@ function TenantsPage() {
             <button
               onClick={() => setTenantCode(null)}
               className="w-full rounded-xl py-3 text-sm font-semibold text-white"
-              style={{ background: "#166534" }}
+              style={{ background: "var(--k-166534)" }}
             >
               Done
             </button>
@@ -583,7 +583,7 @@ function TenantProfile({
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="card-surface w-full max-w-lg animate-slide-up max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 p-5 rounded-t-xl" style={{ background: "#166534" }}>
+        <div className="flex items-center gap-4 p-5 rounded-t-xl" style={{ background: "var(--k-166534)" }}>
           <div
             className="grid h-12 w-12 place-items-center rounded-full text-lg font-bold text-white flex-shrink-0"
             style={{ background: "rgba(255,255,255,0.2)" }}
@@ -626,7 +626,7 @@ function TenantProfile({
                 onClick={onDelete}
                 disabled={deleting}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs font-medium transition-colors disabled:opacity-50"
-                style={{ borderColor: "#FCA5A5", color: "#DC2626", background: "#FEF2F2" }}
+                style={{ borderColor: "var(--k-FCA5A5)", color: "var(--kt-DC2626)", background: "var(--k-FEF2F2)" }}
               >
                 <Trash2 className="h-3.5 w-3.5" /> {deleting ? "Removing…" : "Delete"}
               </button>
@@ -638,25 +638,25 @@ function TenantProfile({
           {/* Details grid */}
           <div className="grid grid-cols-3 gap-3">
             {tenant.move_in_date && (
-              <div className="rounded-xl p-3" style={{ background: "#F5F5F0" }}>
+              <div className="rounded-xl p-3" style={{ background: "var(--k-F5F5F0)" }}>
                 <div className="text-xs text-muted-foreground mb-1">Move-in Date</div>
                 <div className="text-sm font-semibold">{tenant.move_in_date}</div>
               </div>
             )}
             {tenant.deposit != null && Number(tenant.deposit) > 0 && (
-              <div className="rounded-xl p-3" style={{ background: "#F5F5F0" }}>
+              <div className="rounded-xl p-3" style={{ background: "var(--k-F5F5F0)" }}>
                 <div className="text-xs text-muted-foreground mb-1">Deposit Held</div>
                 <div className="text-sm font-semibold">{formatKES(tenant.deposit)}</div>
               </div>
             )}
             {tenant.advance_months != null && Number(tenant.advance_months) > 0 && (
-              <div className="rounded-xl p-3" style={{ background: "#F5F5F0" }}>
+              <div className="rounded-xl p-3" style={{ background: "var(--k-F5F5F0)" }}>
                 <div className="text-xs text-muted-foreground mb-1">Advance Months</div>
                 <div className="text-sm font-semibold">{tenant.advance_months} months</div>
               </div>
             )}
             {tenant.next_due_date && (
-              <div className="rounded-xl p-3" style={{ background: "#F5F5F0" }}>
+              <div className="rounded-xl p-3" style={{ background: "var(--k-F5F5F0)" }}>
                 <div className="text-xs text-muted-foreground mb-1">Next Due Date</div>
                 <div className={`text-sm font-semibold ${overdue ? "text-red-600" : "text-green-700"}`}>
                   {tenant.next_due_date}
@@ -664,19 +664,19 @@ function TenantProfile({
               </div>
             )}
             {tenant.phone && (
-              <div className="rounded-xl p-3" style={{ background: "#F5F5F0" }}>
+              <div className="rounded-xl p-3" style={{ background: "var(--k-F5F5F0)" }}>
                 <div className="text-xs text-muted-foreground mb-1">Phone</div>
                 <div className="text-sm font-semibold">{tenant.phone}</div>
               </div>
             )}
-            <div className="rounded-xl p-3" style={{ background: "#F5F5F0" }}>
+            <div className="rounded-xl p-3" style={{ background: "var(--k-F5F5F0)" }}>
               <div className="text-xs text-muted-foreground mb-1">Monthly Rent</div>
               <div className="text-sm font-semibold">{formatKES(tenant.rent_amount)}</div>
             </div>
           </div>
 
           {/* Outstanding for the due month */}
-          <div className="flex items-center justify-between rounded-xl p-3" style={{ background: "#F5F5F0" }}>
+          <div className="flex items-center justify-between rounded-xl p-3" style={{ background: "var(--k-F5F5F0)" }}>
             <span className="text-sm text-muted-foreground">Owing · {label}</span>
             <span className={`text-sm font-bold ${due === 0 ? "text-green-700" : "text-red-600"}`}>
               {due === 0 ? "Cleared" : `(${formatKES(due)})`}
@@ -695,7 +695,7 @@ function TenantProfile({
                     <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
                     <Tooltip formatter={(v: number) => formatKES(v)} />
-                    <Bar dataKey="amount" fill="#166534" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="amount" fill="var(--kt-166534)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -716,17 +716,17 @@ function TenantProfile({
                     <div className="flex items-center gap-2 mb-1">
                       <span
                         className="rounded-full px-2.5 py-0.5 text-xs font-medium"
-                        style={{ background: "#DCFCE7", color: "#166534" }}
+                        style={{ background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }}
                       >
                         {p.payment_month ?? formatDate(p.paid_on)}
                       </span>
                       <span
                         className="rounded-md px-2 py-0.5 text-xs font-medium"
                         style={p.method === "mpesa"
-                          ? { background: "#DCFCE7", color: "#166534" }
+                          ? { background: "var(--k-DCFCE7)", color: "var(--kt-166534)" }
                           : p.method === "bank"
-                          ? { background: "#EFF6FF", color: "#2563EB" }
-                          : { background: "#F5F5F0", color: "#6B7280" }
+                          ? { background: "var(--k-EFF6FF)", color: "var(--kt-2563EB)" }
+                          : { background: "var(--k-F5F5F0)", color: "var(--kt-6B7280)" }
                         }
                       >
                         {p.method === "mpesa" ? "M-Pesa" : p.method === "bank" ? "Bank Transfer" : "Cash"}
@@ -737,7 +737,7 @@ function TenantProfile({
                       {p.reference && ` · ${p.reference}`}
                     </div>
                   </div>
-                  <div className="font-display font-bold text-sm" style={{ color: "#16A34A" }}>
+                  <div className="font-display font-bold text-sm" style={{ color: "var(--kt-16A34A)" }}>
                     +{formatKES(p.amount)}
                   </div>
                 </div>
@@ -830,18 +830,18 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
         </div>
 
         {/* New vs Existing tenant mode */}
-        <div className="flex gap-1 rounded-xl p-1 mb-5" style={{ background: "#F5F5F0" }}>
+        <div className="flex gap-1 rounded-xl p-1 mb-5" style={{ background: "var(--k-F5F5F0)" }}>
           <button
             type="button"
             onClick={() => setMode("new")}
-            style={{ flex: 1, padding: "8px 0", fontSize: "0.8rem", fontWeight: 600, borderRadius: "10px", border: "none", cursor: "pointer", background: mode === "new" ? "#166534" : "transparent", color: mode === "new" ? "#fff" : "#6B7280", transition: "all 0.15s" }}
+            style={{ flex: 1, padding: "8px 0", fontSize: "0.8rem", fontWeight: 600, borderRadius: "10px", border: "none", cursor: "pointer", background: mode === "new" ? "var(--k-166534)" : "transparent", color: mode === "new" ? "#fff" : "var(--k-6B7280)", transition: "all 0.15s" }}
           >
             New Tenant
           </button>
           <button
             type="button"
             onClick={() => setMode("existing")}
-            style={{ flex: 1, padding: "8px 0", fontSize: "0.8rem", fontWeight: 600, borderRadius: "10px", border: "none", cursor: "pointer", background: mode === "existing" ? "#166534" : "transparent", color: mode === "existing" ? "#fff" : "#6B7280", transition: "all 0.15s" }}
+            style={{ flex: 1, padding: "8px 0", fontSize: "0.8rem", fontWeight: 600, borderRadius: "10px", border: "none", cursor: "pointer", background: mode === "existing" ? "var(--k-166534)" : "transparent", color: mode === "existing" ? "#fff" : "var(--k-6B7280)", transition: "all 0.15s" }}
           >
             Existing Tenant
           </button>
@@ -880,7 +880,7 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
                     <option key={u.id} value={u.unit_name}>{u.unit_name} — {formatKES(u.rent_price)}/mo</option>
                   ))}
                 </select>
-                <button type="button" onClick={() => { setUseDropdown(false); set("unit", ""); }} className="text-xs" style={{ color: "#166534" }}>
+                <button type="button" onClick={() => { setUseDropdown(false); set("unit", ""); }} className="text-xs" style={{ color: "var(--kt-166534)" }}>
                   Enter unit manually instead
                 </button>
               </div>
@@ -888,7 +888,7 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
               <div className="space-y-1">
                 <input required value={form.unit ?? ""} onChange={(e) => set("unit", e.target.value)} className="form-input" />
                 {!initial.id && vacantUnits.length > 0 && (
-                  <button type="button" onClick={() => setUseDropdown(true)} className="text-xs" style={{ color: "#166534" }}>
+                  <button type="button" onClick={() => setUseDropdown(true)} className="text-xs" style={{ color: "var(--kt-166534)" }}>
                     Choose from vacant units instead
                   </button>
                 )}
@@ -942,7 +942,7 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
                     const isOpen = openYear === block.year;
                     return (
                       <div key={block.year} className="rounded-xl border border-border overflow-hidden">
-                        <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "#F9FAFB" }}>
+                        <div className="flex items-center justify-between px-3 py-2.5" style={{ background: "var(--k-F9FAFB)" }}>
                           <button
                             type="button"
                             onClick={() => toggleYear(block)}
@@ -951,12 +951,12 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
                             <span
                               className="grid h-5 w-5 place-items-center rounded border-2 flex-shrink-0"
                               style={{
-                                borderColor: allSelected ? "#166534" : someSelected ? "#166534" : "#D1D5DB",
-                                background: allSelected ? "#166534" : "transparent",
+                                borderColor: allSelected ? "var(--k-166534)" : someSelected ? "var(--k-166534)" : "var(--k-D1D5DB)",
+                                background: allSelected ? "var(--k-166534)" : "transparent",
                               }}
                             >
                               {allSelected && <span style={{ color: "#fff", fontSize: "0.7rem", lineHeight: 1 }}>✓</span>}
-                              {someSelected && !allSelected && <span style={{ color: "#166534", fontSize: "0.9rem", lineHeight: 1 }}>–</span>}
+                              {someSelected && !allSelected && <span style={{ color: "var(--kt-166534)", fontSize: "0.9rem", lineHeight: 1 }}>–</span>}
                             </span>
                             <span className="text-sm font-semibold text-foreground">{block.year}</span>
                             <span className="text-xs text-muted-foreground">
@@ -967,7 +967,7 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
                             type="button"
                             onClick={() => setOpenYear(isOpen ? null : block.year)}
                             className="text-xs font-medium"
-                            style={{ color: "#166534" }}
+                            style={{ color: "var(--kt-166534)" }}
                           >
                             {isOpen ? "Hide months" : "Choose months"}
                           </button>
@@ -982,11 +982,11 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
                                   type="button"
                                   onClick={() => toggleMonth(m.label)}
                                   className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors"
-                                  style={{ background: checked ? "#F0FDF4" : "transparent", border: `1px solid ${checked ? "#BBF7D0" : "#E5E7EB"}` }}
+                                  style={{ background: checked ? "var(--k-F0FDF4)" : "transparent", border: `1px solid ${checked ? "var(--k-BBF7D0)" : "var(--k-E5E7EB)"}` }}
                                 >
                                   <span
                                     className="grid h-4 w-4 place-items-center rounded border-2 flex-shrink-0"
-                                    style={{ borderColor: checked ? "#166534" : "#D1D5DB", background: checked ? "#166534" : "transparent" }}
+                                    style={{ borderColor: checked ? "var(--k-166534)" : "var(--k-D1D5DB)", background: checked ? "var(--k-166534)" : "transparent" }}
                                   >
                                     {checked && <span style={{ color: "#fff", fontSize: "0.6rem", lineHeight: 1 }}>✓</span>}
                                   </span>
@@ -1012,13 +1012,13 @@ function TenantForm({ initial, onSave, onClose, saving, vacantUnits }: {
               type="submit"
               disabled={saving}
               className="rounded-xl px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 glow-primary"
-              style={{ background: "#166534" }}
+              style={{ background: "var(--k-166534)" }}
             >
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
-        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid #E5E7EB;background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:#166534;box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
+        <style>{`.form-input{width:100%;border-radius:.625rem;border:1px solid var(--k-E5E7EB);background:#fff;padding:.625rem .875rem;font-size:.875rem;outline:none;transition:border-color .15s}.form-input:focus{border-color:var(--kt-166534);box-shadow:0 0 0 3px rgba(22,101,52,0.1)}`}</style>
       </div>
     </div>,
     document.body
