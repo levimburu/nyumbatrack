@@ -328,6 +328,7 @@ function AuthPage() {
               <button onClick={handleSignUp} disabled={password.length < 6 || loading} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Create Account
               </button>
+              <p className="mt-3 text-center text-xs" style={{ color: "#9CA3AF" }}>By continuing you agree to the <a href="/privacy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a>.</p>
             </div>
           )}
 
@@ -358,6 +359,7 @@ function AuthPage() {
               <button onClick={handleRedeemInvite} disabled={loading} className="w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2" style={{ background: "#166534" }}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null} Activate My Account
               </button>
+              <p className="mt-3 text-center text-xs" style={{ color: "#9CA3AF" }}>By continuing you agree to the <a href="/privacy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a>.</p>
             </div>
           )}
 
@@ -402,7 +404,7 @@ function AuthPage() {
           )}
         </div>
 
-        <div className="px-8 py-6 text-xs" style={{ color: "#9CA3AF" }}>© 2026 NyumbaTrack Technologies Ltd</div>
+        <div className="px-8 py-6 text-xs flex items-center justify-between" style={{ color: "#9CA3AF" }}><span>© 2026 NyumbaTrack Technologies Ltd</span><a href="/privacy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a></div>
       </div>
 
       {/* ── DESKTOP RIGHT: Branding ── */}
@@ -538,6 +540,7 @@ function AuthPage() {
               <button onClick={handleSignUp} disabled={password.length < 6 || loading} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null} Create Account
               </button>
+              <p className="mt-3 text-center text-xs" style={{ color: "#9CA3AF" }}>By continuing you agree to the <a href="/privacy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a>.</p>
             </div>
           )}
 
@@ -566,6 +569,7 @@ function AuthPage() {
               <button onClick={handleRedeemInvite} disabled={loading} className="mt-6 w-full rounded-2xl bg-amber-400 py-4 text-base font-bold text-amber-900 disabled:opacity-40 transition active:scale-95 flex items-center justify-center gap-2">
                 {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null} Activate My Account
               </button>
+              <p className="mt-3 text-center text-xs" style={{ color: "#9CA3AF" }}>By continuing you agree to the <a href="/privacy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a>.</p>
             </div>
           )}
 
@@ -607,7 +611,7 @@ function AuthPage() {
             </div>
           )}
         </div>
-        <div className="h-8" />
+        <div className="py-4 text-center text-xs" style={{ color: "#9CA3AF" }}><a href="/privacy" target="_blank" rel="noreferrer" className="underline">Privacy Policy</a></div>
       </div>
     </div>
   );
