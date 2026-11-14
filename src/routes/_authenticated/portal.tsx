@@ -157,6 +157,13 @@ function TenantHome() {
                   >
                     <Camera className="h-4 w-4 text-muted-foreground" /> Change Photo
                   </button>
+                  <a
+                    href="/privacy" target="_blank" rel="noreferrer"
+                    onClick={() => setAvatarMenuOpen(false)}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-foreground hover:bg-muted text-left"
+                  >
+                    <Shield className="h-4 w-4 text-muted-foreground" /> Privacy Policy
+                  </a>
                   <button
                     onClick={() => { setAvatarMenuOpen(false); setConfirmingSignOut(true); }}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-foreground hover:bg-muted text-left"

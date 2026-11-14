@@ -885,6 +885,16 @@ export function AppLayout({ children, role, email, displayName }: {
               </div>
             )}
 
+            {/* Privacy Policy */}
+            <div className="px-5 py-4 border-b border-border">
+              <a href="/privacy" target="_blank" rel="noreferrer" className="w-full flex items-center gap-3">
+                <div className="grid h-9 w-9 place-items-center rounded-xl" style={{ background: "#F5F5F0" }}>
+                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <span className="text-sm font-medium text-foreground">Privacy Policy</span>
+              </a>
+            </div>
+
             {/* Sign out all devices */}
             <div className="px-5 py-4 border-b border-border">
               <button onClick={handleSignOutAllDevices} className="w-full flex items-center gap-3">

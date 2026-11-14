@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Home, CreditCard, MessageSquare, LogOut, Building2, Bell } from "lucide-react";
+import { Home, CreditCard, MessageSquare, LogOut, Building2, Bell, ShieldCheck } from "lucide-react";
 import { useMyTenant } from "@/hooks/use-my-tenant";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -130,6 +130,14 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
           <VerticalNav pathname={location.pathname} />
         </nav>
         <div className="p-3 mt-2" style={{ borderTop: "1px solid #1a3a28" }}>
+          <a
+            href="/privacy" target="_blank" rel="noreferrer"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 hover:text-white"
+            style={{ color: "#9CA3AF" }}
+          >
+            <ShieldCheck className="h-4 w-4 flex-shrink-0" />
+            Privacy Policy
+          </a>
           <button
             onClick={() => setConfirmingSignOut(true)}
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 hover:text-white"
