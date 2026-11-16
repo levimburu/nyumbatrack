@@ -15,19 +15,32 @@ import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 
 interface NavItem { to: string; label: string; icon: typeof Users; }
 
-const adminNav: NavItem[] = [
+interface NavGroup { label?: string; items: NavItem[]; }
+
+// Sidebar sections. Each group renders under its own small heading so the
+// ~12 admin pages read as a few clear areas instead of one long list.
+const overviewNav: NavItem[] = [
   { to: "/portfolio", label: "Portfolio", icon: PieChart },
   { to: "/activity", label: "Activity", icon: Clock },
+];
+
+const propertiesNav: NavItem[] = [
   { to: "/properties", label: "Properties", icon: Home },
   { to: "/vacancies", label: "Vacancies", icon: DoorOpen },
+];
+
+const moneyNav: NavItem[] = [
   { to: "/arrears", label: "Arrears", icon: AlertCircle },
-  { to: "/maintenance", label: "Maintenance", icon: Wrench },
-  { to: "/compliance", label: "Compliance", icon: ShieldCheck },
-  { to: "/vendors", label: "Vendors", icon: Hammer },
-  { to: "/communications", label: "Communications", icon: MessageSquare },
   { to: "/collections", label: "Collections", icon: TrendingUp },
   { to: "/financials", label: "Financials", icon: Landmark },
   { to: "/statements", label: "Statements", icon: FileText },
+];
+
+const operationsNav: NavItem[] = [
+  { to: "/maintenance", label: "Maintenance", icon: Wrench },
+  { to: "/vendors", label: "Vendors", icon: Hammer },
+  { to: "/compliance", label: "Compliance", icon: ShieldCheck },
+  { to: "/communications", label: "Communications", icon: MessageSquare },
 ];
 
 // Pages that only make sense once a specific property is selected — shown
@@ -87,16 +100,24 @@ export function AppLayout({ children, role, email, displayName }: {
   const { data: companyAccess } = useCompanyAccess();
   const companyMemberships = (companyAccess?.memberships ?? []).filter((m) => m.company?.kind === "company");
   const isSuspended = companyMemberships.length > 0 && companyMemberships.every((m) => m.company?.status === "suspended");
-  const items: NavItem[] =
+  const isCompanyMember = !!companyAccess?.memberships.some((m) => m.company?.kind === "company");
+  const isOfficer = !!companyAccess?.officerCompanies.length;
+  const adminOrganisationNav: NavItem[] = [
+    ...(isCompanyMember ? [{ to: "/landlords", label: "Landlords", icon: Users }] : []),
+    ...(isCompanyMember ? [{ to: "/company", label: "Company", icon: Building2 }] : []),
+    ...(isOfficer ? [{ to: "/staff", label: "Staff", icon: Users }, { to: "/access", label: "Access", icon: ShieldCheck }] : []),
+  ];
+  const groups: NavGroup[] =
     role === "admin"
       ? [
-          ...adminNav,
-          ...(companyAccess?.isPlatformAdmin ? [{ to: "/owner", label: "Owner console", icon: Building2 }] : []),
-          ...(companyAccess?.memberships.some((m) => m.company?.kind === "company") ? [{ to: "/landlords", label: "Landlords", icon: Users }] : []),
-          ...(companyAccess?.memberships.some((m) => m.company?.kind === "company") ? [{ to: "/company", label: "Company", icon: Building2 }] : []),
-          ...(companyAccess?.officerCompanies.length ? [{ to: "/staff", label: "Staff", icon: Users }, { to: "/access", label: "Access", icon: ShieldCheck }] : []),
-        ]
-      : tenantNav;
+          { items: overviewNav },
+          { label: "Properties", items: propertiesNav },
+          { label: "Money", items: moneyNav },
+          { label: "Operations", items: operationsNav },
+          { label: "Organisation", items: adminOrganisationNav },
+          { label: "Platform", items: companyAccess?.isPlatformAdmin ? [{ to: "/owner", label: "Owner console", icon: Building2 }] : [] },
+        ].filter((g) => g.items.length > 0)
+      : [{ items: tenantNav }];
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -436,8 +457,15 @@ export function AppLayout({ children, role, email, displayName }: {
         </div>
       )}
 
-      <nav className="flex-1 min-h-0 overflow-y-auto space-y-0.5 px-3 sidebar-nav-scroll">
-        {items.map((it) => {
+      <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-2 sidebar-nav-scroll">
+        {groups.map((group, gi) => (
+        <div key={group.label ?? `group-${gi}`} className={cn("space-y-0.5", gi > 0 && "mt-4")}>
+        {group.label && (
+          <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--kt-6B9E7A)" }}>
+            {group.label}
+          </div>
+        )}
+        {group.items.map((it) => {
           const active = pathname === it.to;
           const Icon = it.icon;
           const isPropertiesLink = it.to === "/properties";
@@ -491,6 +519,8 @@ export function AppLayout({ children, role, email, displayName }: {
             </div>
           );
         })}
+        </div>
+        ))}
       </nav>
 
       <div className="p-3 mt-2" style={{ borderTop: "1px solid var(--k-1A3A28)" }}>
