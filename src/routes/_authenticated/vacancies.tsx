@@ -8,6 +8,8 @@ import { UNIT_TYPES, unitTypeLabel } from "@/lib/unitTypes";
 import { Search, MapPin, Building2, Copy, DoorOpen, X } from "lucide-react";
 import { toast } from "sonner";
 import { VacancyDetail } from "@/components/VacancyDetail";
+import { CardGridSkeleton } from "@/components/PageSkeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/_authenticated/vacancies")({
   component: VacanciesPage,
@@ -201,7 +203,7 @@ function VacanciesPage() {
       <div>
         <h1 className="font-display text-2xl font-bold text-foreground">Vacancies</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          {loading ? "Loading…" : `${vacancies.length} vacant ${vacancies.length === 1 ? "unit" : "units"} across ${properties?.length ?? 0} ${properties?.length === 1 ? "property" : "properties"}`}
+          {loading ? <Skeleton className="inline-block h-3 w-44 align-middle" /> : `${vacancies.length} vacant ${vacancies.length === 1 ? "unit" : "units"} across ${properties?.length ?? 0} ${properties?.length === 1 ? "property" : "properties"}`}
         </p>
       </div>
 
@@ -258,7 +260,7 @@ function VacanciesPage() {
       )}
 
       {loading ? (
-        <div className="flex min-h-[30vh] items-center justify-center text-sm text-muted-foreground">Loading…</div>
+        <CardGridSkeleton count={6} />
       ) : filtered.length === 0 ? (
         <div className="card-surface flex flex-col items-center px-4 py-12 text-center">
           <DoorOpen className="h-8 w-8 text-muted-foreground mb-3" />

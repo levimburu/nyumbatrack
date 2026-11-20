@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { AppShellSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -36,9 +36,5 @@ function IndexPage() {
     });
   }, [navigate]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--k-F5F5F0)]">
-      <Loader2 className="h-8 w-8 animate-spin text-[var(--k-166534)]" />
-    </div>
-  );
+  return <AppShellSkeleton />;
 }

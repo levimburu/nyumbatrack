@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 import { OWNERSHIP_TYPES } from "@/lib/contacts";
+import { DetailSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/register-property")({
   component: RegisterPropertyPage,
@@ -78,7 +79,7 @@ function RegisterPropertyPage() {
     },
   });
 
-  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (isLoading) return <DetailSkeleton />;
   if (!company) return <div className="p-6 text-sm text-muted-foreground">Only a company's Senior Officer can register a property.</div>;
 
   const upload = async (file: File) => {

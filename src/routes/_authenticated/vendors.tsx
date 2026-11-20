@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ListSearchInput } from "@/components/ListSearchInput";
 import { Plus, X, Phone, Mail, Pencil, Users } from "lucide-react";
 import { toast } from "sonner";
+import { PageSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/vendors")({
   component: VendorsPage,
@@ -128,9 +129,7 @@ function VendorsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
+      <PageSkeleton rows={5} />
     );
   }
 

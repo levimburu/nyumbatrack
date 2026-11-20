@@ -4,6 +4,7 @@ import { Check, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
+import { DetailSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/access")({
   component: AccessPage,
@@ -58,7 +59,7 @@ function AccessPage() {
     },
   });
 
-  if (loadingAccess) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (loadingAccess) return <DetailSkeleton />;
   if (!ids.length) return <div className="p-6 text-sm text-muted-foreground">Only a company's Senior Officer can see this page.</div>;
 
   const decide = async (id: string, approve: boolean) => {

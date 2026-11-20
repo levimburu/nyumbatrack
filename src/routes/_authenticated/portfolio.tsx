@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES } from "@/lib/format";
 import { useProperty } from "@/context/PropertyContext";
+import { DashboardSkeleton } from "@/components/PageSkeletons";
 import {
   Building2, Users, Wallet, TrendingUp, AlertCircle, DoorOpen, DoorClosed, LayoutGrid,
   Wrench, CheckCircle2, Clock, Circle, ChevronRight,
@@ -378,9 +379,7 @@ function PortfolioDashboard() {
 
   if (!profileLoaded || propsLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
+      <DashboardSkeleton />
     );
   }
 

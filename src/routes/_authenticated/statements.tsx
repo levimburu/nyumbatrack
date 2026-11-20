@@ -9,6 +9,7 @@ import { FileText, Download, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 import { fetchManagedPropertyIds } from "@/lib/managedProperties";
+import { DetailSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/statements")({
   component: StatementsPage,
@@ -297,9 +298,7 @@ function StatementsPage() {
 
   if (!profileLoaded || accessLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
+      <DetailSkeleton />
     );
   }
 

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ListSearchInput } from "@/components/ListSearchInput";
 import { Plus, X, MessageSquare, Building2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { PageSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/communications")({
   component: CommunicationsPage,
@@ -172,9 +173,7 @@ function CommunicationsPage() {
 
   if (!profileLoaded || isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
+      <PageSkeleton rows={5} />
     );
   }
 

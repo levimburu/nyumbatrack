@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatKES } from "@/lib/format";
 import { CheckCircle2, Wrench, Building2 } from "lucide-react";
+import { PageSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/activity")({
   component: ActivityPage,
@@ -132,9 +133,7 @@ function ActivityPage() {
 
   if (!profileLoaded || paymentsLoading || ticketsLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
+      <PageSkeleton rows={6} />
     );
   }
 

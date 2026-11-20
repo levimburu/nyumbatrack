@@ -12,6 +12,7 @@ import { useProperty } from "@/context/PropertyContext";
 import { toast } from "sonner";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface NavItem { to: string; label: string; icon: typeof Users; }
 
@@ -734,7 +735,11 @@ export function AppLayout({ children, role, email, displayName }: {
               {/* Quick summary — real counts, fetched fresh each time the
                   panel opens, not a live-updating dashboard. */}
               {quickSummaryLoading ? (
-                <div className="px-5 py-4 border-b border-border text-xs text-muted-foreground">Loading summary…</div>
+                <div className="px-5 py-4 border-b border-border space-y-2" role="status" aria-label="Loading summary">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3.5 w-4/5" />
+                  <Skeleton className="h-3.5 w-3/5" />
+                </div>
               ) : quickSummary && (quickSummary.paymentsToday > 0 || quickSummary.openTickets > 0 || quickSummary.complianceExpiring > 0) ? (
                 <div className="px-5 py-4 border-b border-border" style={{ background: "var(--k-F5F5F0)" }}>
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Quick Summary</div>

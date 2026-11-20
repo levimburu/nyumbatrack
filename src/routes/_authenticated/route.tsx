@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { AppLayout } from "@/components/AppLayout";
 import { TenantShell } from "@/components/TenantShell";
 import { useState, useEffect } from "react";
+import { AppShellSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -34,9 +35,7 @@ function AuthenticatedShell() {
 
   if (loading || !role) {
     return (
-      <div className="grid min-h-screen place-items-center bg-background">
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      </div>
+      <AppShellSkeleton />
     );
   }
 

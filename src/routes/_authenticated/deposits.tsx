@@ -6,6 +6,7 @@ import { formatKES, formatDate } from "@/lib/format";
 import { useProperty } from "@/context/PropertyContext";
 import { Wallet, CheckCircle2, Clock, X, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { TableRowsSkeleton, ListSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/deposits")({
   component: DepositsPage,
@@ -193,7 +194,7 @@ function DepositsPage() {
           </thead>
           <tbody>
             {isLoading && (
-              <tr><td colSpan={7} className="px-5 py-10 text-center text-sm text-muted-foreground">Loading...</td></tr>
+              <TableRowsSkeleton rows={5} cols={7} />
             )}
             {!isLoading && !deposits?.length && (
               <tr><td colSpan={7} className="px-5 py-10 text-center text-sm text-muted-foreground">No deposits recorded yet.</td></tr>
@@ -239,7 +240,7 @@ function DepositsPage() {
 
       {/* Mobile cards */}
       <div className="space-y-3 md:hidden">
-        {isLoading && <div className="text-sm text-muted-foreground text-center py-10">Loading...</div>}
+        {isLoading && <ListSkeleton rows={4} />}
         {!isLoading && !deposits?.length && (
           <div className="card-surface p-10 text-center text-sm text-muted-foreground">No deposits recorded yet.</div>
         )}

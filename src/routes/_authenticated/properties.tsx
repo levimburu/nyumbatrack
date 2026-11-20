@@ -11,6 +11,7 @@ import { formatKES, formatKESCompact } from "@/lib/format";
 import type { PaymentMethod } from "@/lib/reminders";
 import { PhotoCropper } from "@/components/PhotoCropper";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
+import { PageSkeleton } from "@/components/PageSkeletons";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -244,9 +245,7 @@ function PropertiesPage() {
   const renderContent = () => {
     if (!profileLoaded || isLoading) {
       return (
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="text-sm text-muted-foreground">Loading...</div>
-        </div>
+        <PageSkeleton variant="grid" rows={6} />
       );
     }
 

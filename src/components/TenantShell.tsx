@@ -6,6 +6,7 @@ import { useMyTenant } from "@/hooks/use-my-tenant";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { toast } from "sonner";
+import { AppShellSkeleton } from "@/components/PageSkeletons";
 
 const TABS = [
   { to: "/portal" as const, label: "Home", icon: Home },
@@ -72,9 +73,7 @@ export function TenantShell({ children, email }: { children: React.ReactNode; em
 
   if (isLoading) {
     return (
-      <div className="grid min-h-screen place-items-center bg-background">
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      </div>
+      <AppShellSkeleton />
     );
   }
 

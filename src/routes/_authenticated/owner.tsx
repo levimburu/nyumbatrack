@@ -2,6 +2,7 @@ import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-rout
 import { LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
+import { AppShellSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/owner")({
   component: OwnerLayout,
@@ -14,7 +15,7 @@ function OwnerLayout() {
   const navigate = useNavigate();
   const { data: access, isLoading } = useCompanyAccess();
 
-  if (isLoading) return <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">Loading…</div>;
+  if (isLoading) return <AppShellSkeleton />;
   if (!access?.isPlatformAdmin) {
     return (
       <div className="grid min-h-screen place-items-center p-6 text-center">

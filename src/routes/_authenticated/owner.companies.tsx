@@ -8,6 +8,7 @@ import { CompanyInvites } from "@/components/CompanyInvites";
 import { ago, isOverdue, type CompanyStat } from "@/lib/ownerFormat";
 import { formatKES } from "@/lib/format";
 import { CompanyProfileForm, profileToValues } from "@/components/CompanyProfileForm";
+import { ListSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/owner/companies")({
   component: OwnerCompanies,
@@ -72,7 +73,7 @@ function OwnerCompanies() {
         {showNew && <CompanyProfileForm mode="owner-create" initial={profileToValues(null)} submitLabel="Create company" onSubmit={create} />}
       </div>
 
-      {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
+      {isLoading && <ListSkeleton rows={3} />}
       {companies.map((c) => (
         <CompanyCard key={c.id} c={c} members={(members ?? []).filter((m) => m.company_id === c.id)} onChanged={refresh} />
       ))}

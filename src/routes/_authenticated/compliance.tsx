@@ -7,6 +7,7 @@ import { ListSearchInput } from "@/components/ListSearchInput";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, X, ShieldCheck, Building2, AlertTriangle, CheckCircle2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { PageSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/compliance")({
   component: CompliancePage,
@@ -204,9 +205,7 @@ function CompliancePage() {
 
   if (!profileLoaded || isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
+      <PageSkeleton stats={3} rows={5} />
     );
   }
 

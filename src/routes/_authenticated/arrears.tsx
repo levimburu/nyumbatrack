@@ -11,6 +11,7 @@ import { ReminderButton, type PropertyPaymentDetails } from "@/components/Remind
 import { useProperty } from "@/context/PropertyContext";
 import { AlertCircle, Building2, Phone, Wallet, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { PageSkeleton } from "@/components/PageSkeletons";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -176,9 +177,7 @@ function ArrearsPage() {
 
   if (!profileLoaded || isLoading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </div>
+      <PageSkeleton rows={5} />
     );
   }
 

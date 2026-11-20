@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 import { SensitiveDetails } from "@/components/SensitiveDetails";
 import { ownershipLabel, telHref } from "@/lib/contacts";
+import { DetailSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/property-details/$propertyId")({
   component: PropertyDetailsPage,
@@ -101,7 +102,7 @@ function PropertyDetailsPage() {
     qc.invalidateQueries({ queryKey: ["property-caretakers", propertyId] });
   };
 
-  if (isLoading) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (isLoading) return <DetailSkeleton />;
   if (!property) return <div className="p-6 text-sm text-muted-foreground">Property not found, or you don't have access to it.</div>;
 
   return (

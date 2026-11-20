@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 import { CompanyInvites } from "@/components/CompanyInvites";
+import { ListSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/staff")({
   component: StaffPage,
@@ -100,7 +101,7 @@ function StaffPage() {
         )}
       </div>
 
-      {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
+      {isLoading && <ListSkeleton rows={3} />}
 
       <div className="card-surface space-y-2 p-4">
         <div className="flex items-center gap-2 text-sm font-semibold"><Users className="h-4 w-4" /> Senior Officers</div>

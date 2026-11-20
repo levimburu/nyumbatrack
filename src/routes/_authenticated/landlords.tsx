@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 import { SensitiveDetails } from "@/components/SensitiveDetails";
 import { telHref } from "@/lib/contacts";
+import { ListSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/landlords")({
   component: LandlordsPage,
@@ -60,7 +61,7 @@ function LandlordsPage() {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, phone or property" className={`${input} pl-9`} />
       </div>
-      {isLoading && <div className="text-sm text-muted-foreground">Loading…</div>}
+      {isLoading && <ListSkeleton rows={4} />}
       {!isLoading && filtered.length === 0 && <div className="text-sm text-muted-foreground">No landlords yet. They are added when a Senior Officer registers a property.</div>}
       <div className="space-y-2">
         {filtered.map((l) => (

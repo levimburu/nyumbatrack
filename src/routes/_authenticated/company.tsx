@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompanyAccess } from "@/hooks/useCompanyAccess";
 import { CompanyProfileForm, profileToValues } from "@/components/CompanyProfileForm";
 import { formatKES } from "@/lib/format";
+import { DetailSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/company")({
   component: CompanyPage,
@@ -34,7 +35,7 @@ function CompanyPage() {
     queryFn: async () => { const { data, error } = await db.from("companies").select("*").eq("id", cid).maybeSingle(); if (error) throw error; return data as Record<string, any> | null; },
   });
 
-  if (loadingAccess) return <div className="p-6 text-sm text-muted-foreground">Loading…</div>;
+  if (loadingAccess) return <DetailSkeleton />;
   if (!membership) return <div className="p-6 text-sm text-muted-foreground">Company details are available to company accounts.</div>;
 
   const save = async (values: Record<string, string>) => {

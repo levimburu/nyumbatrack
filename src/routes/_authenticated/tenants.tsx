@@ -11,6 +11,7 @@ import { useProperty } from "@/context/PropertyContext";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { ReminderButton, usePropertyPaymentDetails, type PropertyPaymentDetails } from "@/components/ReminderButton";
 import { isOverdue, outstandingForDueMonth } from "@/lib/reminders";
+import { LinesSkeleton } from "@/components/PageSkeletons";
 
 export const Route = createFileRoute("/_authenticated/tenants")({
   component: TenantsPage,
@@ -705,7 +706,7 @@ function TenantProfile({
           {/* Payment history */}
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-3">Payment History</h3>
-            {isLoading && <div className="text-sm text-muted-foreground py-4 text-center">Loading...</div>}
+            {isLoading && <LinesSkeleton lines={3} />}
             {!isLoading && payments?.length === 0 && (
               <div className="text-sm text-muted-foreground py-4 text-center">No payments recorded yet.</div>
             )}
